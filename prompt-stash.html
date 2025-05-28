@@ -6,13 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Prompt Stash</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
-            /* Tailwind gray-100 */
         }
 
         .prompt-card {
@@ -21,74 +19,38 @@
 
         .prompt-card:hover {
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            /* Tailwind shadow-lg */
         }
 
         .tag {
             background-color: #e0e7ff;
-            /* Tailwind indigo-100 */
             color: #3730a3;
-            /* Tailwind indigo-800 */
             padding: 0.25rem 0.75rem;
             border-radius: 9999px;
-            /* Tailwind rounded-full */
             font-size: 0.875rem;
-            /* Tailwind text-sm */
             margin-right: 0.5rem;
             margin-bottom: 0.5rem;
             display: inline-block;
         }
 
-        /* Custom scrollbar for prompt content if needed */
-        .prompt-content-display::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .prompt-content-display::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-
-        .prompt-content-display::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-
-        .prompt-content-display::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
-        /* Modal styles */
         .modal {
             display: none;
-            /* Hidden by default */
             position: fixed;
-            /* Stay in place */
             z-index: 1000;
-            /* Sit on top */
             left: 0;
             top: 0;
             width: 100%;
-            /* Full width */
             height: 100%;
-            /* Full height */
-            overflow: auto;
-            /* Enable scroll if needed */
             background-color: rgba(0, 0, 0, 0.4);
-            /* Black w/ opacity */
         }
 
         .modal-content {
             background-color: #fefefe;
             margin: 15% auto;
-            /* 15% from the top and centered */
             padding: 20px;
             border: 1px solid #888;
             width: 80%;
-            /* Could be more or less, depending on screen size */
             max-width: 500px;
             border-radius: 0.5rem;
-            /* Tailwind rounded-lg */
             text-align: center;
         }
 
@@ -104,7 +66,6 @@
         <header class="mb-10 text-center">
             <h1 class="text-4xl font-bold text-gray-800">My Prompt Stash</h1>
             <p class="text-gray-600 mt-2">Your personal library of awesome prompts!</p>
-            <p class="text-xs text-gray-500 mt-1">User ID: <span id="userIdDisplay">Loading...</span></p>
         </header>
 
         <section id="add-prompt-section" class="mb-10 p-6 bg-white rounded-lg shadow-md">
@@ -136,45 +97,11 @@
             </div>
         </section>
 
-        <section id="search-filter-section" class="mb-10 p-6 bg-white rounded-lg shadow-md">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-6">Search Prompts</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div class="md:col-span-2">
-                    <label for="searchTerm" class="block text-sm font-medium text-gray-700">Search Term</label>
-                    <input type="text" id="searchTerm" name="searchTerm"
-                        class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="Search by keyword...">
-                </div>
-                <div>
-                    <label for="searchType" class="block text-sm font-medium text-gray-700">Search In</label>
-                    <select id="searchType" name="searchType"
-                        class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                        <option value="all">All Fields</option>
-                        <option value="title">Title</option>
-                        <option value="content">Content</option>
-                        <option value="tag">Tag</option>
-                    </select>
-                </div>
-            </div>
-            <div class="mt-6 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                <button id="searchBtn"
-                    class="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    Search
-                </button>
-                <button id="showAllBtn"
-                    class="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Show All
-                </button>
-            </div>
-        </section>
-
         <section id="prompts-display-section">
             <h2 class="text-2xl font-semibold text-gray-700 mb-6">Saved Prompts</h2>
             <div id="promptsList" class="space-y-6">
                 <p id="noPromptsMessage" class="text-gray-500 text-center py-4">No prompts saved yet. Add one above!</p>
             </div>
-            <p id="noSearchResultsMessage" class="text-gray-500 text-center py-4" style="display: none;">No prompts
-                match your search criteria.</p>
         </section>
     </div>
 
@@ -192,294 +119,90 @@
         </div>
     </div>
 
-    <script type="module">
-        // Firebase App (the core Firebase SDK) is always required and must be listed first
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // Add SDKs for Firebase products that you want to use
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, getDocs, deleteDoc, onSnapshot, query, Timestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
+        const promptsKey = 'promptStashPrompts';
+        let prompts = JSON.parse(localStorage.getItem(promptsKey)) || [];
+        let promptIdToDelete = null;
 
-        // Your web app's Firebase configuration
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-prompt-app';
+        const promptsList = document.getElementById('promptsList');
+        const noPromptsMessage = document.getElementById('noPromptsMessage');
+        const deleteConfirmationModal = document.getElementById('deleteConfirmationModal');
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        // setLogLevel('debug'); // Uncomment for Firestore debugging
-
-        let userId = null;
-        let promptsCollectionRef = null;
-        let allPromptsCache = []; // To store all prompts for client-side filtering
-        let unsubscribePrompts = null; // To store the onSnapshot listener
-
-        // --- Authentication ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                userId = user.uid;
-                console.log("User authenticated with UID:", userId);
-                $('#userIdDisplay').text(userId);
-                promptsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/prompts`);
-                fetchPrompts();
-            } else {
-                console.log("User not authenticated. Trying to sign in.");
-                $('#userIdDisplay').text("Authenticating...");
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                        console.log("Signed in with custom token.");
-                    } else {
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
-                    }
-                    // onAuthStateChanged will be triggered again after sign-in
-                } catch (error) {
-                    console.error("Authentication error:", error);
-                    $('#userIdDisplay').text("Auth Error");
-                    $('#promptsList').html('<p class="text-red-500 text-center">Authentication failed. Please refresh.</p>');
-                }
-            }
-        });
-
-
-        // --- Firestore Operations ---
-
-        // Function to fetch prompts and listen for real-time updates
-        function fetchPrompts() {
-            if (!promptsCollectionRef) {
-                console.log("Prompts collection reference not initialized yet.");
-                return;
-            }
-            if (unsubscribePrompts) {
-                unsubscribePrompts(); // Unsubscribe from previous listener if any
-            }
-
-            const q = query(promptsCollectionRef); // No specific ordering for now, can add orderBy('createdAt', 'desc') later
-            unsubscribePrompts = onSnapshot(q, (querySnapshot) => {
-                allPromptsCache = [];
-                querySnapshot.forEach((doc) => {
-                    allPromptsCache.push({ id: doc.id, ...doc.data() });
-                });
-                // Sort by createdAt descending (newest first)
-                allPromptsCache.sort((a, b) => {
-                    const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
-                    const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
-                    return timeB - timeA;
-                });
-                displayPrompts(allPromptsCache);
-                $('#noPromptsMessage').toggle(allPromptsCache.length === 0 && $('#searchTerm').val() === '');
-                $('#noSearchResultsMessage').hide();
-            }, (error) => {
-                console.error("Error fetching prompts: ", error);
-                $('#promptsList').html('<p class="text-red-500 text-center">Error loading prompts. Please try again.</p>');
-            });
+        function savePrompts() {
+            localStorage.setItem(promptsKey, JSON.stringify(prompts));
         }
 
-        // Function to display prompts on the page
-        function displayPrompts(prompts) {
-            const promptsList = $('#promptsList');
-            promptsList.empty(); // Clear existing prompts
-
-            if (prompts.length === 0 && ($('#searchTerm').val() !== '' || $('#searchType').val() !== 'all')) {
-                $('#noSearchResultsMessage').show();
-                $('#noPromptsMessage').hide();
-            } else if (prompts.length === 0) {
-                $('#noPromptsMessage').show();
-                $('#noSearchResultsMessage').hide();
-            } else {
-                $('#noPromptsMessage').hide();
-                $('#noSearchResultsMessage').hide();
+        function displayPrompts() {
+            promptsList.innerHTML = '';
+            if (prompts.length === 0) {
+                noPromptsMessage.style.display = 'block';
+                return;
             }
-
-            prompts.forEach(prompt => {
-                const tagsHtml = prompt.tags && prompt.tags.length > 0
-                    ? prompt.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
-                    : '<span class="text-sm text-gray-500">No tags</span>';
-
-                // Format date
-                let formattedDate = 'Date not available';
-                if (prompt.createdAt && prompt.createdAt.toDate) {
-                    try {
-                        formattedDate = prompt.createdAt.toDate().toLocaleDateString('en-US', {
-                            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                        });
-                    } catch (e) {
-                        console.warn("Could not format date for prompt:", prompt.id, e);
-                        // Fallback if toDate() is not available or fails (e.g. if data is not a proper Timestamp)
-                        if (prompt.createdAt.seconds) {
-                            formattedDate = new Date(prompt.createdAt.seconds * 1000).toLocaleDateString('en-US', {
-                                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                            });
-                        }
-                    }
-                }
-
-
-                const promptCard = `
-                    <div class="prompt-card bg-white p-6 rounded-lg shadow-md border border-gray-200" data-id="${prompt.id}">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-xl font-semibold text-indigo-700">${escapeHtml(prompt.title)}</h3>
-                            <button class="delete-prompt-btn text-red-500 hover:text-red-700 font-semibold" data-id="${prompt.id}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
-                        </div>
-                        <p class="text-gray-500 text-xs mb-3">Added: ${formattedDate}</p>
-                        <div class="prompt-content-display text-gray-700 mb-4 whitespace-pre-wrap break-words max-h-60 overflow-y-auto">${escapeHtml(prompt.content)}</div>
-                        <div class="tags-container">
-                            ${tagsHtml}
-                        </div>
+            noPromptsMessage.style.display = 'none';
+            prompts.forEach((prompt, index) => {
+                const promptCard = document.createElement('div');
+                promptCard.className = 'prompt-card bg-white p-6 rounded-lg shadow-md border border-gray-200';
+                promptCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-xl font-semibold text-indigo-700">${prompt.title}</h3>
+                        <button class="delete-prompt-btn text-red-500 hover:text-red-700 font-semibold" data-id="${index}">
+                            Delete
+                        </button>
+                    </div>
+                    <p class="text-gray-500 text-xs mb-3">Added: ${new Date(prompt.createdAt).toLocaleString()}</p>
+                    <div class="prompt-content-display text-gray-700 mb-4 whitespace-pre-wrap break-words">${prompt.content}</div>
+                    <div class="tags-container">
+                        ${prompt.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
                     </div>
                 `;
-                promptsList.append(promptCard);
+                promptsList.appendChild(promptCard);
             });
         }
 
-        // Function to add a new prompt
-        $('#addPromptBtn').on('click', async () => {
-            if (!promptsCollectionRef) {
-                alert("Database connection not ready. Please wait.");
-                return;
-            }
-
-            const title = $('#promptTitle').val().trim();
-            const content = $('#promptContent').val().trim();
-            const tagsString = $('#promptTags').val().trim();
+        document.getElementById('addPromptBtn').addEventListener('click', () => {
+            const title = document.getElementById('promptTitle').value.trim();
+            const content = document.getElementById('promptContent').value.trim();
+            const tags = document.getElementById('promptTags').value.trim().split(',').map(tag => tag.trim()).filter(tag => tag);
 
             if (!title || !content) {
                 alert('Title and Content cannot be empty!');
                 return;
             }
 
-            const tags = tagsString ? tagsString.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag !== '') : [];
+            prompts.push({ title, content, tags, createdAt: new Date().toISOString() });
+            savePrompts();
+            displayPrompts();
 
-            try {
-                await addDoc(promptsCollectionRef, {
-                    title: title,
-                    content: content,
-                    tags: tags,
-                    createdAt: Timestamp.now() // Use Firestore server timestamp
-                });
-                // Clear form fields
-                $('#promptTitle').val('');
-                $('#promptContent').val('');
-                $('#promptTags').val('');
-                // No need to call fetchPrompts() or displayPrompts() here, onSnapshot will handle it.
-                console.log("Prompt added successfully");
-            } catch (e) {
-                console.error("Error adding document: ", e);
-                alert("Failed to add prompt. See console for details.");
+            document.getElementById('promptTitle').value = '';
+            document.getElementById('promptContent').value = '';
+            document.getElementById('promptTags').value = '';
+        });
+
+        promptsList.addEventListener('click', (event) => {
+            if (event.target.classList.contains('delete-prompt-btn')) {
+                promptIdToDelete = event.target.dataset.id;
+                deleteConfirmationModal.style.display = 'flex';
             }
         });
 
-        // --- Deletion Modal Logic ---
-        let promptIdToDelete = null;
-        const modal = $('#deleteConfirmationModal');
-
-        // Event listener for delete buttons on prompt cards (using event delegation)
-        $('#promptsList').on('click', '.delete-prompt-btn', function () {
-            promptIdToDelete = $(this).data('id');
-            modal.css('display', 'flex'); // Show modal
+        document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+            prompts.splice(promptIdToDelete, 1);
+            savePrompts();
+            displayPrompts();
+            deleteConfirmationModal.style.display = 'none';
         });
 
-        $('#cancelDeleteBtn').on('click', () => {
-            modal.hide();
-            promptIdToDelete = null;
+        document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+            deleteConfirmationModal.style.display = 'none';
         });
 
-        $('#confirmDeleteBtn').on('click', async () => {
-            if (promptIdToDelete && promptsCollectionRef) {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/prompts`, promptIdToDelete));
-                    console.log("Prompt deleted successfully:", promptIdToDelete);
-                    // The onSnapshot listener will automatically update the UI.
-                } catch (error) {
-                    console.error("Error deleting prompt: ", error);
-                    alert("Failed to delete prompt. See console for details.");
-                } finally {
-                    modal.hide();
-                    promptIdToDelete = null;
-                }
-            }
-        });
-        // Close modal if user clicks outside of it
-        $(window).on('click', function (event) {
-            if (event.target == modal[0]) { // Check if the target is the modal itself
-                modal.hide();
-                promptIdToDelete = null;
+        window.addEventListener('click', (event) => {
+            if (event.target === deleteConfirmationModal) {
+                deleteConfirmationModal.style.display = 'none';
             }
         });
 
-
-        // --- Search Functionality ---
-        $('#searchBtn').on('click', () => {
-            performSearch();
-        });
-
-        $('#searchTerm').on('keypress', function (e) {
-            if (e.which == 13) { // Enter key pressed
-                performSearch();
-            }
-        });
-
-        function performSearch() {
-            const searchTerm = $('#searchTerm').val().toLowerCase().trim();
-            const searchType = $('#searchType').val();
-
-            if (!searchTerm) {
-                displayPrompts(allPromptsCache); // Show all if search term is empty
-                $('#noSearchResultsMessage').hide();
-                return;
-            }
-
-            const filteredPrompts = allPromptsCache.filter(prompt => {
-                const title = prompt.title ? prompt.title.toLowerCase() : '';
-                const content = prompt.content ? prompt.content.toLowerCase() : '';
-                const tags = prompt.tags ? prompt.tags.map(t => t.toLowerCase()) : [];
-
-                switch (searchType) {
-                    case 'title':
-                        return title.includes(searchTerm);
-                    case 'content':
-                        return content.includes(searchTerm);
-                    case 'tag':
-                        return tags.some(tag => tag.includes(searchTerm));
-                    case 'all':
-                    default:
-                        return title.includes(searchTerm) ||
-                            content.includes(searchTerm) ||
-                            tags.some(tag => tag.includes(searchTerm));
-                }
-            });
-            displayPrompts(filteredPrompts);
-            $('#noSearchResultsMessage').toggle(filteredPrompts.length === 0);
-            $('#noPromptsMessage').hide();
-        }
-
-
-        $('#showAllBtn').on('click', () => {
-            $('#searchTerm').val('');
-            $('#searchType').val('all');
-            displayPrompts(allPromptsCache);
-            $('#noSearchResultsMessage').hide();
-            $('#noPromptsMessage').toggle(allPromptsCache.length === 0);
-        });
-
-        // Utility to escape HTML to prevent XSS
-        function escapeHtml(unsafe) {
-            if (typeof unsafe !== 'string') {
-                return '';
-            }
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
+        displayPrompts();
     </script>
 </body>
 
