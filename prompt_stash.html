@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Stash</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .prompt-card {
+            transition: box-shadow 0.3s ease-in-out;
+        }
+
+        .prompt-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .tag {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.4);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .modal-buttons button {
+            margin: 0 10px;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col items-center pt-8 pb-16 px-4">
+
+    <div class="w-full max-w-4xl">
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-bold text-gray-800">Prompt Stash</h1>
+            <p class="text-gray-600 mt-2">Your personal library of awesome prompts!</p>
+        </header>
+
+        <section id="add-prompt-section" class="mb-10 p-6 bg-white rounded-lg shadow-md">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6">Add New Prompt</h2>
+            <div class="space-y-4">
+                <div>
+                    <label for="promptTitle" class="block text-sm font-medium text-gray-700">Title</label>
+                    <input type="text" id="promptTitle" name="promptTitle"
+                        class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        placeholder="e.g., Creative Story Idea">
+                </div>
+                <div>
+                    <label for="promptContent" class="block text-sm font-medium text-gray-700">Prompt Content</label>
+                    <textarea id="promptContent" name="promptContent" rows="4"
+                        class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        placeholder="Enter your detailed prompt here..."></textarea>
+                </div>
+                <div>
+                    <label for="promptTags" class="block text-sm font-medium text-gray-700">Tags
+                        (comma-separated)</label>
+                    <input type="text" id="promptTags" name="promptTags"
+                        class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        placeholder="e.g., fiction, sci-fi, character development">
+                </div>
+                <button id="addPromptBtn"
+                    class="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Add Prompt
+                </button>
+            </div>
+        </section>
+
+        <section id="prompts-display-section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6">Saved Prompts</h2>
+            <div id="promptsList" class="space-y-6">
+                <p id="noPromptsMessage" class="text-gray-500 text-center py-4">No prompts saved yet. Add one above!</p>
+            </div>
+        </section>
+    </div>
+
+    <div id="deleteConfirmationModal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Confirm Deletion</h3>
+            <p class="text-sm text-gray-500 mb-6">Are you sure you want to delete this prompt? This action cannot be
+                undone.</p>
+            <div class="modal-buttons">
+                <button id="confirmDeleteBtn"
+                    class="py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium">Yes, Delete</button>
+                <button id="cancelDeleteBtn"
+                    class="py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md font-medium">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="common_resources/js/promptStash.js"></script>
+    <script>
+        const promptsKey = 'promptStashPrompts';
+        let savedPrompts = JSON.parse(localStorage.getItem(promptsKey)) || [];
+        let promptIdToDelete = null;
+
+        const promptsList = document.getElementById('promptsList');
+        const noPromptsMessage = document.getElementById('noPromptsMessage');
+        const deleteConfirmationModal = document.getElementById('deleteConfirmationModal');
+
+        document.getElementById('addPromptBtn').addEventListener('click', () => {
+            const title = document.getElementById('promptTitle').value.trim();
+            const content = document.getElementById('promptContent').value.trim();
+            const tags = document.getElementById('promptTags').value.trim().split(',').map(tag => tag.trim()).filter(tag => tag);
+
+            if (!title || !content) {
+                alert('Title and Content cannot be empty!');
+                return;
+            }
+
+            savedPrompts.push({ title, content, tags, createdAt: new Date().toISOString() });
+            savePrompts(promptsKey, savedPrompts);
+            displayPrompts(savedPrompts, promptsList, noPromptsMessage);
+
+            document.getElementById('promptTitle').value = '';
+            document.getElementById('promptContent').value = '';
+            document.getElementById('promptTags').value = '';
+        });
+
+        promptsList.addEventListener('click', (event) => {
+            if (event.target.classList.contains('delete-prompt-btn')) {
+                promptIdToDelete = event.target.dataset.id;
+                deleteConfirmationModal.style.display = 'flex';
+            }
+        });
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+            savedPrompts.splice(promptIdToDelete, 1);
+            savePrompts(promptsKey, savedPrompts);
+            displayPrompts(savedPrompts, promptsList, noPromptsMessage);
+            deleteConfirmationModal.style.display = 'none';
+        });
+
+        document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+            deleteConfirmationModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target === deleteConfirmationModal) {
+                deleteConfirmationModal.style.display = 'none';
+            }
+        });
+
+        displayPrompts(savedPrompts, promptsList, noPromptsMessage);
+    </script>
+</body>
+
+</html>
