@@ -12,7 +12,7 @@ function savePrompts(promptsKey, prompts) {
 /**
  * Displays a list of prompts in the specified container element.
  *
- * @param {Array} savedPrompts - The array of prompt objects prevsiously saved.
+ * @param {Array} savedPrompts - The array of prompt objects previously saved.
  * @param {HTMLElement} promptsList - The DOM element where prompt cards will be rendered.
  * @param {HTMLElement} noPromptsMessage - The DOM element to show when there are no prompts.
  *
