@@ -157,7 +157,7 @@
         promptsList.addEventListener('click', (event) => {
             if (event.target.classList.contains('delete-prompt-btn')) {
                 promptIdToDelete = event.target.dataset.id;
-                deleteConfirmationModal.style.display = 'flex';
+                deleteConfirmationModal.classList.add('show');
             }
         });
 
