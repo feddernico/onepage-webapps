@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<title>QUnit</title>
+<link rel="stylesheet" href="../qunit-2.24.1.css">
+
+<body>
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+    <script src="../qunit-2.24.1.js"></script>
+    <script src="../../common_resources/js/promptStash.js"></script>
+    <script>
+        QUnit.module('savePrompts', function () {
+            QUnit.test('save prompts to localStorage', function (assert) {
+                const testPrompts = [{ title: 'Test Prompt', content: 'This is a test prompt.', tags: ['test'] }];
+                savePrompts('testPrompts', testPrompts);
+                const savedPrompts = JSON.parse(localStorage.getItem('testPrompts'));
+                assert.deepEqual(savedPrompts, testPrompts, 'Prompts should be saved correctly');
+            });
+        });
+
+        QUnit.module('displayPrompts', function () {
+            QUnit.test('display prompts in the list', function (assert) {
+                const testPrompts = [
+                    { title: 'Prompt 1', content: 'Content 1', tags: ['tag1'], createdAt: '2023-10-01T00:00:00Z' },
+                    { title: 'Prompt 2', content: 'Content 2', tags: ['tag2'], createdAt: '2023-10-02T00:00:00Z' }
+                ];
+                const promptsList = document.createElement('ul');
+                const noPromptsMessage = document.createElement('div');
+                displayPrompts(testPrompts, promptsList, noPromptsMessage);
+                assert.equal(promptsList.children.length, 2, 'Two prompts should be displayed');
+                assert.equal(noPromptsMessage.style.display, 'none', 'No prompts message should be hidden');
+            });
+        });
+    </script>
+</body>
+
+</html>
