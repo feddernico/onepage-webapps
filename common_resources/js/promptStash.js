@@ -357,10 +357,14 @@ class PromptStashApp {
             .split(',').map(tag => tag.trim()).filter(tag => tag);
         const projectId = document.getElementById('promptProject').value || null;
 
+        const errorMessageElement = document.getElementById('formErrorMessage');
         if (!title || !content) {
-            alert('Title and Content cannot be empty!');
+            errorMessageElement.textContent = 'Title and Content cannot be empty!';
+            errorMessageElement.style.display = 'block';
             return;
         }
+        errorMessageElement.style.display = 'none';
+        errorMessageElement.textContent = '';
 
         const newPrompt = {
             id: generateId(),
