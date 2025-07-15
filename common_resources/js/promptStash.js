@@ -255,9 +255,16 @@ class PromptStashApp {
                     <span class="ml-auto text-sm text-gray-500">${promptCount}</span>
                 </div>
                 <button class="delete-project-btn text-red-400 hover:text-red-600 text-xs mt-1 opacity-0 hover:opacity-100 transition-opacity" 
-                        data-id="${project.id}" onclick="event.stopPropagation(); window.promptStashApp.deleteProject('${project.id}')">
+                        data-id="${project.id}">
                     Delete Project
                 </button>
+                <script>
+                    const deleteButton = projectElement.querySelector('.delete-project-btn');
+                    deleteButton.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        window.promptStashApp.deleteProject(project.id);
+                    });
+                </script>
             `;
 
             this.projectsList.appendChild(projectElement);
