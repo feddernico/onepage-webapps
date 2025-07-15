@@ -327,7 +327,10 @@ class PromptStashApp {
         document.querySelectorAll('.project-item').forEach(item => {
             item.classList.remove('active');
         });
-        document.querySelector(`[data-project="${projectId}"]`).classList.add('active');
+        const projectElement = document.querySelector(`[data-project="${projectId}"]`);
+        if (projectElement) {
+            projectElement.classList.add('active');
+        }
 
         // Update title
         const titleElement = document.getElementById('currentProjectTitle');
