@@ -23,12 +23,6 @@ function savePrompts(promptsKey, prompts) {
  * @param {Array} savedPrompts - The array of prompt objects previously saved.
  * @param {HTMLElement} promptsList - The DOM element where prompt cards will be rendered.
  * @param {HTMLElement} noPromptsMessage - The DOM element to show when there are no prompts.
- *
- * @description
- * Clears the promptsList container and checks if there are any prompts to display.
- * If no prompts are available, shows the noPromptsMessage element.
- * Otherwise, hides the noPromptsMessage and renders each prompt as a card with title, creation date,
- * content, and tags. Each card also includes a delete button.
  */
 function displayPrompts(savedPrompts, promptsList, noPromptsMessage) {
     promptsList.innerHTML = '';
@@ -79,12 +73,20 @@ function displayPrompts(savedPrompts, promptsList, noPromptsMessage) {
     });
 }
 
-/**
- * Enhanced Prompt Stash Application
- * Manages prompts and projects with localStorage persistence
- */
-if (typeof window.PromptStashApp === 'undefined') {
-    window.PromptStashApp = class PromptStashApp {
+// Use IIFE to prevent global scope pollution and redeclaration errors
+(function() {
+    'use strict';
+    
+    // Only define if not already defined
+    if (typeof window.PromptStashApp !== 'undefined') {
+        return;
+    }
+
+    /**
+     * Enhanced Prompt Stash Application
+     * Manages prompts and projects with localStorage persistence
+     */
+    class PromptStashApp {
         constructor() {
             this.STORAGE_KEYS = {
                 prompts: 'promptStashPrompts',
@@ -236,7 +238,10 @@ if (typeof window.PromptStashApp === 'undefined') {
             document.querySelectorAll('.color-option').forEach(option => {
                 option.classList.remove('selected');
             });
-            document.querySelector('.color-option[data-color="#3B82F6"]').classList.add('selected');
+            const defaultColor = document.querySelector('.color-option[data-color="#3B82F6"]');
+            if (defaultColor) {
+                defaultColor.classList.add('selected');
+            }
             this.selectedColor = '#3B82F6';
         }
 
@@ -346,9 +351,11 @@ if (typeof window.PromptStashApp === 'undefined') {
                 countElement.textContent = `${count} prompts`;
             } else {
                 const project = this.savedProjects.find(p => p.id === projectId);
-                titleElement.textContent = project.name;
-                const count = this.savedPrompts.filter(p => p.projectId === projectId).length;
-                countElement.textContent = `${count} prompts`;
+                if (project) {
+                    titleElement.textContent = project.name;
+                    const count = this.savedPrompts.filter(p => p.projectId === projectId).length;
+                    countElement.textContent = `${count} prompts`;
+                }
             }
 
             this.renderPrompts();
@@ -448,12 +455,15 @@ if (typeof window.PromptStashApp === 'undefined') {
                 this.savedPrompts.filter(p => !p.projectId).length;
         }
     }
-}
 
-// Initialize app when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    if (!window.promptStashApp) {
-        window.promptStashApp = new window.PromptStashApp();
-        window.promptStashApp.init();
-    }
-});
+    // Expose to global scope
+    window.PromptStashApp = PromptStashApp;
+
+    // Initialize app when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!window.promptStashApp) {
+            window.promptStashApp = new PromptStashApp();
+            window.promptStashApp.init();
+        }
+    });
+})();
