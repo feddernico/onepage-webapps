@@ -283,7 +283,7 @@ class PromptStashApp {
     updatePreview() {
         const content = this.promptContent.value;
         if (content.trim()) {
-            this.markdownPreview.innerHTML = marked.parse(content);
+            this.markdownPreview.innerHTML = DOMPurify.sanitize(marked.parse(content));
             // Highlight code blocks if any
             this.markdownPreview.querySelectorAll('pre code').forEach((block) => {
                 hljs.highlightElement(block);
