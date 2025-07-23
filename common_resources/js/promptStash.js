@@ -95,12 +95,15 @@ class PromptStashApp {
         this.currentProject = 'all';
         this.selectedColor = '#3B82F6';
         this.deleteTarget = null;
+        this.isPreviewMode = false;
 
         this.initializeElements();
+        this.initializeMarked();
     }
 
     initializeElements() {
         this.sidebar = document.getElementById('sidebar');
+        this.sidebarOverlay = document.getElementById('sidebarOverlay');
         this.mainContent = document.getElementById('mainContent');
         this.toggleSidebar = document.getElementById('toggleSidebar');
         this.closeSidebar = document.getElementById('closeSidebar');
@@ -109,6 +112,20 @@ class PromptStashApp {
         this.noPromptsMessage = document.getElementById('noPromptsMessage');
         this.newProjectModal = document.getElementById('newProjectModal');
         this.deleteConfirmationModal = document.getElementById('deleteConfirmationModal');
+        this.rawToggle = document.getElementById('rawToggle');
+        this.previewToggle = document.getElementById('previewToggle');
+        this.rawEditor = document.getElementById('rawEditor');
+        this.previewEditor = document.getElementById('previewEditor');
+        this.markdownPreview = document.getElementById('markdownPreview');
+        this.promptContent = document.getElementById('promptContent');
+    }
+
+    initializeMarked() {
+        // Configure marked for better security and features
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
     }
 
     init() {
@@ -123,12 +140,51 @@ class PromptStashApp {
         // Sidebar toggles
         this.toggleSidebar.addEventListener('click', () => {
             this.sidebar.classList.toggle('collapsed');
-            this.mainContent.classList.toggle('sidebar-open');
+
+            // On desktop, adjust main content margin
+            if (window.innerWidth >= 768) {
+                this.mainContent.classList.toggle('sidebar-open');
+            }
         });
 
         this.closeSidebar.addEventListener('click', () => {
             this.sidebar.classList.add('collapsed');
             this.mainContent.classList.remove('sidebar-open');
+        });
+
+        // Close sidebar when clicking overlay
+        this.sidebarOverlay.addEventListener('click', () => {
+            this.sidebar.classList.add('collapsed');
+            this.sidebarOverlay.classList.remove('show');
+            this.mainContent.classList.remove('sidebar-open');
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                this.sidebarOverlay.classList.remove('show');
+                if (!this.sidebar.classList.contains('collapsed')) {
+                    this.mainContent.classList.add('sidebar-open');
+                }
+            } else {
+                this.mainContent.classList.remove('sidebar-open');
+            }
+        });
+
+        // Format toggle buttons
+        this.rawToggle.addEventListener('click', () => {
+            this.switchToRawMode();
+        });
+
+        this.previewToggle.addEventListener('click', () => {
+            this.switchToPreviewMode();
+        });
+
+        // Update preview as user types
+        this.promptContent.addEventListener('input', () => {
+            if (this.isPreviewMode) {
+                this.updatePreview();
+            }
         });
 
         // New project
@@ -186,6 +242,11 @@ class PromptStashApp {
             const projectItem = e.target.closest('.project-item');
             if (projectItem) {
                 this.selectProject(projectItem.dataset.project);
+                // Close sidebar on mobile after selection
+                if (window.innerWidth < 768) {
+                    this.sidebar.classList.add('collapsed');
+                    this.sidebarOverlay.classList.remove('show');
+                }
             }
         });
 
@@ -200,6 +261,36 @@ class PromptStashApp {
                 this.deleteConfirmationModal.classList.add('show');
             }
         });
+    }
+
+    switchToRawMode() {
+        this.isPreviewMode = false;
+        this.rawToggle.classList.add('active');
+        this.previewToggle.classList.remove('active');
+        this.rawEditor.classList.remove('hidden');
+        this.previewEditor.classList.add('hidden');
+    }
+
+    switchToPreviewMode() {
+        this.isPreviewMode = true;
+        this.previewToggle.classList.add('active');
+        this.rawToggle.classList.remove('active');
+        this.previewEditor.classList.remove('hidden');
+        this.rawEditor.classList.add('hidden');
+        this.updatePreview();
+    }
+
+    updatePreview() {
+        const content = this.promptContent.value;
+        if (content.trim()) {
+            this.markdownPreview.innerHTML = DOMPurify.sanitize(marked.parse(content));
+            // Highlight code blocks if any
+            this.markdownPreview.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        } else {
+            this.markdownPreview.innerHTML = '<p class="text-gray-400 italic">Preview will appear here...</p>';
+        }
     }
 
     saveToStorage() {
