@@ -38,7 +38,7 @@ This repository contains a collection of simple, single-page web applications bu
 ```
 onepage-webapps/
 ├── common_resources/
-│   ├── cs
+│   ├── css
 │   └── js
 ├── app1.html
 ├── app2.html
