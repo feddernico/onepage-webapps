@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Writing Coach</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      height: 100vh;
+      display: flex;
+    }
+
+    #editor {
+      flex: 3;
+      padding: 20px;
+      border: none;
+      outline: none;
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    #sidepanel {
+      flex: 1;
+      border-left: 1px solid #ddd;
+      padding: 16px;
+      background: #fafafa;
+    }
+
+    .question {
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .question button {
+      margin-top: 6px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <textarea id="editor" placeholder="Start writing..."></textarea>
+
+  <div id="sidepanel">
+    <strong>Questions</strong>
+    <div id="questions"></div>
+  </div>
+
+<script>
+const editor = document.getElementById("editor");
+const questionsDiv = document.getElementById("questions");
+
+let lastText = "";
+
+editor.addEventListener("input", async () => {
+  const text = editor.value;
+
+  // Detect sentence completion
+  if (isNewSentenceCompleted(lastText, text)) {
+    const sentence = extractLastSentence(text);
+    const context = text.slice(-800);
+
+    const questions = await getQuestions(sentence, context);
+    renderQuestions(questions);
+  }
+
+  lastText = text;
+});
+
+function isNewSentenceCompleted(prev, curr) {
+  if (curr.length <= prev.length) return false;
+  return /[.!?]\s$/.test(curr.slice(-2));
+}
+
+function extractLastSentence(text) {
+  const matches = text.match(/([^.!?]*[.!?])/g);
+  return matches ? matches[matches.length - 1].trim() : "";
+}
+
+async function getQuestions(sentence, context) {
+  const systemPrompt = `
+You are a writing coach.
+
+Rules:
+- Do NOT write prose.
+- Do NOT suggest sentences.
+- Ask exactly 3 questions.
+- Questions must be grounded in the user's last sentence.
+- Output JSON only in this format:
+{
+  "questions": ["...", "...", "..."]
+}
+`;
+
+  const userPrompt = `
+Context:
+${context}
+
+Last completed sentence:
+"${sentence}"
+
+Ask 3 questions that help the writer continue.
+`;
+  try {
+    const res = await fetch("http://localhost:1234/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama-3.2-1b-instruct", // LM Studio model name (often ignored, but required)
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.4
+      })
+    });
+
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content;
+
+    console.log("RAW MODEL OUTPUT:", raw);
+
+    if (!raw) return [];
+
+    // Strip code fences if present
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+
+    const parsed = JSON.parse(cleaned);
+
+    return Array.isArray(parsed.questions) ? parsed.questions : [];
+  } catch (err) {
+    console.error("getQuestions failed:", err);
+    return [];
+  }
+
+}
+
+function renderQuestions(questions) {
+  questionsDiv.innerHTML = "";
+
+  questions.forEach(q => {
+    const div = document.createElement("div");
+    div.className = "question";
+    div.innerText = q;
+
+    const btn = document.createElement("button");
+    btn.innerText = "Answer";
+    btn.onclick = () => {
+      editor.value += "\n" + q + " ";
+      editor.focus();
+    };
+
+    div.appendChild(btn);
+    questionsDiv.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
+
