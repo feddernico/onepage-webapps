@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baby Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header .date {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .help-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .help-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: scale(1.1);
+        }
+        
+        .today-section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .today-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .today-events {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .event-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .event-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .event-emoji {
+            font-size: 20px;
+        }
+        
+        .event-time {
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+        }
+        
+        .event-time:hover {
+            background: #f0f0f0;
+            border-color: #ddd;
+        }
+        
+        .event-time.editing {
+            background: #fff;
+            border-color: #007bff;
+        }
+        
+        .delete-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .delete-btn:hover {
+            background: #ff3742;
+        }
+        
+        .vitamin-status {
+            background: #e8f5e8;
+            color: #2d5a2d;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 10px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .vitamin-status.not-given {
+            background: #fff3cd;
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+        
+        .calendar-section {
+            padding: 20px;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-nav {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .calendar-nav:hover {
+            background: #0056b3;
+        }
+        
+        .calendar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .calendar-day {
+            background: white;
+            min-height: 80px;
+            padding: 8px 4px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .calendar-day.other-month {
+            background: #f8f9fa;
+            color: #adb5bd;
+        }
+        
+        .calendar-day.today {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+        }
+        
+        .day-number {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .day-events {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+        }
+        
+        .day-event {
+            font-size: 10px;
+            padding: 1px 2px;
+            border-radius: 2px;
+            line-height: 1;
+        }
+        
+        .action-buttons {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+            max-width: 400px;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .action-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            color: white;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .action-btn:active {
+            transform: translateY(0);
+        }
+        
+        .no-events {
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 300px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .help-modal-content {
+            max-width: 500px;
+            width: 95%;
+        }
+        
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .modal-btn.primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .modal-btn.secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .help-section {
+            margin-bottom: 20px;
+        }
+        
+        .help-section h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 16px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 5px;
+        }
+        
+        .help-section p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+            color: #495057;
+        }
+        
+        .help-section ul {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .help-section li {
+            margin-bottom: 5px;
+            line-height: 1.4;
+            color: #495057;
+        }
+        
+        .emoji-guide {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            padding: 5px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .emoji-guide span:first-child {
+            font-size: 20px;
+        }
+        
+        .time-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .export-section {
+            margin-bottom: 100px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .notification.success {
+            background: #28a745;
+        }
+        
+        .notification.error {
+            background: #dc3545;
+        }
+        
+        .notification.info {
+            background: #17a2b8;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👶 Baby Tracker</h1>
+            <div class="date" id="currentDate"></div>
+            <button class="help-btn" onclick="showHelp()" title="How to use this app">❓</button>
+        </div>
+        
+        <div class="today-section">
+            <div class="today-title">
+                📅 Today's Activities
+            </div>
+            <div id="vitaminStatus" class="vitamin-status"></div>
+            <div class="today-events" id="todayEvents">
+                <div class="no-events">No activities recorded yet today</div>
+            </div>
+        </div>
+        
+        <div class="calendar-section">
+            <div class="calendar-header">
+                <button class="calendar-nav" onclick="changeWeek(-1)">← Previous</button>
+                <div class="calendar-title" id="weekTitle"></div>
+                <button class="calendar-nav" onclick="changeWeek(1)">Next →</button>
+            </div>
+            <div class="calendar" id="calendar"></div>
+        </div>
+        
+        <div class="export-section">
+            <div style="padding: 20px; text-align: center; border-top: 1px solid #e9ecef;">
+                <h3 style="margin-bottom: 15px; color: #2c3e50;">📊 Data Management</h3>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="exportToCSV()" style="background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        📥 Download CSV
+                    </button>
+                    <label for="csvImport" style="background: #17a2b8; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; display: inline-block;">
+                        📤 Upload CSV
+                    </label>
+                    <input type="file" id="csvImport" accept=".csv" style="display: none;" onchange="importFromCSV(event)">
+                    <button onclick="clearAllData()" style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        🗑️ Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="action-btn" onclick="addEvent('feed')" title="Feed">🍼</button>
+            <button class="action-btn" onclick="addEvent('poo')" title="Poo">💩</button>
+            <button class="action-btn" onclick="addEvent('nappy')" title="Nappy Change">🧷</button>
+            <button class="action-btn" onclick="addEvent('vitamin')" title="Vitamins">💊</button>
+        </div>
+    </div>
+    
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content help-modal-content">
+            <div class="modal-header">🍼 How to Use Baby Tracker</div>
+            <div class="modal-body">
+                <div class="help-section">
+                    <h3>📱 Quick Start</h3>
+                    <p>Tap the emoji buttons at the bottom to record baby's activities instantly. The app automatically saves the time and date for you!</p>
+                    
+                    <div class="emoji-guide">
+                        <span>🍼</span>
+                        <span><strong>Feed</strong> - Record feeding times</span>
+                    </div>
+                    <div class="emoji-guide">
+                        <span>💩</span>
+                        <span><strong>Poo</strong> - Track bowel movements</span>
+                    </div>
+                    <div class="emoji-guide">
+                        <span>🧷</span>
+                        <span><strong>Nappy Change</strong> - Log diaper changes</span>
+                    </div>
+                    <div class="emoji-guide">
+                        <span>💊</span>
+                        <span><strong>Vitamins</strong> - Track daily vitamins (once per day)</span>
+                    </div>
+                </div>
+                
+                <div class="help-section">
+                    <h3>📅 Viewing Your Data</h3>
+                    <ul>
+                        <li><strong>Today's Activities:</strong> See all of today's events at the top</li>
+                        <li><strong>Weekly Calendar:</strong> View activities across the week</li>
+                        <li><strong>Navigate Weeks:</strong> Use ← Previous / Next → buttons</li>
+                        <li><strong>Vitamin Status:</strong> Shows if vitamins were given today</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <h3>✏️ Editing & Deleting</h3>
+                    <ul>
+                        <li><strong>Edit Time:</strong> Click on any time to adjust it</li>
+                        <li><strong>Delete Events:</strong> Click the × button next to any event</li>
+                        <li><strong>Time Picker:</strong> Use the popup to set exact date and time</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <h3>💾 Backup & Restore</h3>
+                    <p><strong>Important:</strong> Your data is saved in your browser, but it's smart to backup regularly!</p>
+                    <ul>
+                        <li><strong>📥 Download CSV:</strong> Save all your data to a file</li>
+                        <li><strong>📤 Upload CSV:</strong> Restore from a backup file</li>
+                        <li><strong>Replace vs Merge:</strong> Choose to replace all data or add to existing</li>
+                        <li><strong>🗑️ Clear All:</strong> Delete everything (use with caution!)</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <h3>💡 Pro Tips</h3>
+                    <ul>
+                        <li>Export your data weekly as a backup</li>
+                        <li>The app works offline once loaded</li>
+                        <li>Add to your phone's home screen for quick access</li>
+                        <li>Each device needs its own data - use CSV to transfer</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn primary" onclick="closeHelp()">Got it!</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Time Edit Modal -->
+    <div id="timeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Edit Time</div>
+            <div class="modal-body">
+                <input type="datetime-local" id="timeInput" class="time-input">
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn primary" onclick="saveTimeEdit()">Save</button>
+                <button class="modal-btn secondary" onclick="closeTimeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let events = [];
+        let currentWeekStart = new Date();
+        let editingEventId = null;
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEvents();
+            setCurrentWeek();
+            updateDisplay();
+            updateCurrentDate();
+        });
+        
+        function loadEvents() {
+            const stored = localStorage.getItem('babyTrackerEvents');
+            if (stored) {
+                events = JSON.parse(stored);
+            }
+        }
+        
+        function saveEvents() {
+            localStorage.setItem('babyTrackerEvents', JSON.stringify(events));
+        }
+        
+        function addEvent(type) {
+            const now = new Date();
+            const event = {
+                id: Date.now(),
+                type: type,
+                timestamp: now.toISOString(),
+                date: now.toDateString()
+            };
+            
+            events.push(event);
+            saveEvents();
+            updateDisplay();
+        }
+        
+        function deleteEvent(id) {
+            events = events.filter(event => event.id !== id);
+            saveEvents();
+            updateDisplay();
+        }
+        
+        function updateDisplay() {
+            updateTodayEvents();
+            updateVitaminStatus();
+            updateCalendar();
+        }
+        
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
+        }
+        
+        function updateTodayEvents() {
+            const today = new Date().toDateString();
+            const todayEvents = events.filter(event => event.date === today);
+            const container = document.getElementById('todayEvents');
+            
+            if (todayEvents.length === 0) {
+                container.innerHTML = '<div class="no-events">No activities recorded yet today</div>';
+                return;
+            }
+            
+            todayEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            container.innerHTML = todayEvents.map(event => {
+                const time = new Date(event.timestamp).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <div class="event-item">
+                        <div class="event-info">
+                            <span class="event-emoji">${getEventEmoji(event.type)}</span>
+                            <span>${getEventName(event.type)}</span>
+                        </div>
+                        <div>
+                            <span class="event-time" onclick="editTime(${event.id})">${time}</span>
+                            <button class="delete-btn" onclick="deleteEvent(${event.id})">×</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateVitaminStatus() {
+            const today = new Date().toDateString();
+            const vitaminToday = events.some(event => 
+                event.date === today && event.type === 'vitamin'
+            );
+            
+            const statusEl = document.getElementById('vitaminStatus');
+            if (vitaminToday) {
+                statusEl.textContent = '✅ Vitamins given today';
+                statusEl.className = 'vitamin-status';
+            } else {
+                statusEl.textContent = '⚠️ Vitamins not given yet today';
+                statusEl.className = 'vitamin-status not-given';
+            }
+        }
+        
+        function setCurrentWeek() {
+            const now = new Date();
+            const day = now.getDay();
+            const diff = now.getDate() - day;
+            currentWeekStart = new Date(now.setDate(diff));
+            currentWeekStart.setHours(0, 0, 0, 0);
+        }
+        
+        function changeWeek(direction) {
+            const newDate = new Date(currentWeekStart);
+            newDate.setDate(newDate.getDate() + (direction * 7));
+            currentWeekStart = newDate;
+            updateCalendar();
+        }
+        
+        function updateCalendar() {
+            const calendar = document.getElementById('calendar');
+            const weekTitle = document.getElementById('weekTitle');
+            
+            // Update week title
+            const endDate = new Date(currentWeekStart);
+            endDate.setDate(endDate.getDate() + 6);
+            
+            const startStr = currentWeekStart.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            const endStr = endDate.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+            });
+            
+            weekTitle.textContent = `${startStr} - ${endStr}`;
+            
+            // Generate calendar days
+            let calendarHTML = '';
+            const today = new Date().toDateString();
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(date.getDate() + i);
+                const dateStr = date.toDateString();
+                const dayEvents = events.filter(event => event.date === dateStr);
+                
+                const isToday = dateStr === today;
+                
+                calendarHTML += `
+                    <div class="calendar-day ${isToday ? 'today' : ''}">
+                        <div class="day-number">${date.getDate()}</div>
+                        <div class="day-events">
+                            ${dayEvents.map(event => 
+                                `<span class="day-event">${getEventEmoji(event.type)}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            calendar.innerHTML = calendarHTML;
+        }
+        
+        function getEventEmoji(type) {
+            const emojis = {
+                feed: '🍼',
+                poo: '💩',
+                nappy: '🧷',
+                vitamin: '💊'
+            };
+            return emojis[type] || '❓';
+        }
+        
+        function getEventName(type) {
+            const names = {
+                feed: 'Feed',
+                poo: 'Poo',
+                nappy: 'Nappy Change',
+                vitamin: 'Vitamins'
+            };
+            return names[type] || 'Unknown';
+        }
+        
+        function editTime(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if (!event) return;
+            
+            editingEventId = eventId;
+            const input = document.getElementById('timeInput');
+            
+            // Convert to datetime-local format
+            const date = new Date(event.timestamp);
+            const offset = date.getTimezoneOffset();
+            const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+            input.value = localDate.toISOString().slice(0, 16);
+            
+            document.getElementById('timeModal').style.display = 'block';
+        }
+        
+        function saveTimeEdit() {
+            if (!editingEventId) return;
+            
+            const newTime = document.getElementById('timeInput').value;
+            if (!newTime) return;
+            
+            const event = events.find(e => e.id === editingEventId);
+            if (event) {
+                const newDate = new Date(newTime);
+                event.timestamp = newDate.toISOString();
+                event.date = newDate.toDateString();
+                saveEvents();
+                updateDisplay();
+            }
+            
+            closeTimeModal();
+        }
+        
+        function closeTimeModal() {
+            document.getElementById('timeModal').style.display = 'none';
+            editingEventId = null;
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const timeModal = document.getElementById('timeModal');
+            const helpModal = document.getElementById('helpModal');
+            
+            if (event.target === timeModal) {
+                closeTimeModal();
+            }
+            if (event.target === helpModal) {
+                closeHelp();
+            }
+        }
+        
+        // Help Modal Functions
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+        
+        function closeHelp() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+        
+        // CSV Export/Import Functions
+        function exportToCSV() {
+            if (events.length === 0) {
+                showNotification('No data to export', 'info');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = ['Date', 'Time', 'Activity', 'Timestamp'];
+            const csvContent = [
+                headers.join(','),
+                ...events.map(event => {
+                    const date = new Date(event.timestamp);
+                    const dateStr = date.toLocaleDateString('en-US');
+                    const timeStr = date.toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    const activity = getEventName(event.type);
+                    
+                    return [dateStr, timeStr, activity, event.timestamp].join(',');
+                })
+            ].join('\n');
+            
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            
+            // Generate filename with current date
+            const now = new Date();
+            const filename = `baby-tracker-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}.csv`;
+            link.setAttribute('download', filename);
+            
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification(`Exported ${events.length} events to CSV`, 'success');
+        }
+        
+        function importFromCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showNotification('Please select a CSV file', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    
+                    // Skip header row
+                    const dataLines = lines.slice(1).filter(line => line.trim());
+                    
+                    let importedEvents = [];
+                    let errors = 0;
+                    
+                    for (const line of dataLines) {
+                        const [dateStr, timeStr, activity, timestamp] = line.split(',');
+                        
+                        if (!timestamp || !activity) {
+                            errors++;
+                            continue;
+                        }
+                        
+                        // Convert activity name back to type
+                        const type = getEventType(activity.trim());
+                        if (!type) {
+                            errors++;
+                            continue;
+                        }
+                        
+                        const eventDate = new Date(timestamp);
+                        if (isNaN(eventDate.getTime())) {
+                            errors++;
+                            continue;
+                        }
+                        
+                        importedEvents.push({
+                            id: Date.now() + Math.random(), // Ensure unique IDs
+                            type: type,
+                            timestamp: eventDate.toISOString(),
+                            date: eventDate.toDateString()
+                        });
+                    }
+                    
+                    if (importedEvents.length === 0) {
+                        showNotification('No valid data found in CSV', 'error');
+                        return;
+                    }
+                    
+                    // Ask user if they want to replace or merge
+                    const replace = confirm(`Found ${importedEvents.length} valid events in CSV${errors > 0 ? ` (${errors} errors)` : ''}.\n\nClick OK to REPLACE all current data, or Cancel to MERGE with existing data.`);
+                    
+                    if (replace) {
+                        events = importedEvents;
+                    } else {
+                        // Merge: remove duplicates based on timestamp and type
+                        const existingKeys = new Set(events.map(e => `${e.timestamp}-${e.type}`));
+                        const newEvents = importedEvents.filter(e => !existingKeys.has(`${e.timestamp}-${e.type}`));
+                        events = events.concat(newEvents);
+                    }
+                    
+                    saveEvents();
+                    updateDisplay();
+                    
+                    const action = replace ? 'Replaced' : 'Merged';
+                    showNotification(`${action} data successfully! ${importedEvents.length} events processed.`, 'success');
+                    
+                } catch (error) {
+                    showNotification('Error reading CSV file', 'error');
+                    console.error('CSV import error:', error);
+                }
+            };
+            
+            reader.readAsText(file);
+            // Clear the input so the same file can be selected again
+            event.target.value = '';
+        }
+        
+        function getEventType(activityName) {
+            const typeMap = {
+                'Feed': 'feed',
+                'Poo': 'poo',
+                'Nappy Change': 'nappy',
+                'Vitamins': 'vitamin'
+            };
+            return typeMap[activityName] || null;
+        }
+        
+        function clearAllData() {
+            if (events.length === 0) {
+                showNotification('No data to clear', 'info');
+                return;
+            }
+            
+            const confirmed = confirm(`Are you sure you want to delete all ${events.length} events?\n\nThis action cannot be undone. Consider exporting your data first.`);
+            
+            if (confirmed) {
+                events = [];
+                saveEvents();
+                updateDisplay();
+                showNotification('All data cleared', 'info');
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            // Remove existing notifications
+            const existing = document.querySelectorAll('.notification');
+            existing.forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
