@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Toolbox</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            font-size: 20px;
+            color: #2d3748;
+            margin-bottom: 16px;
+        }
+
+        h3 {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 12px;
+        }
+
+        .llm-launcher {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .llm-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 24px;
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: #2d3748;
+            font-weight: 500;
+        }
+
+        .llm-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .llm-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            border-radius: 8px;
+        }
+
+        .prompt-manager {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 24px;
+            min-height: 500px;
+        }
+
+        .prompt-list {
+            border-right: 1px solid #e2e8f0;
+            padding-right: 24px;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+
+        .prompt-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f7fafc;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .prompt-item:hover {
+            background: #edf2f7;
+        }
+
+        .prompt-item.active {
+            background: #e6fffa;
+            border-color: #38b2ac;
+        }
+
+        .prompt-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 4px;
+        }
+
+        .prompt-name {
+            font-weight: 600;
+            color: #2d3748;
+            flex: 1;
+        }
+
+        .prompt-meta {
+            font-size: 12px;
+            color: #718096;
+            margin-bottom: 8px;
+        }
+
+        .prompt-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .icon-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .prompt-editor {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 500;
+            color: #4a5568;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        textarea {
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #cbd5e0;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #667eea;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
+        }
+
+        .variables-panel {
+            background: #f7fafc;
+            padding: 16px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .variable-input {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .variable-label {
+            font-family: monospace;
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        button.secondary {
+            background: #48bb78;
+        }
+
+        button.secondary:hover {
+            background: #38a169;
+        }
+
+        button.danger {
+            background: #f56565;
+        }
+
+        button.danger:hover {
+            background: #e53e3e;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .output-box {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #a0aec0;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .context-bundles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .context-chunk {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .context-chunk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .context-chunk-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .context-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #2d3748;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .versions-panel {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .version-item {
+            padding: 8px;
+            margin-bottom: 4px;
+            background: white;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .version-time {
+            color: #718096;
+        }
+
+        @media (max-width: 768px) {
+            .prompt-manager {
+                grid-template-columns: 1fr;
+            }
+            
+            .prompt-list {
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+                padding-right: 0;
+                padding-bottom: 24px;
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🧠 LLM Toolbox</h1>
+            <p style="color: #718096;">Your productivity hub for AI-powered development</p>
+        </div>
+
+        <div class="card">
+            <h2>🚀 Quick Launch</h2>
+            <div class="llm-launcher">
+                <a href="https://chat.openai.com" target="_blank" class="llm-button" title="Open ChatGPT">
+                    <div class="llm-icon" style="background: #10a37f; color: white;">🤖</div>
+                    <span>ChatGPT</span>
+                </a>
+                <a href="https://claude.ai" target="_blank" class="llm-button" title="Open Claude">
+                    <div class="llm-icon" style="background: #cc9b7a; color: white;">🧠</div>
+                    <span>Claude</span>
+                </a>
+                <a href="https://gemini.google.com" target="_blank" class="llm-button" title="Open Gemini">
+                    <div class="llm-icon" style="background: #4285f4; color: white;">✨</div>
+                    <span>Gemini</span>
+                </a>
+                <a href="https://www.perplexity.ai" target="_blank" class="llm-button" title="Open Perplexity">
+                    <div class="llm-icon" style="background: #20808d; color: white;">🔍</div>
+                    <span>Perplexity</span>
+                </a>
+                <a href="https://chat.mistral.ai" target="_blank" class="llm-button" title="Open Mistral">
+                    <div class="llm-icon" style="background: #f2613f; color: white;">⚡</div>
+                    <span>Mistral</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2>📝 Prompt Manager</h2>
+                <div class="button-group">
+                    <button onclick="app.newPrompt()">+ New Prompt</button>
+                    <button class="secondary" onclick="app.exportData()">Export All</button>
+                    <button class="secondary" onclick="document.getElementById('importFile').click()">Import</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                </div>
+            </div>
+
+            <div class="prompt-manager">
+                <div class="prompt-list" id="promptList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>No prompts yet. Create your first one!</p>
+                    </div>
+                </div>
+
+                <div class="prompt-editor" id="promptEditor" style="display: none;">
+                    <div class="form-group">
+                        <label>Prompt Name</label>
+                        <input type="text" id="promptName" placeholder="e.g., Code Review Assistant">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description (optional)</label>
+                        <input type="text" id="promptDescription" placeholder="What does this prompt do?">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tags (comma-separated)</label>
+                        <input type="text" id="promptTags" placeholder="e.g., coding, review, python">
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label>Prompt Body</label>
+                            <div class="mode-toggle">
+                                <span style="font-size: 12px; color: #718096;">Simple</span>
+                                <div class="toggle-switch" id="modeToggle" onclick="app.toggleMode()">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                                <span style="font-size: 12px; color: #718096;">Advanced</span>
+                            </div>
+                        </div>
+                        <textarea id="promptBody" placeholder="Write your prompt here. Use {{variable}} for parameters."></textarea>
+                        <small style="color: #718096;">Tip: Use {{variable_name}} to create reusable parameters</small>
+                    </div>
+
+                    <div id="variablesPanel"></div>
+
+                    <div class="button-group">
+                        <button onclick="app.savePrompt()">💾 Save Prompt</button>
+                        <button class="secondary" onclick="app.generateFilledPrompt()">🔨 Generate Filled</button>
+                        <button class="secondary" onclick="app.showVersions()">📜 Versions</button>
+                        <button class="danger" onclick="app.deletePrompt()">🗑️ Delete</button>
+                    </div>
+
+                    <div id="versionsPanel" style="display: none;"></div>
+
+                    <div id="outputPanel" style="display: none;">
+                        <h3>Generated Prompt (Ready to Copy)</h3>
+                        <div class="output-box" id="outputBox"></div>
+                        <button class="secondary" onclick="app.copyOutput()">📋 Copy to Clipboard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2>📦 Context Bundles</h2>
+                <div class="button-group">
+                    <button onclick="app.addContextChunk()">+ Add Context</button>
+                    <button class="secondary" onclick="app.copyAllContext()">📋 Copy All</button>
+                </div>
+            </div>
+
+            <div class="context-bundles" id="contextBundles">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <p>No context chunks yet. Add reusable context!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            prompts: [],
+            contexts: [],
+            currentPromptId: null,
+            advancedMode: false,
+
+            init() {
+                this.loadData();
+                this.renderPromptList();
+                this.renderContextBundles();
+                this.setupEventListeners();
+            },
+
+            setupEventListeners() {
+                const importFile = document.getElementById('importFile');
+                if (importFile) {
+                    importFile.addEventListener('change', (e) => this.importData(e));
+                }
+
+                const promptBody = document.getElementById('promptBody');
+                if (promptBody) {
+                    promptBody.addEventListener('input', () => this.extractVariables());
+                }
+            },
+
+            loadData() {
+                try {
+                    const stored = localStorage.getItem('llmToolboxData');
+                    if (stored) {
+                        const data = JSON.parse(stored);
+                        this.prompts = data.prompts || [];
+                        this.contexts = data.contexts || [];
+                    }
+                } catch (e) {
+                    console.error('Error loading data:', e);
+                    this.prompts = [];
+                    this.contexts = [];
+                }
+            },
+
+            saveData() {
+                try {
+                    localStorage.setItem('llmToolboxData', JSON.stringify({
+                        prompts: this.prompts,
+                        contexts: this.contexts,
+                        version: '1.0'
+                    }));
+                } catch (e) {
+                    console.error('Error saving data:', e);
+                    this.showToast('Error saving data!');
+                }
+            },
+
+            generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            },
+
+            showToast(message) {
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            },
+
+            newPrompt() {
+                const newPrompt = {
+                    id: this.generateId(),
+                    name: 'New Prompt',
+                    description: '',
+                    tags: [],
+                    body: '',
+                    variables: [],
+                    versions: [],
+                    updatedAt: Date.now()
+                };
+                this.prompts.unshift(newPrompt);
+                this.saveData();
+                this.renderPromptList();
+                this.editPrompt(newPrompt.id);
+            },
+
+            editPrompt(id) {
+                this.currentPromptId = id;
+                const prompt = this.prompts.find(p => p.id === id);
+                if (!prompt) return;
+
+                document.getElementById('promptEditor').style.display = 'flex';
+                document.getElementById('promptName').value = prompt.name;
+                document.getElementById('promptDescription').value = prompt.description || '';
+                document.getElementById('promptTags').value = prompt.tags.join(', ');
+                document.getElementById('promptBody').value = prompt.body;
+                document.getElementById('outputPanel').style.display = 'none';
+                document.getElementById('versionsPanel').style.display = 'none';
+
+                this.extractVariables();
+                this.renderPromptList();
+            },
+
+            savePrompt() {
+                if (!this.currentPromptId) return;
+
+                const prompt = this.prompts.find(p => p.id === this.currentPromptId);
+                if (!prompt) return;
+
+                const oldBody = prompt.body;
+                const newBody = document.getElementById('promptBody').value;
+
+                prompt.name = document.getElementById('promptName').value || 'Untitled';
+                prompt.description = document.getElementById('promptDescription').value;
+                prompt.tags = document.getElementById('promptTags').value
+                    .split(',')
+                    .map(t => t.trim())
+                    .filter(t => t);
+                prompt.body = newBody;
+                prompt.updatedAt = Date.now();
+
+                if (oldBody !== newBody && oldBody !== '') {
+                    prompt.versions.unshift({
+                        timestamp: Date.now(),
+                        body: oldBody,
+                        note: ''
+                    });
+                    if (prompt.versions.length > 10) {
+                        prompt.versions = prompt.versions.slice(0, 10);
+                    }
+                }
+
+                this.extractVariables();
+                this.saveData();
+                this.renderPromptList();
+                this.showToast('Prompt saved!');
+            },
+
+            deletePrompt() {
+                if (!this.currentPromptId) return;
+                if (!confirm('Delete this prompt?')) return;
+
+                this.prompts = this.prompts.filter(p => p.id !== this.currentPromptId);
+                this.currentPromptId = null;
+                document.getElementById('promptEditor').style.display = 'none';
+                this.saveData();
+                this.renderPromptList();
+                this.showToast('Prompt deleted!');
+            },
+
+            duplicatePrompt(id, event) {
+                event.stopPropagation();
+                const prompt = this.prompts.find(p => p.id === id);
+                if (!prompt) return;
+
+                const newPrompt = {
+                    ...JSON.parse(JSON.stringify(prompt)),
+                    id: this.generateId(),
+                    name: prompt.name + ' (Copy)',
+                    versions: [],
+                    updatedAt: Date.now()
+                };
+                this.prompts.unshift(newPrompt);
+                this.saveData();
+                this.renderPromptList();
+                this.showToast('Prompt duplicated!');
+            },
+
+            extractVariables() {
+                const body = document.getElementById('promptBody').value;
+                const regex = /\{\{([^}]+)\}\}/g;
+                const matches = body.matchAll(regex);
+                const variables = [...new Set([...matches].map(m => m[1].trim()))];
+
+                const prompt = this.prompts.find(p => p.id === this.currentPromptId);
+                if (prompt) {
+                    prompt.variables = variables;
+                }
+
+                this.renderVariables(variables);
+            },
+
+            renderVariables(variables) {
+                const panel = document.getElementById('variablesPanel');
+                if (!variables || variables.length === 0) {
+                    panel.innerHTML = '';
+                    return;
+                }
+
+                panel.innerHTML = `
+                    <div class="variables-panel">
+                        <h3>Parameters</h3>
+                        ${variables.map(v => `
+                            <div class="variable-input">
+                                <span class="variable-label">{{${v}}}</span>
+                                <input type="text" id="var_${v.replace(/[^a-zA-Z0-9]/g, '_')}" placeholder="Enter value for ${v}">
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            },
+
+            generateFilledPrompt() {
+                const prompt = this.prompts.find(p => p.id === this.currentPromptId);
+                if (!prompt) return;
+
+                let filled = prompt.body;
+                prompt.variables.forEach(v => {
+                    const inputId = 'var_' + v.replace(/[^a-zA-Z0-9]/g, '_');
+                    const value = document.getElementById(inputId)?.value || `{{${v}}}`;
+                    const regex = new RegExp(`\\{\\{\\s*${v}\\s*\\}\\}`, 'g');
+                    filled = filled.replace(regex, value);
+                });
+
+                document.getElementById('outputBox').textContent = filled;
+                document.getElementById('outputPanel').style.display = 'block';
+            },
+
+            copyOutput() {
+                const text = document.getElementById('outputBox').textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    this.showToast('Copied to clipboard!');
+                }).catch(() => {
+                    this.showToast('Copy failed. Please try again.');
+                });
+            },
+
+            showVersions() {
+                const prompt = this.prompts.find(p => p.id === this.currentPromptId);
+                if (!prompt || prompt.versions.length === 0) {
+                    this.showToast('No version history yet');
+                    return;
+                }
+
+                const panel = document.getElementById('versionsPanel');
+                panel.style.display = 'block';
+                panel.innerHTML = `
+                    <h3>Version History</h3>
+                    <div class="versions-panel">
+                        ${prompt.versions.map((v, i) => `
+                            <div class="version-item">
+                                <span class="version-time">${new Date(v.timestamp).toLocaleString()}</span>
+                                <button class="icon-btn" onclick="app.restoreVersion(${i})">Restore</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            },
+
+            restoreVersion(index) {
+                const prompt = this.prompts.find(p => p.id === this.currentPromptId);
+                if (!prompt) return;
+
+                const version = prompt.versions[index];
+                document.getElementById('promptBody').value = version.body;
+                this.extractVariables();
+                this.showToast('Version restored! Save to keep changes.');
+            },
+
+            toggleMode() {
+                this.advancedMode = !this.advancedMode;
+                document.getElementById('modeToggle').classList.toggle('active');
+                this.showToast(this.advancedMode ? 'Advanced mode enabled' : 'Simple mode enabled');
+                const textarea = document.getElementById('promptBody');
+                textarea.placeholder = this.advancedMode ?
+                  'Advanced: Support {{var}} and system prompts...' :
+                  'Simple: Basic prompt text';
+            },
+
+            renderPromptList() {
+                const list = document.getElementById('promptList');
+                if (this.prompts.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <p>No prompts yet. Create your first one!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = this.prompts.map(p => `
+                    <div class="prompt-item ${p.id === this.currentPromptId ? 'active' : ''}" onclick="app.editPrompt('${p.id}')">
+                        <div class="prompt-item-header">
+                            <div class="prompt-name">${this.escapeHtml(p.name)}</div>
+                        </div>
+                        <div class="prompt-meta">
+                            ${new Date(p.updatedAt).toLocaleDateString()} • v${p.versions.length + 1}
+                        </div>
+                        <div class="prompt-actions" onclick="event.stopPropagation()">
+                            <button class="icon-btn" onclick="app.duplicatePrompt('${p.id}', event)">📑</button>
+                            <button class="icon-btn" onclick="app.editPrompt('${p.id}')">✏️</button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            },
+
+            addContextChunk() {
+                const newContext = {
+                    id: this.generateId(),
+                    title: 'New Context',
+                    content: ''
+                };
+                this.contexts.push(newContext);
+                this.saveData();
+                this.renderContextBundles();
+            },
+
+            updateContext(id, field, value) {
+                const context = this.contexts.find(c => c.id === id);
+                if (context) {
+                    context[field] = value;
+                    this.saveData();
+                }
+            },
+
+            deleteContext(id, event) {
+                event.stopPropagation();
+                if (!confirm('Delete this context chunk?')) return;
+                this.contexts = this.contexts.filter(c => c.id !== id);
+                this.saveData();
+                this.renderContextBundles();
+                this.showToast('Context deleted!');
+            },
+
+            copyContext(id, event) {
+                event.stopPropagation();
+                const context = this.contexts.find(c => c.id === id);
+                if (!context) return;
+
+                const text = `# ${context.title}\n\n${context.content}`;
+                navigator.clipboard.writeText(text).then(() => {
+                    this.showToast('Context copied!');
+                }).catch(() => {
+                    this.showToast('Copy failed. Please try again.');
+                });
+            },
+
+            copyAllContext() {
+                if (this.contexts.length === 0) {
+                    this.showToast('No context to copy');
+                    return;
+                }
+
+                const text = this.contexts
+                    .map(c => `# ${c.title}\n\n${c.content}`)
+                    .join('\n\n---\n\n');
+                
+                navigator.clipboard.writeText(text).then(() => {
+                    this.showToast('All context copied!');
+                }).catch(() => {
+                    this.showToast('Copy failed. Please try again.');
+                });
+            },
+
+            renderContextBundles() {
+                const container = document.getElementById('contextBundles');
+                if (this.contexts.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <p>No context chunks yet. Add reusable context!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = this.contexts.map(c => `
+                    <div class="context-chunk">
+                        <div class="context-chunk-header">
+                            <input 
+                                type="text" 
+                                value="${this.escapeHtml(c.title)}" 
+                                style="flex: 1; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-weight: 600;"
+                                onchange="app.updateContext('${c.id}', 'title', this.value)"
+                            >
+                            <div class="prompt-actions" style="margin-left: 8px;">
+                                <button class="icon-btn" onclick="app.copyContext('${c.id}', event)">📋</button>
+                                <button class="icon-btn" onclick="app.deleteContext('${c.id}', event)">🗑️</button>
+                            </div>
+                        </div>
+                        <textarea 
+                            class="context-textarea" 
+                            placeholder="Add context content here..."
+                            onchange="app.updateContext('${c.id}', 'content', this.value)"
+                        >${this.escapeHtml(c.content)}</textarea>
+                    </div>
+                `).join('');
+            },
+
+            exportData() {
+                const data = {
+                    prompts: this.prompts,
+                    contexts: this.contexts,
+                    exportedAt: new Date().toISOString()
+                };
+                
+                const json = JSON.stringify(data, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `llm-toolbox-export-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                this.showToast('Data exported!');
+            },
+
+            importData(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        this.prompts = data.prompts || [];
+                        this.contexts = data.contexts || [];
+                        this.saveData();
+                        this.renderPromptList();
+                        this.renderContextBundles();
+                        this.showToast('Data imported successfully!');
+                    } catch (err) {
+                        this.showToast('Failed to import data. Check file format.');
+                        console.error(err);
+                    }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            }
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>
