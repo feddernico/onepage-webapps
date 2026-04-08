@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stave</title>
+
+<!-- abcjs for notation rendering and MIDI -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/abcjs/6.2.2/abcjs-basic-min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --ink: #0d0d0f;
+    --paper: #f5f0e8;
+    --paper-dark: #ebe5d4;
+    --gold: #c9993a;
+    --gold-light: #e8be6a;
+    --gold-dim: #7a5c1e;
+    --staff: #1a1a2e;
+    --staff-accent: #16213e;
+    --cream: #f0ead6;
+    --muted: #8a7f6e;
+    --red-accent: #a63228;
+    --teal-accent: #2d6e6e;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--ink);
+    color: var(--paper);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.35;
+  }
+
+  /* Staff lines decoration */
+  .staff-lines {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .staff-lines::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      180deg,
+      transparent 0px,
+      transparent 38px,
+      rgba(201,153,58,0.04) 38px,
+      rgba(201,153,58,0.04) 39px
+    );
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 48px 0 36px;
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    border-bottom: 1px solid rgba(201,153,58,0.2);
+    margin-bottom: 40px;
+  }
+
+  .logo-mark {
+    width: 72px;
+    height: 72px;
+    border: 2px solid var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .logo-mark::after {
+    content: '𝄞';
+    font-size: 44px;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .header-text h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(30px, 4.8vw, 52px);
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    color: var(--paper);
+    line-height: 0.95;
+  }
+  .header-text h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(16px, 2vw, 24px);
+    font-weight: 600;
+    color: var(--gold-light);
+    letter-spacing: 0.8px;
+    margin-top: 6px;
+  }
+  .header-text p {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--muted);
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  /* SECTIONS */
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(201,153,58,0.15);
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: linear-gradient(180deg, var(--gold), transparent);
+  }
+
+  /* TEXTAREA */
+  .notation-input {
+    width: 100%;
+    min-height: 160px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(201,153,58,0.2);
+    color: var(--gold-light);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 16px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .notation-input:focus {
+    border-color: var(--gold);
+    background: rgba(0,0,0,0.55);
+  }
+  .notation-input::placeholder { color: rgba(201,153,58,0.3); }
+
+  /* CONTROLS ROW */
+  .controls-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  select {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(201,153,58,0.2);
+    color: var(--paper);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 10px 14px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9993a' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  select:focus, select:hover { border-color: var(--gold); }
+  select option { background: #1a1a1a; }
+
+  /* TEMPO */
+  .tempo-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  input[type=range] {
+    flex: 1;
+    accent-color: var(--gold);
+    height: 3px;
+  }
+  .tempo-val {
+    font-size: 11px;
+    color: var(--gold);
+    min-width: 52px;
+    text-align: right;
+  }
+
+  /* BUTTONS */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 11px 22px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.18s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .btn:hover::after { opacity: 0.05; }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--ink);
+    border-color: var(--gold);
+    font-weight: 500;
+  }
+  .btn-primary:hover { background: var(--gold-light); border-color: var(--gold-light); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--paper);
+    border-color: rgba(255,255,255,0.25);
+  }
+  .btn-outline:hover { border-color: var(--paper); }
+
+  .btn-teal {
+    background: transparent;
+    color: #6ecece;
+    border-color: rgba(110,206,206,0.35);
+  }
+  .btn-teal:hover { background: rgba(110,206,206,0.08); border-color: #6ecece; }
+
+  .btn-red {
+    background: transparent;
+    color: #e08080;
+    border-color: rgba(224,128,128,0.35);
+  }
+  .btn-red:hover { background: rgba(224,128,128,0.08); border-color: #e08080; }
+
+  .btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .btn:disabled::after { display: none; }
+
+  /* PLAYBACK BAR */
+  .playback-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(201,153,58,0.1);
+    padding: 10px 16px;
+    margin-bottom: 20px;
+  }
+
+  .play-btn {
+    width: 38px; height: 38px;
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .play-btn:hover { background: var(--gold); color: var(--ink); }
+  .play-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .play-btn:disabled:hover { background: transparent; color: var(--gold); }
+
+  .progress-wrap {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    position: relative;
+    cursor: pointer;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+
+  .time-label {
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  /* NOTATION DISPLAY */
+  #notation-container {
+    background: var(--paper);
+    border: 1px solid rgba(201,153,58,0.3);
+    color: var(--staff);
+    padding: 32px 24px;
+    min-height: 120px;
+    position: relative;
+    overflow-x: auto;
+  }
+  #notation-container.empty::before {
+    content: 'Sheet music will appear here after rendering…';
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: #aaa8a0;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+  }
+
+  /* abcjs overrides inside the paper container */
+  #notation-container svg { max-width: 100%; }
+  #notation-container svg,
+  #notation-container svg path,
+  #notation-container svg text,
+  #notation-container svg tspan {
+    fill: var(--staff);
+    stroke: var(--staff);
+  }
+  #notation-container svg .abcjs-staff,
+  #notation-container svg .abcjs-bar,
+  #notation-container svg .abcjs-ledger,
+  #notation-container svg .abcjs-clef,
+  #notation-container svg .abcjs-time-signature,
+  #notation-container svg .abcjs-key-signature,
+  #notation-container svg .abcjs-note,
+  #notation-container svg .abcjs-rest {
+    fill: var(--staff);
+    stroke: var(--staff);
+  }
+  #notation-container .abcjs-note_selected { fill: var(--red-accent) !important; }
+
+  /* STATUS */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 8px 0;
+    min-height: 28px;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .status-dot.ok { background: #6ecece; }
+  .status-dot.err { background: #e08080; }
+  .status-dot.busy {
+    background: var(--gold);
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* EXAMPLES */
+  .examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .example-chip {
+    font-size: 10px;
+    padding: 4px 10px;
+    border: 1px solid rgba(201,153,58,0.2);
+    color: var(--gold-dim);
+    cursor: pointer;
+    background: transparent;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+  .example-chip:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(201,153,58,0.05);
+  }
+
+  /* DIVIDER */
+  .section-divider {
+    border: none;
+    border-top: 1px solid rgba(201,153,58,0.1);
+    margin: 28px 0;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 560px) {
+    .controls-row { grid-template-columns: 1fr; }
+    header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .btn-row { flex-direction: column; }
+    .btn { text-align: center; }
+  }
+
+  .helper-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: -8px;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="staff-lines"></div>
+
+<div class="container">
+  <header>
+    <div class="logo-mark"></div>
+    <div class="header-text">
+      <h1>Stave</h1>
+      <h2>ABC Notation Studio</h2>
+      <p>Compose · Visualise · Perform · Export</p>
+    </div>
+  </header>
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <div class="section-label">ABC Notation Input</div>
+    <textarea class="notation-input" id="abc-input" spellcheck="false" placeholder="X:1&#10;T:My Tune&#10;M:4/4&#10;L:1/8&#10;K:G&#10;|:GABG ABCD|..."></textarea>
+    <div class="examples">
+      <span class="section-label" style="align-self:center; margin:0 4px 0 0;">Examples →</span>
+      <button class="example-chip" onclick="loadExample('ode')">Ode to Joy</button>
+      <button class="example-chip" onclick="loadExample('scale')">C Major Scale</button>
+      <button class="example-chip" onclick="loadExample('minuet')">Bach Minuet</button>
+      <button class="example-chip" onclick="loadExample('jig')">Irish Jig</button>
+      <button class="example-chip" onclick="loadExample('canon')">Pachelbel Canon</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS CARD -->
+  <div class="controls-row">
+    <div class="card" style="margin-bottom:0">
+      <div class="section-label">Instrument</div>
+      <select id="instrument-select">
+        <!-- Piano family -->
+        <optgroup label="Keyboard">
+          <option value="0">Acoustic Grand Piano</option>
+          <option value="1">Bright Acoustic Piano</option>
+          <option value="4">Electric Piano 1</option>
+          <option value="6">Harpsichord</option>
+          <option value="8">Celesta</option>
+          <option value="10">Music Box</option>
+          <option value="16">Drawbar Organ</option>
+        </optgroup>
+        <!-- Strings -->
+        <optgroup label="Strings">
+          <option value="40">Violin</option>
+          <option value="41">Viola</option>
+          <option value="42">Cello</option>
+          <option value="43">Contrabass</option>
+          <option value="24">Acoustic Guitar (nylon)</option>
+          <option value="25">Acoustic Guitar (steel)</option>
+          <option value="26">Electric Guitar (jazz)</option>
+          <option value="45">Pizzicato Strings</option>
+          <option value="46">Orchestral Harp</option>
+        </optgroup>
+        <!-- Wind -->
+        <optgroup label="Wind">
+          <option value="73">Flute</option>
+          <option value="68">Oboe</option>
+          <option value="71">Clarinet</option>
+          <option value="70">Bassoon</option>
+          <option value="74">Recorder</option>
+          <option value="75">Pan Flute</option>
+        </optgroup>
+        <!-- Brass -->
+        <optgroup label="Brass">
+          <option value="56">Trumpet</option>
+          <option value="57">Trombone</option>
+          <option value="58">Tuba</option>
+          <option value="60">French Horn</option>
+          <option value="61">Brass Section</option>
+        </optgroup>
+        <!-- Percussion -->
+        <optgroup label="Other">
+          <option value="12">Marimba</option>
+          <option value="13">Xylophone</option>
+          <option value="19">Church Organ</option>
+          <option value="79">Ocarina</option>
+          <option value="80">Lead Synth</option>
+          <option value="88">Warm Pad</option>
+        </optgroup>
+      </select>
+      <div class="tempo-val" id="instrument-display" style="margin-top:10px; text-align:left; min-width:0;">Acoustic Grand Piano</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0">
+      <div class="section-label">Tempo</div>
+      <div class="tempo-row">
+        <input type="range" id="tempo-slider" min="40" max="240" value="100">
+        <span class="tempo-val" id="tempo-display">100 BPM</span>
+      </div>
+      <div style="margin-top:14px">
+        <div class="section-label">Transpose</div>
+        <select id="transpose-select">
+          <option value="-6">−6 semitones</option>
+          <option value="-5">−5 semitones</option>
+          <option value="-4">−4 semitones</option>
+          <option value="-3">−3 semitones</option>
+          <option value="-2">−2 semitones</option>
+          <option value="-1">−1 semitone</option>
+          <option value="0" selected>No transpose</option>
+          <option value="1">+1 semitone</option>
+          <option value="2">+2 semitones</option>
+          <option value="3">+3 semitones</option>
+          <option value="4">+4 semitones</option>
+          <option value="5">+5 semitones</option>
+          <option value="6">+6 semitones</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- ACTION BUTTONS -->
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="renderNotation()">⟳ Render Score</button>
+    <button class="btn btn-outline" onclick="startPlayback()" id="play-btn">▶ Play</button>
+    <button class="btn btn-outline" onclick="stopPlayback()" id="stop-btn" disabled>■ Stop</button>
+    <button class="btn btn-teal" onclick="downloadMIDI()" id="midi-btn" disabled>⬇ MIDI</button>
+    <button class="btn btn-teal" onclick="downloadWAV()" id="wav-btn" disabled>⬇ WAV</button>
+  </div>
+  <div class="helper-note">MIDI export is for GarageBand, VLC, MuseScore, or a DAW. QuickTime Player on modern macOS does not play `.midi` files.</div>
+
+  <!-- STATUS -->
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">Ready. Enter ABC notation above and click Render Score.</span>
+  </div>
+
+  <!-- PLAYBACK BAR -->
+  <div class="playback-bar">
+    <button class="play-btn" id="mini-play" onclick="togglePlay()" disabled>▶</button>
+    <div class="progress-wrap" id="progress-wrap" onclick="seekTo(event)">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <span class="time-label" id="time-label">0:00</span>
+  </div>
+
+  <!-- NOTATION DISPLAY -->
+  <div class="section-label">Sheet Music</div>
+  <div id="notation-container" class="empty"></div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  EXAMPLES
+// ─────────────────────────────────────────────
+const EXAMPLES = {
+  ode: `X:1\nT:Ode to Joy\nC:Beethoven\nM:4/4\nL:1/4\nQ:1/4=100\nK:C\n|: E E F G | G F E D | C C D E | E3/2 D/ D2 |\n E E F G | G F E D | C C D E | D3/2 C/ C2 |\n D D E C | D EF E C | D EF E D | C D G2 |\n E E F G | G F E D | C C D E | D3/2 C/ C2 :|`,
+  scale: `X:1\nT:C Major Scale\nM:4/4\nL:1/4\nQ:1/4=80\nK:C\n| C D E F | G A B c | c B A G | F E D C |`,
+  minuet: `X:1\nT:Minuet in G\nC:J.S. Bach\nM:3/4\nL:1/8\nQ:3/8=60\nK:G\n|: D2 | G2 AB G2 | c2 BA G2 | F2 EF GF | E4 EF |\nG2 AB cB | A2 Bc dA | B2 cB AG | A4 :|\n|: d2 | d3 c Bd | g2 fg ed | c3 B Ac | f2 ef dc |\nB2 GF GA | B2 cB AG | F2 EF GF | G4 :|`,
+  jig: `X:1\nT:The Kesh Jig\nM:6/8\nL:1/8\nQ:3/8=100\nK:G\n|: GAB def | gfe dBA | GAB def | gdB A3 |\nGAB def | gfe def | gfe dBG | BAG G3 :|\n|: def gdB | def gdB | def gfe | dBG A3 |\ndef gdB | def gfe | faf ege | dBG G3 :|`,
+  canon: `X:1\nT:Pachelbel Canon\nC:Pachelbel\nM:4/4\nL:1/4\nQ:1/4=72\nK:D\n|: D A | B F | G D | G A |\nD A | B F | G D | A2 :|\n|: d2 f2 | e2 d2 | d2 f2 | e4 |\nd2 f2 | g2 f2 | e2 f2 | d4 :|`,
+};
+
+function loadExample(key) {
+  document.getElementById('abc-input').value = EXAMPLES[key];
+  renderNotation();
+}
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let isPlaying = false;
+let totalDuration = 0;
+let playStartTime = 0;
+let timerInterval = null;
+let currentABC = '';
+let scheduledNodes = [];   // all active AudioNodes so we can stop them
+let audioCtx = null;
+
+// ─────────────────────────────────────────────
+//  STATUS
+// ─────────────────────────────────────────────
+function setStatus(msg, type = 'idle') {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  dot.className = 'status-dot' + (type==='ok' ? ' ok' : type==='err' ? ' err' : type==='busy' ? ' busy' : '');
+  txt.textContent = msg;
+}
+
+function formatTime(s) {
+  const sec = Math.floor(s % 60), min = Math.floor(s / 60);
+  return min + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+// ─────────────────────────────────────────────
+//  TEMPO SLIDER
+// ─────────────────────────────────────────────
+document.getElementById('tempo-slider').addEventListener('input', function() {
+  document.getElementById('tempo-display').textContent = this.value + ' BPM';
+});
+
+function getSelectedInstrumentName() {
+  const select = document.getElementById('instrument-select');
+  return select.options[select.selectedIndex]?.text || 'Instrument';
+}
+
+function updateInstrumentDisplay() {
+  document.getElementById('instrument-display').textContent = getSelectedInstrumentName();
+}
+
+document.getElementById('instrument-select').addEventListener('change', function() {
+  updateInstrumentDisplay();
+  if (isPlaying) {
+    stopPlayback();
+    startPlayback();
+    return;
+  }
+  if (currentABC) setStatus('Instrument set to ' + getSelectedInstrumentName() + '.', 'ok');
+});
+
+// ─────────────────────────────────────────────
+//  RENDER NOTATION  (abcjs — score only)
+// ─────────────────────────────────────────────
+function renderNotation() {
+  const abcText = document.getElementById('abc-input').value.trim();
+  if (!abcText) { setStatus('No ABC notation entered.', 'err'); return; }
+  if (!window.ABCJS || typeof ABCJS.renderAbc !== 'function') {
+    setStatus('abcjs failed to load, so the score cannot be rendered.', 'err');
+    return;
+  }
+
+  setStatus('Rendering score…', 'busy');
+  const container = document.getElementById('notation-container');
+  container.innerHTML = '';
+  container.classList.remove('empty');
+
+  try {
+    const visualObj = ABCJS.renderAbc('notation-container', abcText, {
+      responsive: 'resize',
+      staffwidth: container.offsetWidth - 48,
+      scale: 1.2,
+      paddingright: 0,
+      paddingleft: 0,
+      wrap: { minSpacing: 1.8, maxSpacing: 2.5, preferredMeasuresPerLine: 4 },
+      add_classes: true,
+    })[0];
+    if (!visualObj) throw new Error('No score was generated from the ABC text.');
+    currentABC = abcText;
+
+    // Build the playback sequence after the score is on screen. If audio prep fails,
+    // keep the rendered notation visible instead of clearing the score.
+    const audioReady = buildSequence(abcText, visualObj);
+    setStatus(audioReady ? 'Score rendered. Audio ready.' : 'Score rendered, but audio preparation failed.', audioReady ? 'ok' : 'err');
+
+    document.getElementById('play-btn').disabled = !audioReady;
+    document.getElementById('stop-btn').disabled = !audioReady;
+    document.getElementById('midi-btn').disabled = !audioReady;
+    document.getElementById('wav-btn').disabled = !audioReady;
+    document.getElementById('mini-play').disabled = !audioReady;
+  } catch(e) {
+    container.classList.add('empty');
+    setStatus('Render error: ' + e.message, 'err');
+  }
+}
+
+// ─────────────────────────────────────────────
+//  SEQUENCE BUILDER  — extract notes via abcjs
+//  Returns array of {time, duration, midi, velocity}
+// ─────────────────────────────────────────────
+let noteSequence = [];
+
+function buildSequence(abcText, visualObj) {
+  const tempo = parseInt(document.getElementById('tempo-slider').value);
+  const transpose = parseInt(document.getElementById('transpose-select').value);
+  if (!visualObj) {
+    noteSequence = [];
+    totalDuration = 0;
+    return false;
+  }
+
+  try {
+    const seq = ABCJS.synth.sequence(visualObj, { qpm: tempo, defaultQpm: tempo });
+    noteSequence = parseSynthSequence(seq, transpose);
+    if (!noteSequence.length) throw new Error('No note events found in the rendered tune.');
+    totalDuration = noteSequence.reduce((m, n) => Math.max(m, n.time + n.duration), 0) + 0.5;
+    return true;
+  } catch(e) {
+    // Fall back to MIDI extraction for browsers/builds where synth.sequence
+    // is unavailable or returns no events.
+    try {
+      const seq = ABCJS.synth.getMidiFile(visualObj, {
+        midiOutputType: 'binary',
+        qpm: tempo,
+        defaultQpm: tempo,
+        transpose: transpose,
+      });
+
+      noteSequence = parseMidiArray(seq, transpose);
+      totalDuration = noteSequence.reduce((m, n) => Math.max(m, n.time + n.duration), 0) + 0.5;
+      return noteSequence.length > 0;
+    } catch(midiErr) {
+      noteSequence = scrapeViaCallbacks(visualObj, tempo, transpose);
+      totalDuration = noteSequence.reduce((m, n) => Math.max(m, n.time + n.duration), 0) + 0.5;
+      return noteSequence.length > 0;
+    }
+  }
+}
+
+function parseSynthSequence(sequence, transpose) {
+  const notes = [];
+  if (!sequence || !sequence.tracks) return notes;
+
+  for (const track of sequence.tracks) {
+    for (const ev of track) {
+      if (ev.cmd !== 'note') continue;
+      notes.push({
+        time: ev.start,
+        duration: ev.duration,
+        midi: ev.pitch + transpose,
+        velocity: ev.volume || 80,
+      });
+    }
+  }
+
+  return notes.sort((a, b) => a.time - b.time);
+}
+
+// Parse getMidiFile binary output into note events.
+function parseMidiArray(midiBytes, transpose) {
+  const notes = [];
+  if (!midiBytes || !midiBytes.length) return notes;
+
+  // Walk the MIDI byte array
+  const bytes = midiBytes instanceof Uint8Array ? midiBytes : new Uint8Array(midiBytes);
+  let pos = 0;
+
+  function read(n) {
+    const slice = bytes.slice(pos, pos + n);
+    pos += n;
+    return slice;
+  }
+  function readUint32() {
+    const b = read(4);
+    return (b[0]<<24)|(b[1]<<16)|(b[2]<<8)|b[3];
+  }
+  function readUint16() {
+    const b = read(2);
+    return (b[0]<<8)|b[1];
+  }
+  function readVarLen() {
+    let val = 0, b;
+    do { b = bytes[pos++]; val = (val << 7) | (b & 0x7F); } while (b & 0x80);
+    return val;
+  }
+
+  // Header
+  read(4); // MThd
+  readUint32(); // length
+  readUint16(); // format
+  const numTracks = readUint16();
+  const division = readUint16(); // ticks per quarter
+
+  let microPerBeat = 500000; // default 120 BPM
+
+  for (let t = 0; t < numTracks; t++) {
+    const trackTag = String.fromCharCode(...read(4));
+    const trackLen = readUint32();
+    const trackEnd = pos + trackLen;
+
+    let tick = 0;
+    const pending = {}; // noteOn waiting for noteOff: key = pitch
+
+    while (pos < trackEnd) {
+      const delta = readVarLen();
+      tick += delta;
+      let status = bytes[pos];
+
+      if (status === 0xFF) { // meta
+        pos++;
+        const type = bytes[pos++];
+        const len = readVarLen();
+        if (type === 0x51 && len === 3) {
+          microPerBeat = (bytes[pos]<<16)|(bytes[pos+1]<<8)|bytes[pos+2];
+        }
+        pos += len;
+        continue;
+      }
+      if (status === 0xF0 || status === 0xF7) { // sysex
+        pos++;
+        const len = readVarLen();
+        pos += len;
+        continue;
+      }
+      pos++;
+      const type = (status >> 4) & 0xF;
+      const ch   = status & 0xF;
+
+      if (type === 0x9) { // note on
+        const pitch = bytes[pos++], vel = bytes[pos++];
+        const timeSec = (tick / division) * (microPerBeat / 1e6);
+        if (vel > 0) {
+          pending[pitch] = { time: timeSec, velocity: vel };
+        } else if (pending[pitch]) {
+          const on = pending[pitch];
+          notes.push({ time: on.time, duration: timeSec - on.time, midi: pitch, velocity: on.velocity });
+          delete pending[pitch];
+        }
+      } else if (type === 0x8) { // note off
+        const pitch = bytes[pos++]; pos++; // vel ignored
+        const timeSec = (tick / division) * (microPerBeat / 1e6);
+        if (pending[pitch]) {
+          const on = pending[pitch];
+          notes.push({ time: on.time, duration: timeSec - on.time, midi: pitch, velocity: on.velocity });
+          delete pending[pitch];
+        }
+      } else if (type === 0xA || type === 0xB || type === 0xE) {
+        pos += 2;
+      } else if (type === 0xC || type === 0xD) {
+        pos += 1;
+      }
+    }
+    pos = trackEnd;
+  }
+
+  return notes.sort((a, b) => a.time - b.time);
+}
+
+// Fallback: scrape notes via abcjs TimingCallbacks
+function scrapeViaCallbacks(visualObj, tempo, transpose) {
+  const notes = [];
+  const secPerBeat = 60 / tempo;
+
+  try {
+    const seqCallbackNotes = [];
+    // Use synth sequence if available
+    const midiSeq = ABCJS.synth.sequence(visualObj, { qpm: tempo, defaultQpm: tempo });
+    if (midiSeq && midiSeq.tracks) {
+      for (const track of midiSeq.tracks) {
+        for (const ev of track) {
+          if (ev.cmd === 'note') {
+            seqCallbackNotes.push({
+              time: ev.start,
+              duration: ev.duration,
+              midi: ev.pitch + transpose,
+              velocity: ev.volume || 80,
+            });
+          }
+        }
+      }
+      return seqCallbackNotes;
+    }
+  } catch(e) { /* fall through */ }
+
+  return notes;
+}
+
+// ─────────────────────────────────────────────
+//  INSTRUMENT TONE PROFILES
+//  Each profile: { type, harmonics, attack, decay, sustain, release, detune }
+// ─────────────────────────────────────────────
+const TONE_PROFILES = {
+  // Piano family
+  0:  { type:'triangle', harmonics:[1,0.5,0.22,0.08], attack:0.005, decay:0.24, sustain:0.28, release:0.65, filterType:'lowpass', filterFrequency:2600, filterQ:0.7 },
+  1:  { type:'triangle', harmonics:[1,0.7,0.35,0.12], attack:0.003, decay:0.2,  sustain:0.25, release:0.5,  filterType:'lowpass', filterFrequency:4200, filterQ:1.1 },
+  4:  { type:'sine',     harmonics:[1,0.35,0.18,0.12],attack:0.012, decay:0.35, sustain:0.38, release:0.7,  vibratoDepth:6, vibratoRate:4.8, detuneSpread:[-4,4], filterType:'bandpass', filterFrequency:1800, filterQ:0.9 },
+  6:  { type:'square',   harmonics:[1,0.18,0.1,0.05], attack:0.001, decay:0.08, sustain:0.12, release:0.18, filterType:'highpass', filterFrequency:900, filterQ:0.5 }, // harpsichord
+  8:  { type:'sine',     harmonics:[1,0.18,0.44,0.22],attack:0.01,  decay:0.42, sustain:0.2,  release:1.0,  detuneSpread:[-8,8], filterType:'lowpass', filterFrequency:4800, filterQ:0.6 }, // celesta
+  10: { type:'triangle', harmonics:[1,0.15,0.45,0.28],attack:0.002, decay:0.18, sustain:0.08, release:0.55, detuneSpread:[-10,10], filterType:'bandpass', filterFrequency:3200, filterQ:1.8 }, // music box
+  16: { type:'square',   harmonics:[1,0.7,0.45,0.2], attack:0.02,  decay:0.08, sustain:0.85, release:0.4,  filterType:'lowpass', filterFrequency:2200, filterQ:0.8, vibratoDepth:3, vibratoRate:5.5 }, // drawbar organ
+  // Strings
+  40: { type:'sawtooth', harmonics:[1,0.48,0.24,0.1], attack:0.09,  decay:0.08, sustain:0.88, release:0.32, vibratoDepth:12, vibratoRate:6.2, detuneSpread:[-5,5], filterType:'lowpass', filterFrequency:3600, filterQ:1.1 }, // violin
+  41: { type:'sawtooth', harmonics:[1,0.42,0.22,0.08],attack:0.11,  decay:0.08, sustain:0.84, release:0.38, vibratoDepth:8,  vibratoRate:5.6, detuneSpread:[-4,4], filterType:'lowpass', filterFrequency:2900, filterQ:1.0 }, // viola
+  42: { type:'sawtooth', harmonics:[1,0.34,0.18,0.07],attack:0.13,  decay:0.08, sustain:0.82, release:0.46, vibratoDepth:6,  vibratoRate:4.9, detuneSpread:[-3,3], filterType:'lowpass', filterFrequency:1800, filterQ:0.9 }, // cello
+  43: { type:'sawtooth', harmonics:[1,0.28,0.12,0.05],attack:0.16,  decay:0.08, sustain:0.8,  release:0.55, detuneSpread:[-2,2], filterType:'lowpass', filterFrequency:1100, filterQ:0.7 }, // bass
+  24: { type:'triangle', harmonics:[1,0.28,0.12,0.05],attack:0.006, decay:0.25, sustain:0.16, release:0.45, filterType:'lowpass', filterFrequency:2500, filterQ:0.9 }, // nylon guitar
+  25: { type:'triangle', harmonics:[1,0.46,0.22,0.1], attack:0.004, decay:0.22, sustain:0.12, release:0.35, filterType:'bandpass', filterFrequency:2900, filterQ:1.4 }, // steel guitar
+  26: { type:'triangle', harmonics:[1,0.33,0.18,0.07],attack:0.008, decay:0.3,  sustain:0.22, release:0.45, filterType:'bandpass', filterFrequency:1900, filterQ:1.1 }, // jazz guitar
+  45: { type:'triangle', harmonics:[1,0.12,0.06],     attack:0.002, decay:0.12, sustain:0.02, release:0.18, filterType:'highpass', filterFrequency:650,  filterQ:0.5 }, // pizzicato
+  46: { type:'triangle', harmonics:[1,0.22,0.14,0.07],attack:0.012, decay:0.45, sustain:0.22, release:0.8,  detuneSpread:[-6,6], filterType:'lowpass', filterFrequency:3000, filterQ:0.8 }, // harp
+  // Wind
+  73: { type:'sine',     harmonics:[1,0.07,0.03],      attack:0.04,  decay:0.03, sustain:0.92, release:0.14, vibratoDepth:10, vibratoRate:5.2, filterType:'lowpass', filterFrequency:4200, filterQ:0.5 }, // flute
+  68: { type:'sawtooth', harmonics:[1,0.34,0.14,0.08],attack:0.025, decay:0.04, sustain:0.86, release:0.12, vibratoDepth:5,  vibratoRate:6.5, filterType:'bandpass', filterFrequency:2100, filterQ:1.7 }, // oboe
+  71: { type:'square',   harmonics:[1,0.0,0.24,0.0,0.1],attack:0.02,decay:0.04, sustain:0.9,  release:0.11, filterType:'lowpass', filterFrequency:1700, filterQ:1.4 }, // clarinet
+  70: { type:'sawtooth', harmonics:[1,0.42,0.3,0.12], attack:0.04,  decay:0.05, sustain:0.84, release:0.18, filterType:'lowpass', filterFrequency:1400, filterQ:1.2 }, // bassoon
+  74: { type:'sine',     harmonics:[1,0.05,0.03],      attack:0.03,  decay:0.04, sustain:0.86, release:0.1,  filterType:'lowpass', filterFrequency:3000, filterQ:0.5 }, // recorder
+  75: { type:'sine',     harmonics:[1,0.12,0.05],      attack:0.05,  decay:0.04, sustain:0.9,  release:0.1,  vibratoDepth:9,  vibratoRate:5.1, filterType:'bandpass', filterFrequency:2600, filterQ:0.9 }, // pan flute
+  // Brass
+  56: { type:'sawtooth', harmonics:[1,0.62,0.42,0.16],attack:0.03,  decay:0.05, sustain:0.78, release:0.12, filterType:'bandpass', filterFrequency:2600, filterQ:1.3 }, // trumpet
+  57: { type:'sawtooth', harmonics:[1,0.48,0.26,0.12],attack:0.05,  decay:0.05, sustain:0.8,  release:0.18, filterType:'lowpass', filterFrequency:1900, filterQ:1.0 }, // trombone
+  58: { type:'sawtooth', harmonics:[1,0.3,0.18,0.08], attack:0.06,  decay:0.07, sustain:0.82, release:0.24, filterType:'lowpass', filterFrequency:1200, filterQ:0.8 }, // tuba
+  60: { type:'sawtooth', harmonics:[1,0.38,0.22,0.1], attack:0.08,  decay:0.06, sustain:0.84, release:0.22, filterType:'bandpass', filterFrequency:1700, filterQ:0.9 }, // french horn
+  61: { type:'sawtooth', harmonics:[1,0.55,0.35,0.18],attack:0.05,  decay:0.05, sustain:0.82, release:0.18, detuneSpread:[-7,7], filterType:'bandpass', filterFrequency:2200, filterQ:1.0 }, // brass section
+  // Other
+  12: { type:'sine',     harmonics:[1,0.22,0.48,0.12],attack:0.003, decay:0.32, sustain:0.08, release:0.45, filterType:'bandpass', filterFrequency:2400, filterQ:1.4 }, // marimba
+  13: { type:'sine',     harmonics:[1,0.26,0.58,0.18],attack:0.002, decay:0.22, sustain:0.05, release:0.32, filterType:'bandpass', filterFrequency:3200, filterQ:1.8 }, // xylophone
+  19: { type:'square',   harmonics:[1,0.48,0.28,0.12],attack:0.03,  decay:0.08, sustain:0.92, release:0.45, filterType:'lowpass', filterFrequency:1800, filterQ:0.8, vibratoDepth:2, vibratoRate:5.0 }, // organ
+  79: { type:'sine',     harmonics:[1,0.1,0.04,0.02], attack:0.03,  decay:0.04, sustain:0.86, release:0.1,  vibratoDepth:7,  vibratoRate:4.7, filterType:'bandpass', filterFrequency:2000, filterQ:0.7 }, // ocarina
+  80: { type:'sawtooth', harmonics:[1,0.4,0.24,0.12], attack:0.01,  decay:0.16, sustain:0.62, release:0.22, detuneSpread:[-12,12], filterType:'lowpass', filterFrequency:3400, filterQ:0.9, vibratoDepth:5, vibratoRate:6.8 }, // lead synth
+  88: { type:'sine',     harmonics:[1,0.3,0.15,0.08], attack:0.16,  decay:0.2,  sustain:0.72, release:0.9,  detuneSpread:[-14,0,14], filterType:'lowpass', filterFrequency:1600, filterQ:0.6, vibratoDepth:3, vibratoRate:4.2 }, // warm pad
+};
+
+function getProfile(program) {
+  return TONE_PROFILES[program] || TONE_PROFILES[0];
+}
+
+// ─────────────────────────────────────────────
+//  MIDI PITCH → Hz
+// ─────────────────────────────────────────────
+function midiToHz(midi) {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+// ─────────────────────────────────────────────
+//  PLAY A SINGLE NOTE on an AudioContext
+//  Returns the gain node (to track/cancel later)
+// ─────────────────────────────────────────────
+function scheduleNote(ctx, midi, startTime, duration, velocity, program, masterGain) {
+  const profile = getProfile(program);
+  const hz = midiToHz(midi);
+  const vel = (velocity / 127) * 0.18; // keep volume sane
+
+  const gain = ctx.createGain();
+  let outputNode = gain;
+  let filter = null;
+  if (profile.filterType) {
+    filter = ctx.createBiquadFilter();
+    filter.type = profile.filterType;
+    filter.frequency.value = profile.filterFrequency || 2200;
+    filter.Q.value = profile.filterQ || 0.7;
+    gain.connect(filter);
+    outputNode = filter;
+  }
+  outputNode.connect(masterGain);
+
+  // Build additive harmonics
+  const oscillators = [];
+  const lfos = [];
+  const detuneSpread = profile.detuneSpread && profile.detuneSpread.length ? profile.detuneSpread : [0];
+  profile.harmonics.forEach((amp, harmonicIndex) => {
+    if (amp === 0) return;
+    detuneSpread.forEach((spread) => {
+      const osc = ctx.createOscillator();
+      osc.type = harmonicIndex === 0 ? profile.type : 'sine';
+      osc.frequency.value = hz * (harmonicIndex + 1);
+      osc.detune.value = spread;
+      osc.start(startTime);
+      osc.stop(startTime + duration + profile.release + 0.05);
+      oscillators.push(osc);
+
+      const hGain = ctx.createGain();
+      hGain.gain.value = amp / detuneSpread.length;
+      osc.connect(hGain);
+      hGain.connect(gain);
+
+      if (profile.vibratoDepth) {
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
+        lfo.frequency.value = profile.vibratoRate || 5;
+        lfoGain.gain.value = profile.vibratoDepth;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.detune);
+        lfo.start(startTime);
+        lfo.stop(startTime + duration + profile.release + 0.05);
+        lfos.push(lfo, lfoGain);
+      }
+    });
+  });
+
+  // ADSR envelope on master gain
+  const a = profile.attack, d = profile.decay, s = profile.sustain, r = profile.release;
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(vel, startTime + a);
+  gain.gain.linearRampToValueAtTime(vel * s, startTime + a + d);
+  gain.gain.setValueAtTime(vel * s, startTime + duration - 0.005);
+  gain.gain.linearRampToValueAtTime(0, startTime + duration + r);
+
+  return { gain, filter, oscillators, lfos };
+}
+
+// ─────────────────────────────────────────────
+//  PLAYBACK ENGINE  (Web Audio API, no CDN)
+// ─────────────────────────────────────────────
+function getOrCreateCtx() {
+  if (!audioCtx || audioCtx.state === 'closed') {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function startPlayback() {
+  if (!noteSequence.length) { setStatus('Render the score first.', 'err'); return; }
+  if (isPlaying) return;
+
+  const ctx = getOrCreateCtx();
+  const program = parseInt(document.getElementById('instrument-select').value);
+
+  // Master gain with slight compression
+  const masterGain = ctx.createGain();
+  masterGain.gain.value = 1.0;
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -18;
+  comp.knee.value = 10;
+  comp.ratio.value = 4;
+  masterGain.connect(comp);
+  comp.connect(ctx.destination);
+
+  const ctxStartTime = ctx.currentTime + 0.05;
+  scheduledNodes = [];
+
+  noteSequence.forEach(note => {
+    const dur = Math.max(note.duration, 0.05);
+    const n = scheduleNote(ctx, note.midi, ctxStartTime + note.time, dur, note.velocity, program, masterGain);
+    scheduledNodes.push(n);
+  });
+
+  isPlaying = true;
+  playStartTime = Date.now();
+  document.getElementById('mini-play').textContent = '■';
+  setStatus('Playing…', 'busy');
+
+  timerInterval = setInterval(() => {
+    const elapsed = (Date.now() - playStartTime) / 1000;
+    const pct = Math.min((elapsed / totalDuration) * 100, 100);
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('time-label').textContent = formatTime(elapsed);
+    if (elapsed >= totalDuration) {
+      stopPlayback();
+      setStatus('Playback complete.', 'ok');
+    }
+  }, 100);
+}
+
+function stopPlayback() {
+  isPlaying = false;
+  clearInterval(timerInterval);
+  // Immediately silence all nodes
+  scheduledNodes.forEach(n => {
+    try { n.gain.gain.cancelScheduledValues(0); n.gain.gain.setValueAtTime(0, 0); } catch(e){}
+    n.oscillators.forEach(o => { try { o.stop(0); } catch(e){} });
+    (n.lfos || []).forEach(node => { try { node.stop?.(0); } catch(e){} });
+  });
+  scheduledNodes = [];
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('time-label').textContent = '0:00';
+  document.getElementById('mini-play').textContent = '▶';
+  if (currentABC) setStatus('Stopped.', 'ok');
+}
+
+function togglePlay() {
+  if (isPlaying) stopPlayback(); else startPlayback();
+}
+
+function seekTo(evt) {
+  if (!noteSequence.length || totalDuration === 0) return;
+  stopPlayback();
+  startPlayback();
+}
+
+function writeMidiVarLen(value) {
+  let buffer = value & 0x7F;
+  const bytes = [];
+  while ((value >>= 7)) {
+    buffer <<= 8;
+    buffer |= ((value & 0x7F) | 0x80);
+  }
+  while (true) {
+    bytes.push(buffer & 0xFF);
+    if (buffer & 0x80) buffer >>= 8;
+    else break;
+  }
+  return bytes;
+}
+
+function buildMidiFile(notes, tempoBpm, program) {
+  const ticksPerQuarter = 480;
+  const ticksPerSecond = (ticksPerQuarter * tempoBpm) / 60;
+  const track = [];
+  const pushBytes = (...bytes) => track.push(...bytes);
+  const pushMeta = (delta, type, data) => {
+    pushBytes(...writeMidiVarLen(delta), 0xFF, type, ...writeMidiVarLen(data.length), ...data);
+  };
+
+  const midiEvents = [];
+  notes.forEach((note) => {
+    const startTick = Math.max(0, Math.round(note.time * ticksPerSecond));
+    const durationTick = Math.max(1, Math.round(note.duration * ticksPerSecond));
+    const endTick = startTick + durationTick;
+    const pitch = Math.max(0, Math.min(127, Math.round(note.midi)));
+    const velocity = Math.max(1, Math.min(127, Math.round(note.velocity || 80)));
+
+    midiEvents.push({ tick: startTick, order: 1, bytes: [0x90, pitch, velocity] });
+    midiEvents.push({ tick: endTick, order: 0, bytes: [0x80, pitch, 0] });
+  });
+
+  midiEvents.sort((a, b) => (a.tick - b.tick) || (a.order - b.order) || (a.bytes[1] - b.bytes[1]));
+
+  const microsecondsPerQuarter = Math.max(1, Math.round(60000000 / tempoBpm));
+  pushMeta(0, 0x51, [
+    (microsecondsPerQuarter >> 16) & 0xFF,
+    (microsecondsPerQuarter >> 8) & 0xFF,
+    microsecondsPerQuarter & 0xFF,
+  ]);
+  pushMeta(0, 0x58, [4, 2, 24, 8]);
+  pushBytes(0x00, 0xC0, Math.max(0, Math.min(127, program || 0)));
+
+  let lastTick = 0;
+  midiEvents.forEach((event) => {
+    const delta = Math.max(0, event.tick - lastTick);
+    pushBytes(...writeMidiVarLen(delta), ...event.bytes);
+    lastTick = event.tick;
+  });
+
+  pushMeta(0, 0x2F, []);
+
+  const header = [
+    0x4D, 0x54, 0x68, 0x64,
+    0x00, 0x00, 0x00, 0x06,
+    0x00, 0x00,
+    0x00, 0x01,
+    (ticksPerQuarter >> 8) & 0xFF, ticksPerQuarter & 0xFF,
+  ];
+
+  const trackHeader = [
+    0x4D, 0x54, 0x72, 0x6B,
+    (track.length >> 24) & 0xFF,
+    (track.length >> 16) & 0xFF,
+    (track.length >> 8) & 0xFF,
+    track.length & 0xFF,
+  ];
+
+  return new Uint8Array([...header, ...trackHeader, ...track]);
+}
+
+// ─────────────────────────────────────────────
+//  MIDI DOWNLOAD  (abcjs — no soundfonts needed)
+// ─────────────────────────────────────────────
+function downloadMIDI() {
+  if (!noteSequence.length) { setStatus('Render first.', 'err'); return; }
+  const tempo = parseInt(document.getElementById('tempo-slider').value);
+  const instrument = parseInt(document.getElementById('instrument-select').value);
+
+  setStatus('Generating MIDI…', 'busy');
+  try {
+    const midiData = buildMidiFile(noteSequence, tempo, instrument);
+    const blob = new Blob([midiData], { type: 'audio/midi' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'abc-notation.mid';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+    setStatus('MIDI downloaded. Open it in GarageBand, VLC, MuseScore, or a DAW.', 'ok');
+  } catch(e) {
+    setStatus('MIDI error: ' + (e.message || e), 'err');
+  }
+}
+
+// ─────────────────────────────────────────────
+//  WAV DOWNLOAD  (offline Web Audio render — no CDN)
+// ─────────────────────────────────────────────
+async function downloadWAV() {
+  if (!noteSequence.length) { setStatus('Render first.', 'err'); return; }
+  setStatus('Rendering WAV… (offline audio pass)', 'busy');
+  document.getElementById('wav-btn').disabled = true;
+
+  const program = parseInt(document.getElementById('instrument-select').value);
+  const sampleRate = 44100;
+  const duration = Math.max(totalDuration, 1) + 1.5;
+  const offlineCtx = new OfflineAudioContext(2, Math.ceil(sampleRate * duration), sampleRate);
+
+  const masterGain = offlineCtx.createGain();
+  masterGain.gain.value = 1.0;
+  const comp = offlineCtx.createDynamicsCompressor();
+  comp.threshold.value = -18; comp.knee.value = 10; comp.ratio.value = 4;
+  masterGain.connect(comp);
+  comp.connect(offlineCtx.destination);
+
+  noteSequence.forEach(note => {
+    const dur = Math.max(note.duration, 0.05);
+    scheduleNote(offlineCtx, note.midi, note.time + 0.05, dur, note.velocity, program, masterGain);
+  });
+
+  try {
+    const renderedBuffer = await offlineCtx.startRendering();
+    const wavBytes = encodeWAV(renderedBuffer);
+    const blob = new Blob([wavBytes], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'abc-notation.wav';
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+    setStatus('WAV downloaded.', 'ok');
+  } catch(e) {
+    setStatus('WAV error: ' + (e.message || e), 'err');
+  }
+  document.getElementById('wav-btn').disabled = false;
+}
+
+// ─────────────────────────────────────────────
+//  WAV ENCODER  (16-bit stereo PCM)
+// ─────────────────────────────────────────────
+function encodeWAV(buffer) {
+  const numCh = buffer.numberOfChannels;
+  const sr = buffer.sampleRate;
+  const len = buffer.length;
+  const bps = 16;
+  const blockAlign = numCh * (bps / 8);
+  const dataSize = len * blockAlign;
+  const ab = new ArrayBuffer(44 + dataSize);
+  const v = new DataView(ab);
+  const ws = (o, s) => { for (let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); v.setUint32(4,36+dataSize,true); ws(8,'WAVE'); ws(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,numCh,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*blockAlign,true);
+  v.setUint16(32,blockAlign,true); v.setUint16(34,bps,true);
+  ws(36,'data'); v.setUint32(40,dataSize,true);
+  const channels = Array.from({length:numCh},(_,c)=>buffer.getChannelData(c));
+  let offset = 44;
+  for (let i=0;i<len;i++) {
+    for (let c=0;c<numCh;c++) {
+      const s = Math.max(-1,Math.min(1,channels[c][i]));
+      v.setInt16(offset, (s<0?s*0x8000:s*0x7FFF)|0, true);
+      offset += 2;
+    }
+  }
+  return ab;
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+window.addEventListener('load', () => {
+  updateInstrumentDisplay();
+  document.getElementById('abc-input').value = EXAMPLES.ode;
+  setTimeout(() => renderNotation(), 300);
+});
+</script>
+</body>
+</html>
