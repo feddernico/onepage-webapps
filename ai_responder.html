@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalAI Lead Responder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2d8a8f;
+            --primary-hover: #247073;
+            --accent-color: #38bdf8;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #f1f5f9;
+            --bg-surface: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border-color: #cbd5e1;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #0f172a;
+                --bg-secondary: #1e293b;
+                --bg-surface: #1a2332;
+                --text-primary: #f1f5f9;
+                --text-secondary: #cbd5e1;
+                --text-muted: #94a3b8;
+                --border-color: #334155;
+                --primary-color: #38bdf8;
+                --primary-hover: #0284c7;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: 100vh;
+            gap: 0;
+        }
+
+        .sidebar {
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-surface);
+        }
+
+        .sidebar-header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .inbox-section {
+            padding: 16px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .inbox-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding: 0 8px;
+        }
+
+        .lead-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .lead-item:hover {
+            background-color: var(--bg-secondary);
+            border-color: var(--primary-color);
+        }
+
+        .lead-item.active {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .lead-item.active p {
+            color: white;
+        }
+
+        .lead-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .lead-preview {
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lead-item.active .lead-preview {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-primary);
+        }
+
+        .editor-header {
+            padding: 20px;
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border-color);
+        }
+
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .editor-panel-item {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .editor-panel-item:last-child {
+            border-right: none;
+        }
+
+        .panel-label {
+            padding: 12px 16px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .lead-details {
+            margin-bottom: 16px;
+        }
+
+        .detail-row {
+            margin-bottom: 12px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            padding: 10px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+        }
+
+        .inquiry-text {
+            padding: 12px;
+            background-color: var(--bg-secondary);
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.6;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: none;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(45, 138, 143, 0.1);
+        }
+
+        .suggestions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .suggestion-item {
+            padding: 10px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .suggestion-item:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .suggestion-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-right: 6px;
+            font-weight: 500;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 6px 12px;
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .suggestion-item:hover .copy-button {
+            opacity: 1;
+        }
+
+        .suggestion-item {
+            position: relative;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: var(--warning-color);
+            color: white;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 1024px) {
+            .editor-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .editor-panel-item {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .editor-panel-item:last-child {
+                border-bottom: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .editor-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            background-color: var(--success-color);
+            color: white;
+            border-radius: 6px;
+            font-size: 14px;
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>🤖 LocalAI</h1>
+                <p>Lead Response Manager</p>
+            </div>
+            <div class="inbox-section">
+                <div class="inbox-title">Inbound Leads</div>
+                <div id="leadsList"></div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="editor-header">
+                <div class="editor-title" id="editorTitle">Select a lead to start</div>
+                <div class="editor-actions">
+                    <button class="btn btn-secondary" id="clearBtn">Clear</button>
+                    <button class="btn btn-primary" id="sendBtn">Send Response</button>
+                </div>
+            </div>
+
+            <div class="editor-area">
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-state-icon">📬</div>
+                    <h2 style="margin-bottom: 8px;">No Lead Selected</h2>
+                    <p>Select an inquiry from the left to compose a response</p>
+                </div>
+
+                <div id="editorPanel" class="editor-panel" style="display: none;">
+                    <div class="editor-panel-item">
+                        <div class="panel-label">Lead Details & Inquiry</div>
+                        <div class="panel-content">
+                            <div class="lead-details" id="leadDetails"></div>
+                            <div class="detail-label">Inquiry Message</div>
+                            <div class="inquiry-text" id="inquiryText"></div>
+                        </div>
+                    </div>
+
+                    <div class="editor-panel-item">
+                        <div class="panel-label">Your Response</div>
+                        <div class="panel-content" style="padding: 0; display: flex; flex-direction: column;">
+                            <textarea id="responseText" placeholder="Write or paste your response here..."></textarea>
+                            <div style="padding: 12px; border-top: 1px solid var(--border-color); max-height: 150px; overflow-y: auto;">
+                                <div class="panel-label" style="margin-bottom: 12px;">AI Suggestions</div>
+                                <div class="suggestions" id="suggestions"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample leads data
+        const leads = [
+            {
+                id: 1,
+                name: 'Sarah Mitchell',
+                email: 'sarah@techstartup.com',
+                category: 'Service Inquiry',
+                inquiry: 'Hi, we\'re interested in your web development services. Can you provide an estimate for a custom e-commerce platform with real-time inventory management?',
+                suggestions: [
+                    '<span class="suggestion-tag">Professional</span>Thank you for reaching out, Sarah! We\'d be happy to discuss your e-commerce project. I\'ll send you a detailed proposal with timeline and cost breakdown by end of day. Can you share more about your target platform and current tech stack?',
+                    '<span class="suggestion-tag">Casual</span>Hey Sarah! That sounds like an awesome project. Let\'s chat about your needs. I usually send over a discovery call link where we can dive into specifics and I can give you ballpark figures.',
+                    '<span class="suggestion-tag">Template</span>Hi Sarah, Thanks for the inquiry! I\'ll need a bit more info: current traffic expectations, shipping regions, and any existing integrations needed. When works best for a quick 20-min call to discuss details?'
+                ]
+            },
+            {
+                id: 2,
+                name: 'Marcus Chen',
+                email: 'marcus@brandagency.co.uk',
+                category: 'Support Question',
+                inquiry: 'I deployed my site last week but the performance metrics show high bounce rates. What could be causing this and how can I improve it?',
+                suggestions: [
+                    '<span class="suggestion-tag">Helpful</span>Hi Marcus, High bounce rates often point to page speed or UX issues. I can audit your site and identify bottlenecks. Are you seeing bounces on specific pages or across the board? Let me pull your metrics and we can troubleshoot together.',
+                    '<span class="suggestion-tag">Quick</span>Bounce rate spikes usually mean one of three things: slow load time, confusing UX, or traffic source mismatch. Can you share your Core Web Vitals scores? That\'ll tell us where to focus first.',
+                    '<span class="suggestion-tag">Technical</span>This is typically a performance issue. Check your: 1) LCP (Largest Contentful Paint) 2) FID (First Input Delay) 3) CLS (Cumulative Layout Shift). Send me your PageSpeed scores and let\'s optimize.'
+                ]
+            },
+            {
+                id: 3,
+                name: 'Elena Rodriguez',
+                email: 'elena@nonprofitorg.org',
+                category: 'Partnership Inquiry',
+                inquiry: 'We run a nonprofit focused on tech education in underserved communities. Would you be open to collaborating on a pro bono website redesign project?',
+                suggestions: [
+                    '<span class="suggestion-tag">Community</span>Elena, this resonates deeply with us. We\'d love to discuss a pro bono partnership. Can you send over details about your current site and specific goals? We usually dedicate one project per quarter to nonprofit work.',
+                    '<span class="suggestion-tag">Professional</span>Thank you for thinking of us. We\'re committed to community impact. Let\'s schedule a call to understand your tech needs, timeline, and success metrics so we can scope appropriately.',
+                    '<span class="suggestion-tag">Warm</span>This is exactly the kind of project we love. I\'d like to learn more about your mission and current challenges. When could we hop on a call this week?'
+                ]
+            },
+            {
+                id: 4,
+                name: 'David Kumar',
+                email: 'david@ecommerce.shop',
+                category: 'Technical Issue',
+                inquiry: 'Our checkout process is converting at 2%, which seems low. The site is built with vanilla JS. Is it a technical issue or UX problem?',
+                suggestions: [
+                    '<span class="suggestion-tag">Data-Driven</span>2% is below industry average (2-3% for e-commerce). Before optimizing, we need to identify the drop-off point. Can you share: 1) Cart abandonment rate 2) Payment page abandonment 3) Checkout duration? Then we\'ll know if it\'s UX or technical.',
+                    '<span class="suggestion-tag">Quick Win</span>Most checkout issues are UX, not technical. Common culprits: unclear shipping costs, payment options limited, too many form fields. Let\'s do a quick audit of your flow.',
+                    '<span class="suggestion-tag">Technical</span>Vanilla JS checkout can bottleneck if not optimized. Check: form validation latency, payment gateway integration latency, page load on checkout step. Could be all three contributing to friction.'
+                ]
+            },
+            {
+                id: 5,
+                name: 'Priya Desai',
+                email: 'priya@marketing.co',
+                category: 'Collaboration',
+                inquiry: 'Hi! I represent a growing SaaS marketing team. We\'re looking for a developer who understands both technical implementation and marketing metrics. Are you open to retainer work?',
+                suggestions: [
+                    '<span class="suggestion-tag">Professional</span>Priya, I appreciate this opportunity. My background blends technical depth with marketing fluency—tracking conversions, funnels, and ROI is central to everything I build. Let\'s discuss scope and retainer structure.',
+                    '<span class="suggestion-tag">Enthusiastic</span>This is my sweet spot! I love working with marketing teams where technical implementation ties directly to measurable outcomes. What\'s your current tech stack and which metrics matter most?',
+                    '<span class="suggestion-tag">Template</span>Retainer work is something I\'m selective about. Can you share: current team size, typical projects, and how you measure success? Then we can explore if there\'s a good fit.'
+                ]
+            }
+        ];
+
+        let currentLead = null;
+
+        // Initialize app
+        function init() {
+            renderLeadsList();
+        }
+
+        function renderLeadsList() {
+            const leadsList = document.getElementById('leadsList');
+            leadsList.innerHTML = leads.map(lead => `
+                <div class="lead-item ${currentLead?.id === lead.id ? 'active' : ''}" data-id="${lead.id}">
+                    <div class="lead-name">${lead.name}</div>
+                    <div class="lead-preview">${lead.inquiry.substring(0, 50)}...</div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.lead-item').forEach(item => {
+                item.addEventListener('click', () => selectLead(parseInt(item.dataset.id)));
+            });
+        }
+
+        function selectLead(id) {
+            currentLead = leads.find(l => l.id === id);
+            renderEditor();
+        }
+
+        function renderEditor() {
+            if (!currentLead) return;
+
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('editorPanel').style.display = 'grid';
+
+            // Update header
+            document.getElementById('editorTitle').textContent = `Response to ${currentLead.name}`;
+
+            // Update lead details
+            const leadDetails = document.getElementById('leadDetails');
+            leadDetails.innerHTML = `
+                <div class="detail-row">
+                    <div class="category-badge">${currentLead.category}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">From</div>
+                    <div class="detail-value">${currentLead.name}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Email</div>
+                    <div class="detail-value">${currentLead.email}</div>
+                </div>
+            `;
+
+            // Update inquiry text
+            document.getElementById('inquiryText').textContent = currentLead.inquiry;
+
+            // Clear and update response
+            const responseText = document.getElementById('responseText');
+            responseText.value = '';
+            responseText.focus();
+
+            // Update suggestions
+            const suggestions = document.getElementById('suggestions');
+            suggestions.innerHTML = currentLead.suggestions.map((suggestion, index) => `
+                <div class="suggestion-item">
+                    ${suggestion}
+                    <button class="copy-button" onclick="applySuggestion(${currentLead.id}, ${index})">Use This</button>
+                </div>
+            `).join('');
+
+            renderLeadsList();
+        }
+
+        function applySuggestion(leadId, suggestionIndex) {
+            const lead = leads.find(l => l.id === leadId);
+            if (lead) {
+                const suggestion = lead.suggestions[suggestionIndex];
+                // Strip HTML tags for display
+                const text = suggestion.replace(/<[^>]*>/g, '');
+                document.getElementById('responseText').value = text;
+                showToast('✨ Suggestion applied!');
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            document.getElementById('responseText').value = '';
+            showToast('Response cleared');
+        });
+
+        document.getElementById('sendBtn').addEventListener('click', () => {
+            const response = document.getElementById('responseText').value.trim();
+            if (!response) {
+                showToast('⚠️ Please write a response first');
+                return;
+            }
+            if (!currentLead) {
+                showToast('⚠️ No lead selected');
+                return;
+            }
+            
+            // Simulate sending
+            const email = currentLead.email;
+            const name = currentLead.name;
+            
+            showToast(`✅ Response sent to ${name}!`);
+            document.getElementById('responseText').value = '';
+            setTimeout(() => {
+                // Move to next lead
+                const nextId = (currentLead.id % leads.length) + 1;
+                selectLead(nextId);
+            }, 800);
+        });
+
+        init();
+    </script>
+</body>
+</html>
