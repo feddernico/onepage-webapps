@@ -3,8 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baby Tracker</title>
+    <title>BabyLog</title>
     <style>
+        :root {
+            --bg-top: #fff7fb;
+            --bg-bottom: #f4ecff;
+            --surface: #fffafb;
+            --surface-soft: #fdf3f9;
+            --surface-strong: #f7ebf5;
+            --text-primary: #3c2f46;
+            --text-secondary: #7f6b8d;
+            --accent-pink: #dd5aa9;
+            --accent-pink-dark: #c84797;
+            --accent-purple: #8660c8;
+            --accent-purple-dark: #734fb3;
+            --accent-blue: #56a8db;
+            --accent-blue-dark: #4498cf;
+            --accent-mint: #61d3c3;
+            --accent-mint-dark: #4bc0b0;
+            --accent-yellow: #f5cf70;
+            --shadow-soft: 0 10px 30px rgba(199, 124, 180, 0.14);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,45 +33,49 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
             min-height: 100vh;
             padding-bottom: 100px;
+            color: var(--text-primary);
         }
         
         .container {
             max-width: 400px;
             margin: 0 auto;
-            background: white;
+            background: var(--surface);
             min-height: 100vh;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-soft);
             position: relative;
         }
         
         .header {
-            background: linear-gradient(135deg, #ff6b6b, #feca57);
-            color: white;
+            background: linear-gradient(180deg, #fffdfd 0%, #fff4fa 100%);
+            color: var(--accent-pink);
             padding: 20px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 24px rgba(221, 90, 169, 0.1);
             position: relative;
+            border-bottom: 1px solid #f7dcea;
         }
         
         .header h1 {
             font-size: 24px;
             margin-bottom: 5px;
+            color: var(--accent-pink);
         }
         
         .header .date {
             font-size: 14px;
-            opacity: 0.9;
+            color: var(--text-secondary);
+            opacity: 1;
         }
         
         .help-btn {
             position: absolute;
             top: 15px;
             right: 15px;
-            background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0.3);
+            background: linear-gradient(135deg, #f3e7ff 0%, #f9ddec 100%);
+            border: 2px solid #f0d3e6;
             color: white;
             width: 35px;
             height: 35px;
@@ -62,24 +86,25 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
+            color: var(--accent-purple);
         }
         
         .help-btn:hover {
-            background: rgba(255,255,255,0.3);
-            border-color: rgba(255,255,255,0.5);
+            background: linear-gradient(135deg, #f7edff 0%, #fde7f2 100%);
+            border-color: #ebc6df;
             transform: scale(1.1);
         }
         
         .today-section {
             padding: 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
+            background: linear-gradient(180deg, #fff8fc 0%, #fcf4fb 100%);
+            border-bottom: 1px solid #f1dce8;
         }
         
         .today-title {
             font-size: 18px;
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--accent-purple);
             margin-bottom: 15px;
             display: flex;
             align-items: center;
@@ -93,13 +118,14 @@
         }
         
         .event-item {
-            background: white;
+            background: linear-gradient(180deg, #fffefe 0%, #fff7fb 100%);
             padding: 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 18px;
+            box-shadow: 0 8px 22px rgba(190, 142, 190, 0.12);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid #f7e6ef;
         }
         
         .event-info {
@@ -114,25 +140,25 @@
         
         .event-time {
             font-size: 14px;
-            color: #666;
+            color: var(--text-secondary);
             cursor: pointer;
             padding: 4px 8px;
-            border-radius: 4px;
+            border-radius: 8px;
             border: 1px solid transparent;
         }
         
         .event-time:hover {
-            background: #f0f0f0;
-            border-color: #ddd;
+            background: #f8eef7;
+            border-color: #edd3e6;
         }
         
         .event-time.editing {
             background: #fff;
-            border-color: #007bff;
+            border-color: var(--accent-blue);
         }
         
         .delete-btn {
-            background: #ff4757;
+            background: linear-gradient(135deg, #f27eb0 0%, #df5fa4 100%);
             color: white;
             border: none;
             width: 24px;
@@ -146,27 +172,28 @@
         }
         
         .delete-btn:hover {
-            background: #ff3742;
+            background: linear-gradient(135deg, #ea6aa0 0%, #cf4b91 100%);
         }
         
         .vitamin-status {
-            background: #e8f5e8;
-            color: #2d5a2d;
+            background: #ebfbf7;
+            color: #277668;
             padding: 10px;
-            border-radius: 8px;
+            border-radius: 14px;
             text-align: center;
             margin-bottom: 10px;
-            border-left: 4px solid #28a745;
+            border-left: 4px solid var(--accent-mint);
         }
         
         .vitamin-status.not-given {
-            background: #fff3cd;
-            color: #856404;
-            border-left-color: #ffc107;
+            background: #fff4df;
+            color: #8b6530;
+            border-left-color: var(--accent-yellow);
         }
         
         .calendar-section {
             padding: 20px;
+            background: linear-gradient(180deg, #fffafc 0%, #fff5fa 100%);
         }
         
         .calendar-header {
@@ -177,36 +204,38 @@
         }
         
         .calendar-nav {
-            background: #007bff;
+            background: linear-gradient(135deg, var(--accent-purple) 0%, #9b73d9 100%);
             color: white;
             border: none;
             padding: 8px 12px;
-            border-radius: 6px;
+            border-radius: 999px;
             cursor: pointer;
             font-size: 14px;
+            box-shadow: 0 8px 18px rgba(134, 96, 200, 0.18);
         }
         
         .calendar-nav:hover {
-            background: #0056b3;
+            background: linear-gradient(135deg, var(--accent-purple-dark) 0%, #8b65cf 100%);
         }
         
         .calendar-title {
             font-size: 16px;
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--accent-pink);
         }
         
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 1px;
-            background: #dee2e6;
-            border-radius: 8px;
+            background: #f1deea;
+            border-radius: 18px;
             overflow: hidden;
+            box-shadow: 0 10px 24px rgba(191, 137, 185, 0.12);
         }
         
         .calendar-day {
-            background: white;
+            background: #fffdfd;
             min-height: 80px;
             padding: 8px 4px;
             display: flex;
@@ -215,19 +244,21 @@
         }
         
         .calendar-day.other-month {
-            background: #f8f9fa;
-            color: #adb5bd;
+            background: #faf3f7;
+            color: #b7a6b8;
         }
         
         .calendar-day.today {
-            background: #e3f2fd;
-            border: 2px solid #2196f3;
+            background: linear-gradient(180deg, #dd5aa9 0%, #c84f9d 100%);
+            border: 2px solid #c84f9d;
+            color: white;
         }
         
         .day-number {
             font-size: 12px;
             font-weight: 600;
             margin-bottom: 4px;
+            color: inherit;
         }
         
         .day-events {
@@ -248,33 +279,49 @@
             bottom: 0;
             left: 50%;
             transform: translateX(-50%);
-            background: white;
+            background: linear-gradient(180deg, #fffafc 0%, #fff3f8 100%);
             padding: 15px;
             border-radius: 20px 20px 0 0;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 -8px 24px rgba(186, 130, 178, 0.16);
             display: flex;
             gap: 15px;
             max-width: 400px;
             width: 100%;
             justify-content: center;
+            border-top: 1px solid #f1dbe6;
         }
         
         .action-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
             border: none;
             width: 60px;
             height: 60px;
             border-radius: 50%;
             font-size: 24px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 12px 24px rgba(177, 124, 192, 0.22);
             transition: all 0.3s ease;
             color: white;
+        }
+
+        .action-btn.feed-btn {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-dark) 100%);
+        }
+
+        .action-btn.poo-btn {
+            background: linear-gradient(135deg, var(--accent-pink) 0%, var(--accent-pink-dark) 100%);
+        }
+
+        .action-btn.nappy-btn {
+            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-purple-dark) 100%);
+        }
+
+        .action-btn.vitamin-btn {
+            background: linear-gradient(135deg, var(--accent-mint) 0%, var(--accent-mint-dark) 100%);
         }
         
         .action-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 16px 28px rgba(177, 124, 192, 0.3);
         }
         
         .action-btn:active {
@@ -282,7 +329,7 @@
         }
         
         .no-events {
-            color: #6c757d;
+            color: var(--text-secondary);
             font-style: italic;
             text-align: center;
             padding: 20px;
@@ -304,13 +351,14 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: white;
+            background: linear-gradient(180deg, #fffefd 0%, #fff5fa 100%);
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 20px;
             max-width: 300px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(145, 104, 172, 0.2);
         }
         
         .help-modal-content {
@@ -323,6 +371,7 @@
             font-weight: 600;
             margin-bottom: 15px;
             text-align: center;
+            color: var(--accent-pink);
         }
         
         .modal-body {
@@ -344,12 +393,12 @@
         }
         
         .modal-btn.primary {
-            background: #007bff;
+            background: linear-gradient(135deg, var(--accent-purple) 0%, #9b73d9 100%);
             color: white;
         }
         
         .modal-btn.secondary {
-            background: #6c757d;
+            background: #cfbdd8;
             color: white;
         }
         
@@ -358,17 +407,17 @@
         }
         
         .help-section h3 {
-            color: #2c3e50;
+            color: var(--accent-purple);
             margin-bottom: 10px;
             font-size: 16px;
-            border-bottom: 2px solid #e9ecef;
+            border-bottom: 2px solid #f0ddea;
             padding-bottom: 5px;
         }
         
         .help-section p {
             margin-bottom: 8px;
             line-height: 1.5;
-            color: #495057;
+            color: var(--text-primary);
         }
         
         .help-section ul {
@@ -379,7 +428,7 @@
         .help-section li {
             margin-bottom: 5px;
             line-height: 1.4;
-            color: #495057;
+            color: var(--text-primary);
         }
         
         .emoji-guide {
@@ -388,7 +437,7 @@
             gap: 10px;
             margin-bottom: 8px;
             padding: 5px;
-            background: #f8f9fa;
+            background: #faf1f7;
             border-radius: 5px;
         }
         
@@ -399,8 +448,8 @@
         .time-input {
             width: 100%;
             padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 1px solid #ead2e2;
+            border-radius: 10px;
             font-size: 14px;
         }
         
@@ -421,15 +470,15 @@
         }
         
         .notification.success {
-            background: #28a745;
+            background: linear-gradient(135deg, var(--accent-mint) 0%, var(--accent-mint-dark) 100%);
         }
         
         .notification.error {
-            background: #dc3545;
+            background: linear-gradient(135deg, #f27eb0 0%, #df5fa4 100%);
         }
         
         .notification.info {
-            background: #17a2b8;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-dark) 100%);
         }
         
         @keyframes slideIn {
@@ -447,7 +496,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>👶 Baby Tracker</h1>
+            <h1>👶 BabyLog</h1>
             <div class="date" id="currentDate"></div>
             <button class="help-btn" onclick="showHelp()" title="How to use this app">❓</button>
         </div>
@@ -472,17 +521,17 @@
         </div>
         
         <div class="export-section">
-            <div style="padding: 20px; text-align: center; border-top: 1px solid #e9ecef;">
-                <h3 style="margin-bottom: 15px; color: #2c3e50;">📊 Data Management</h3>
+            <div style="padding: 20px; text-align: center; border-top: 1px solid #f0ddea;">
+                <h3 style="margin-bottom: 15px; color: #8660c8;">📊 Data Management</h3>
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button onclick="exportToCSV()" style="background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                    <button onclick="exportToCSV()" style="background: linear-gradient(135deg, #61d3c3 0%, #4bc0b0 100%); color: white; border: none; padding: 10px 15px; border-radius: 999px; cursor: pointer; font-size: 14px;">
                         📥 Download CSV
                     </button>
-                    <label for="csvImport" style="background: #17a2b8; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; display: inline-block;">
+                    <label for="csvImport" style="background: linear-gradient(135deg, #56a8db 0%, #4498cf 100%); color: white; border: none; padding: 10px 15px; border-radius: 999px; cursor: pointer; font-size: 14px; display: inline-block;">
                         📤 Upload CSV
                     </label>
                     <input type="file" id="csvImport" accept=".csv" style="display: none;" onchange="importFromCSV(event)">
-                    <button onclick="clearAllData()" style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                    <button onclick="clearAllData()" style="background: linear-gradient(135deg, #dd5aa9 0%, #c84797 100%); color: white; border: none; padding: 10px 15px; border-radius: 999px; cursor: pointer; font-size: 14px;">
                         🗑️ Clear All
                     </button>
                 </div>
@@ -490,17 +539,17 @@
         </div>
         
         <div class="action-buttons">
-            <button class="action-btn" onclick="addEvent('feed')" title="Feed">🍼</button>
-            <button class="action-btn" onclick="addEvent('poo')" title="Poo">💩</button>
-            <button class="action-btn" onclick="addEvent('nappy')" title="Nappy Change">🧷</button>
-            <button class="action-btn" onclick="addEvent('vitamin')" title="Vitamins">💊</button>
+            <button class="action-btn feed-btn" onclick="addEvent('feed')" title="Feed">🍼</button>
+            <button class="action-btn poo-btn" onclick="addEvent('poo')" title="Poo">💩</button>
+            <button class="action-btn nappy-btn" onclick="addEvent('nappy')" title="Nappy Change">🧷</button>
+            <button class="action-btn vitamin-btn" onclick="addEvent('vitamin')" title="Vitamins">💊</button>
         </div>
     </div>
     
     <!-- Help Modal -->
     <div id="helpModal" class="modal">
         <div class="modal-content help-modal-content">
-            <div class="modal-header">🍼 How to Use Baby Tracker</div>
+            <div class="modal-header">🍼 How to Use BabyLog</div>
             <div class="modal-body">
                 <div class="help-section">
                     <h3>📱 Quick Start</h3>
