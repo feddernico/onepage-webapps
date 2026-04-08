@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Refiner</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=boska@700&display=swap" rel="stylesheet">
+<style>
+:root, [data-theme="light"] {
+  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+  --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
+  --color-bg: #f7f6f2; --color-surface: #f9f8f5; --color-surface-2: #fbfbf9; --color-surface-offset: #edeae5; --color-border: #d4d1ca;
+  --color-text: #28251d; --color-text-muted: #6e6b66; --color-text-faint: #9f9b95; --color-primary: #01696f; --color-primary-hover: #0c4e54; --color-primary-highlight: #dce8e6; --color-success: #437a22; --color-error: #a12c7b;
+  --radius-sm: 0.375rem; --radius-md: 0.75rem; --radius-lg: 1rem; --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06); --shadow-md: 0 8px 24px rgba(0,0,0,.08);
+  --font-body: 'Satoshi', Inter, system-ui, sans-serif; --font-display: 'Boska', Georgia, serif;
+}
+[data-theme="dark"] {
+  --color-bg: #171614; --color-surface: #1c1b19; --color-surface-2: #201f1d; --color-surface-offset: #2a2826; --color-border: #393836;
+  --color-text: #e1dfdb; --color-text-muted: #b0ada8; --color-text-faint: #7f7b76; --color-primary: #4f98a3; --color-primary-hover: #227f8b; --color-primary-highlight: #243436; --color-success: #7fbb5c; --color-error: #df72b2;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.2); --shadow-md: 0 8px 24px rgba(0,0,0,.3);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) { --color-bg: #171614; --color-surface: #1c1b19; --color-surface-2: #201f1d; --color-surface-offset: #2a2826; --color-border: #393836; --color-text: #e1dfdb; --color-text-muted: #b0ada8; --color-text-faint: #7f7b76; --color-primary: #4f98a3; --color-primary-hover: #227f8b; --color-primary-highlight: #243436; --color-success: #7fbb5c; --color-error: #df72b2; }
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0} html{-webkit-text-size-adjust:none;text-size-adjust:none;scroll-behavior:smooth}
+body{min-height:100dvh;font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;background:radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 28%), var(--color-bg);color:var(--color-text)}
+button,input,textarea,select{font:inherit;color:inherit} button{cursor:pointer;border:none;background:none} textarea{resize:vertical}
+a,button,input,textarea,select{transition:background .18s ease,color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+:focus-visible{outline:2px solid var(--color-primary);outline-offset:3px}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important;scroll-behavior:auto !important}}
+.skip-link{position:absolute;left:var(--space-4);top:-3rem;background:var(--color-primary);color:#fff;padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);z-index:10}.skip-link:focus{top:var(--space-4)}
+.app{max-width:1100px;margin:0 auto;padding:var(--space-4);display:grid;gap:var(--space-4)} .topbar{display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);padding-top:var(--space-2)}
+.brand{display:flex;align-items:center;gap:var(--space-3)} .logo{width:2.5rem;height:2.5rem;padding:0.45rem;border-radius:0.8rem;background:var(--color-surface);border:1px solid color-mix(in srgb,var(--color-text) 10%,transparent);box-shadow:var(--shadow-sm)} .logo svg{width:100%;height:100%}
+.brand h1{font-family:var(--font-display);font-size:var(--text-xl);line-height:1} .brand p{font-size:var(--text-sm);color:var(--color-text-muted)}
+.icon-btn{min-width:44px;min-height:44px;border-radius:var(--radius-full);display:grid;place-items:center;background:var(--color-surface);border:1px solid color-mix(in srgb,var(--color-text) 10%,transparent)} .icon-btn:hover{transform:translateY(-1px);background:var(--color-surface-2)}
+.layout{display:grid;gap:var(--space-4)} .panel{background:color-mix(in srgb,var(--color-surface) 88%, transparent);backdrop-filter:blur(10px);border:1px solid color-mix(in srgb,var(--color-text) 10%, transparent);border-radius:var(--radius-lg);box-shadow:var(--shadow-md)}
+.hero{padding:var(--space-6);display:grid;gap:var(--space-4)} .hero-copy{display:grid;gap:var(--space-3)} .kicker{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-1) var(--space-3);width:max-content;border-radius:var(--radius-full);background:var(--color-primary-highlight);color:var(--color-primary);font-size:var(--text-xs);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.hero h2{font-size:var(--text-xl);line-height:1.1;max-width:14ch} .hero p{color:var(--color-text-muted);max-width:58ch} .grid{display:grid;gap:var(--space-4)}
+.controls{padding:var(--space-4);display:grid;gap:var(--space-4)} .control-row{display:grid;gap:var(--space-2)} label,legend{font-size:var(--text-sm);font-weight:700}
+textarea,select,input[type="text"]{width:100%;padding:0.9rem 1rem;border-radius:var(--radius-md);border:1px solid color-mix(in srgb,var(--color-text) 12%,transparent);background:var(--color-surface-2)} textarea{min-height:10rem}
+.field-hint{font-size:var(--text-xs);color:var(--color-text-muted)} .segmented{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-2)}
+.segmented button{padding:0.85rem 1rem;border-radius:var(--radius-md);border:1px solid color-mix(in srgb,var(--color-text) 12%,transparent);background:var(--color-surface-2);text-align:left}
+.segmented button strong{display:block;font-size:var(--text-sm)} .segmented button span{display:block;font-size:var(--text-xs);color:var(--color-text-muted)} .segmented button.active{background:var(--color-primary-highlight);border-color:color-mix(in srgb,var(--color-primary) 35%, transparent)}
+.button-row{display:flex;flex-wrap:wrap;gap:var(--space-3)} .btn{min-height:44px;padding:0.9rem 1.1rem;border-radius:var(--radius-md);font-weight:700;border:1px solid transparent}
+.btn-primary{background:var(--color-primary);color:white}.btn-primary:hover{background:var(--color-primary-hover)} .btn-secondary{background:var(--color-surface-2);border-color:color-mix(in srgb,var(--color-text) 12%,transparent)} .btn-danger{background:color-mix(in srgb,var(--color-error) 14%, var(--color-surface-2));color:var(--color-error);border-color:color-mix(in srgb,var(--color-error) 22%,transparent)}
+.status{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;font-size:var(--text-sm);color:var(--color-text-muted)} .badge{display:inline-flex;align-items:center;gap:var(--space-2);padding:0.35rem 0.7rem;border-radius:var(--radius-full);background:var(--color-surface-offset);font-size:var(--text-xs);font-weight:700}
+.badge-dot{width:.55rem;height:.55rem;border-radius:50%;background:var(--color-text-faint)} .badge.ok .badge-dot{background:var(--color-success)} .badge.warn .badge-dot{background:var(--color-error)}
+.meters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)} .meter{padding:var(--space-3);background:var(--color-surface-2);border-radius:var(--radius-md);border:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)} .meter strong{display:block;font-size:var(--text-lg)} .meter span{font-size:var(--text-xs);color:var(--color-text-muted)}
+.output{padding:var(--space-4);display:grid;gap:var(--space-4)} .text-card{display:grid;gap:var(--space-2)} .text-card header{display:flex;justify-content:space-between;align-items:center;gap:var(--space-3)} .text-card h3{font-size:var(--text-lg)} .actions-inline{display:flex;gap:var(--space-2);flex-wrap:wrap}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--text-sm)} .footer-note{padding:0 var(--space-4) var(--space-4);font-size:var(--text-xs);color:var(--color-text-muted)} .hidden{display:none !important}
+progress{width:100%;height:0.75rem;border:none;border-radius:var(--radius-full);overflow:hidden;background:var(--color-surface-offset)} progress::-webkit-progress-bar{background:var(--color-surface-offset)} progress::-webkit-progress-value{background:var(--color-primary);border-radius:var(--radius-full)} progress::-moz-progress-bar{background:var(--color-primary)}
+@media (min-width: 920px){.layout{grid-template-columns:1.08fr .92fr;align-items:start}.hero{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-label="Voice Refiner logo">
+          <path d="M24 7c4.4 0 8 3.6 8 8v9c0 4.4-3.6 8-8 8s-8-3.6-8-8v-9c0-4.4 3.6-8 8-8Z"/>
+          <path d="M10 22c0 7.7 6.3 14 14 14s14-6.3 14-14"/><path d="M24 36v6"/><path d="M17 42h14"/><path d="M35 13l6-6"/>
+        </svg>
+      </div>
+      <div><h1>Voice Refiner</h1><p>Record, transcribe, and polish spoken notes locally in the browser.</p></div>
+    </div>
+    <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch theme"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+  </header>
+  <main id="main" class="layout">
+    <section class="panel hero">
+      <div class="hero-copy">
+        <span class="kicker">Speech → draft → refined text</span>
+        <h2>Turn a rough voice message into something clean, concise, and ready to send.</h2>
+        <p>The app captures a spoken draft with the browser speech API, then asks WebLLM to rewrite it in your chosen tone. Use the lite model for quick cleanup or the deep model for stronger edits.</p>
+      </div>
+      <div class="meters" aria-label="Prototype highlights">
+        <div class="meter"><strong>Fast pass</strong><span>Lightweight rewrite for quick notes, reminders, and short replies.</span></div>
+        <div class="meter"><strong>Deep pass</strong><span>Heavier model for emails, summaries, and more nuanced restructuring.</span></div>
+      </div>
+    </section>
+    <section class="panel controls" aria-labelledby="input-title">
+      <div class="control-row"><h2 id="input-title" style="font-size:var(--text-lg)">Capture</h2><p class="field-hint">Best in Chromium browsers with microphone permission and WebGPU enabled.</p></div>
+      <div class="control-row"><label for="intent">Refinement goal</label><select id="intent"><option value="professional">Professional message</option><option value="friendly">Friendly message</option><option value="concise">Concise summary</option><option value="structured">Structured notes</option><option value="custom">Custom instruction</option></select></div>
+      <div class="control-row" id="customWrap"><label for="customInstruction">Custom instruction</label><input id="customInstruction" type="text" placeholder="Example: Rewrite as a crisp follow-up email with a warm tone"></div>
+      <fieldset class="control-row"><legend>Model depth</legend><div class="segmented" role="tablist" aria-label="Model depth"><button type="button" class="active" data-mode="lite" role="tab" aria-selected="true"><strong>Lite</strong><span>Lower memory, faster first response</span></button><button type="button" data-mode="deep" role="tab" aria-selected="false"><strong>Deep</strong><span>Heavier but better at restructuring</span></button></div></fieldset>
+      <div class="control-row"><label for="draftText">Draft transcript</label><textarea id="draftText" placeholder="Your live transcript or pasted rough draft appears here"></textarea></div>
+      <div class="button-row"><button class="btn btn-primary" id="recordBtn" type="button">Start recording</button><button class="btn btn-secondary" id="stopBtn" type="button" disabled>Stop</button><button class="btn btn-secondary" id="refineBtn" type="button">Refine text</button><button class="btn btn-danger" id="clearBtn" type="button">Clear</button></div>
+      <div class="status" aria-live="polite"><span class="badge" id="micBadge"><span class="badge-dot"></span><span id="micState">Mic idle</span></span><span class="badge" id="llmBadge"><span class="badge-dot"></span><span id="llmState">Model not loaded</span></span><span class="badge" id="gpuBadge"><span class="badge-dot"></span><span id="gpuState">Checking WebGPU</span></span></div>
+      <div class="control-row"><label for="loadProgress">Model load progress</label><progress id="loadProgress" max="100" value="0"></progress><div class="field-hint" id="progressText">No model loading yet.</div></div>
+    </section>
+    <section class="panel output" aria-labelledby="output-title">
+      <div class="text-card"><header><h2 id="output-title">Refined output</h2><div class="actions-inline"><button class="btn btn-secondary" type="button" id="copyBtn">Copy</button><button class="btn btn-secondary" type="button" id="swapBtn">Use as draft</button></div></header><textarea id="refinedText" placeholder="The polished version will appear here"></textarea></div>
+      <div class="text-card"><header><h3>Prompt preview</h3></header><div class="panel" style="padding:var(--space-3);background:var(--color-surface-2);border-radius:var(--radius-md);box-shadow:none"><p id="promptPreview" class="mono"></p></div></div>
+      <div class="text-card"><header><h3>Notes</h3></header><ul style="display:grid;gap:var(--space-2);padding-left:1.1rem;color:var(--color-text-muted)"><li>Speech recognition quality depends on the browser engine and language pack.</li><li>The refinement step runs fully in-browser through WebLLM once the model is downloaded.</li><li>Deep models can take several gigabytes of GPU memory; keep the lite option as the default path.</li></ul></div>
+    </section>
+  </main>
+  <p class="footer-note">Keyboard shortcuts: R to record or stop, Cmd/Ctrl + Enter to refine, Esc to stop recording.</p>
+</div>
+<script type="module">
+import * as webllm from 'https://esm.run/@mlc-ai/web-llm';
+const state = {
+  recognition: null,
+  isRecording: false,
+  recognitionStarting: false,
+  transcriptFinal: '',
+  transcriptInterim: '',
+  modelMode: 'lite',
+  engine: null,
+  loadedModelId: '',
+  loadingModel: false,
+  selectedTheme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+  models: {
+    lite: { id: 'Llama-3.2-1B-Instruct-q4f32_1-MLC', label: 'Llama 3.2 1B', note: 'good default for low-memory devices' },
+    deep: { id: 'Qwen3-8B-q4f16_1-MLC', label: 'Qwen3 8B', note: 'better restructuring but much heavier' }
+  }
+};
+const el = {
+  draftText: document.getElementById('draftText'), refinedText: document.getElementById('refinedText'), recordBtn: document.getElementById('recordBtn'), stopBtn: document.getElementById('stopBtn'), refineBtn: document.getElementById('refineBtn'), clearBtn: document.getElementById('clearBtn'), copyBtn: document.getElementById('copyBtn'), swapBtn: document.getElementById('swapBtn'), intent: document.getElementById('intent'), customWrap: document.getElementById('customWrap'), customInstruction: document.getElementById('customInstruction'), loadProgress: document.getElementById('loadProgress'), progressText: document.getElementById('progressText'), micState: document.getElementById('micState'), llmState: document.getElementById('llmState'), gpuState: document.getElementById('gpuState'), micBadge: document.getElementById('micBadge'), llmBadge: document.getElementById('llmBadge'), gpuBadge: document.getElementById('gpuBadge'), promptPreview: document.getElementById('promptPreview'), themeToggle: document.querySelector('[data-theme-toggle]'), modeButtons: Array.from(document.querySelectorAll('[data-mode]'))
+};
+document.documentElement.setAttribute('data-theme', state.selectedTheme); updateThemeIcon(); updateCustomVisibility(); updatePromptPreview(); checkCapabilities(); setupSpeechRecognition(); wireEvents();
+function wireEvents(){ el.intent.addEventListener('change',()=>{updateCustomVisibility();updatePromptPreview();}); el.customInstruction.addEventListener('input',updatePromptPreview); el.draftText.addEventListener('input',updatePromptPreview); el.recordBtn.addEventListener('click',toggleRecording); el.stopBtn.addEventListener('click',stopRecording); el.refineBtn.addEventListener('click',refineDraft); el.clearBtn.addEventListener('click',clearAll); el.copyBtn.addEventListener('click',copyOutput); el.swapBtn.addEventListener('click',()=>{ if(!el.refinedText.value.trim()) return; el.draftText.value=el.refinedText.value.trim(); updatePromptPreview(); }); el.themeToggle.addEventListener('click',toggleTheme); el.modeButtons.forEach(btn=>btn.addEventListener('click',()=>setMode(btn.dataset.mode))); document.addEventListener('keydown',onKeydown); }
+function onKeydown(event){ if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){ event.preventDefault(); refineDraft(); } if(event.key.toLowerCase()==='r'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){ event.preventDefault(); toggleRecording(); } if(event.key==='Escape'&&(state.isRecording||state.recognitionStarting)){ stopRecording(); } }
+function toggleTheme(){ state.selectedTheme=state.selectedTheme==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme',state.selectedTheme); updateThemeIcon(); }
+function updateThemeIcon(){ const dark=state.selectedTheme==='dark'; el.themeToggle.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode'); el.themeToggle.innerHTML=dark?'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'; }
+function setMode(mode){ state.modelMode=mode; el.modeButtons.forEach(btn=>{ const active=btn.dataset.mode===mode; btn.classList.toggle('active',active); btn.setAttribute('aria-selected',String(active)); }); setLlmStatus(`Selected ${state.models[mode].label}`,'ok'); updatePromptPreview(); }
+function checkCapabilities(){ const hasWebGPU='gpu' in navigator; setBadge(el.gpuBadge,hasWebGPU?'ok':'warn'); el.gpuState.textContent=hasWebGPU?'WebGPU available':'WebGPU missing'; }
+function setupSpeechRecognition(){ const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SpeechRecognition){ setMicStatus('Speech recognition unavailable in this browser','warn'); el.recordBtn.disabled=true; return; } const recognition=new SpeechRecognition(); recognition.continuous=true; recognition.interimResults=true; recognition.lang='en-US'; recognition.onstart=()=>{ state.recognitionStarting=false; state.isRecording=true; el.recordBtn.textContent='Recording…'; el.stopBtn.disabled=false; setMicStatus('Listening','ok'); }; recognition.onend=()=>{ state.recognitionStarting=false; state.isRecording=false; el.recordBtn.textContent='Start recording'; el.stopBtn.disabled=true; setMicStatus('Mic idle',''); }; recognition.onerror=(event)=>{ state.recognitionStarting=false; if(event.error==='aborted'){ setMicStatus('Recording stopped',''); return; } setMicStatus(`Mic error: ${event.error}`,'warn'); }; recognition.onresult=(event)=>{ let interim=''; for(let i=event.resultIndex;i<event.results.length;i+=1){ const result=event.results[i]; const text=result[0].transcript; if(result.isFinal){ state.transcriptFinal+=(state.transcriptFinal?' ':'')+text.trim(); } else { interim+=text; } } state.transcriptInterim=interim.trim(); el.draftText.value=[state.transcriptFinal,state.transcriptInterim].filter(Boolean).join(' ').trim(); updatePromptPreview(); }; state.recognition=recognition; setMicStatus('Mic ready','ok'); }
+function toggleRecording(){ if(state.isRecording||state.recognitionStarting){ stopRecording(); return; } if(!state.recognition) return; state.transcriptInterim=''; state.recognitionStarting=true; el.recordBtn.textContent='Starting…'; el.stopBtn.disabled=false; setMicStatus('Starting microphone…',''); try { state.recognition.start(); } catch(error){ state.recognitionStarting=false; el.recordBtn.textContent='Start recording'; el.stopBtn.disabled=true; if(error?.name==='InvalidStateError'){ setMicStatus('Mic is already active','warn'); return; } setMicStatus(error.message||'Could not start microphone','warn'); } }
+function stopRecording(){ if(!state.recognition) return; if(state.recognitionStarting||state.isRecording){ state.recognitionStarting=false; try { state.recognition.stop(); setMicStatus('Stopping microphone…',''); } catch(error){ if(error?.name!=='InvalidStateError'){ setMicStatus(error.message||'Could not stop microphone','warn'); } } } }
+function clearAll(){ state.transcriptFinal=''; state.transcriptInterim=''; el.draftText.value=''; el.refinedText.value=''; updatePromptPreview(); }
+function updateCustomVisibility(){ const custom=el.intent.value==='custom'; el.customWrap.classList.toggle('hidden',!custom); }
+function buildInstruction(){ const map={ professional:'Rewrite the transcript as a professional message. Fix grammar, remove filler words, keep the meaning, and keep it natural.', friendly:'Rewrite the transcript as a friendly, polished message. Keep it warm, clear, and concise.', concise:'Rewrite the transcript into a concise summary with only the key points.', structured:'Rewrite the transcript as structured notes with a short title and bullet points.' }; if(el.intent.value==='custom'){ return el.customInstruction.value.trim()||'Rewrite the transcript clearly and naturally.'; } return map[el.intent.value]; }
+function buildMessages(){ const instruction=buildInstruction(); const draft=el.draftText.value.trim(); return [{ role:'system', content:'You refine rough speech transcripts into clean, useful text. Preserve meaning, remove repetition and filler words, do not invent facts, and output only the final refined text unless the user explicitly asks for structure.' }, { role:'user', content:`Instruction: ${instruction}\n\nTranscript:\n${draft}` }]; }
+function updatePromptPreview(){ const draft=el.draftText.value.trim()||'[waiting for transcript]'; el.promptPreview.textContent=`Model: ${state.models[state.modelMode].id}\nInstruction: ${buildInstruction()}\nTranscript: ${draft.slice(0,280)}${draft.length>280?'…':''}`; }
+async function ensureModel(){ const targetModelId=state.models[state.modelMode].id; if(state.engine&&state.loadedModelId===targetModelId) return state.engine; if(state.loadingModel) throw new Error('A model is already loading.'); state.loadingModel=true; el.loadProgress.value=0; setLlmStatus(`Loading ${targetModelId}`,''); try { const engine=await webllm.CreateMLCEngine(targetModelId,{ initProgressCallback:(report)=>{ const progress=typeof report.progress==='number'?Math.round(report.progress*100):0; el.loadProgress.value=progress; el.progressText.textContent=report.text||`Loading ${progress}%`; } }); state.engine=engine; state.loadedModelId=targetModelId; setLlmStatus(`Loaded ${targetModelId}`,'ok'); return engine; } finally { state.loadingModel=false; } }
+async function refineDraft(){ const draft=el.draftText.value.trim(); if(!draft){ setLlmStatus('Add or record a draft first','warn'); el.draftText.focus(); return; } el.refineBtn.disabled=true; el.refineBtn.textContent='Refining…'; el.refinedText.value=''; updatePromptPreview(); try { const engine=await ensureModel(); const stream=await engine.chat.completions.create({ messages:buildMessages(), temperature:0.2, stream:true }); let output=''; for await (const chunk of stream){ output+=chunk.choices?.[0]?.delta?.content||''; el.refinedText.value=output.trimStart(); } setLlmStatus(`Done with ${state.models[state.modelMode].label}`,'ok'); } catch(error){ console.error(error); setLlmStatus(error.message||'Refinement failed','warn'); } finally { el.refineBtn.disabled=false; el.refineBtn.textContent='Refine text'; } }
+async function copyOutput(){ const text=el.refinedText.value.trim(); if(!text) return; try { await navigator.clipboard.writeText(text); setLlmStatus('Refined text copied','ok'); } catch { setLlmStatus('Clipboard copy failed','warn'); } }
+function setMicStatus(text,tone){ el.micState.textContent=text; setBadge(el.micBadge,tone); }
+function setLlmStatus(text,tone){ el.llmState.textContent=text; setBadge(el.llmBadge,tone); }
+function setBadge(node,tone){ node.classList.remove('ok','warn'); if(tone) node.classList.add(tone); }
+</script>
+</body>
+</html>
