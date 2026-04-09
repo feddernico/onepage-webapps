@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Gemma 4 Browser Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 860px; margin: 40px auto; padding: 0 16px; }
+    textarea { width: 100%; }
+    #loaderWrap { margin: 16px 0; }
+    #statusText { font-size: 14px; margin-bottom: 8px; color: #333; }
+    #barOuter {
+      width: 100%;
+      height: 12px;
+      background: #e8e8e8;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    #barInner {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #4f46e5, #06b6d4);
+      transition: width 0.15s ease;
+    }
+    #barMeta { margin-top: 8px; font-size: 13px; color: #555; }
+    pre {
+      white-space: pre-wrap;
+      background: #111;
+      color: #f5f5f5;
+      padding: 12px;
+      border-radius: 8px;
+      min-height: 140px;
+    }
+  </style>
+</head>
+<body>
+  <textarea id="prompt" rows="6">Rewrite this note clearly and professionally.</textarea>
+  <button id="run">Generate</button>
+
+  <div id="loaderWrap">
+    <div id="statusText">Idle</div>
+    <div id="barOuter"><div id="barInner"></div></div>
+    <div id="barMeta">0%</div>
+  </div>
+
+  <pre id="out"></pre>
+
+  <script type="module">
+    import {
+      AutoProcessor,
+      Gemma4ForConditionalGeneration,
+      TextStreamer,
+      env
+    } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers/dist/transformers.min.js";
+
+    const modelId = "onnx-community/gemma-4-E2B-it-ONNX";
+
+    const out = document.getElementById("out");
+    const btn = document.getElementById("run");
+    const promptEl = document.getElementById("prompt");
+    const statusText = document.getElementById("statusText");
+    const barInner = document.getElementById("barInner");
+    const barMeta = document.getElementById("barMeta");
+
+    env.allowLocalModels = false;
+    env.useBrowserCache = true;
+
+    const device = ("gpu" in navigator) ? "webgpu" : null;
+
+    let processorPromise;
+    let modelPromise;
+
+    function setProgress(pct, label, meta = "") {
+      const clamped = Math.max(0, Math.min(100, pct || 0));
+      barInner.style.width = clamped + "%";
+      statusText.textContent = label;
+      barMeta.textContent = meta || `${clamped}%`;
+    }
+
+    function makeProgressHandler(stage) {
+      return (info) => {
+        if (!info) return;
+
+        if (info.status === "initiate") {
+          setProgress(0, `${stage}: starting`, info.file || "Preparing download...");
+          return;
+        }
+
+        if (info.status === "progress") {
+          const pct = info.total ? Math.round((info.loaded / info.total) * 100) : 0;
+          const file = info.file ? `File: ${info.file}` : "Downloading...";
+          const bytes = info.total
+            ? `${(info.loaded / 1e6).toFixed(1)} / ${(info.total / 1e6).toFixed(1)} MB`
+            : `${(info.loaded / 1e6).toFixed(1)} MB`;
+          setProgress(pct, `${stage}: downloading`, `${file} — ${bytes} — ${pct}%`);
+          return;
+        }
+
+        if (info.status === "done") {
+          setProgress(100, `${stage}: downloaded`, info.file || "Done");
+          return;
+        }
+
+        if (info.status === "ready") {
+          setProgress(100, `${stage}: ready`, "Loaded from cache or fully initialized");
+          return;
+        }
+
+        if (info.status === "progress_total") {
+          const pct = Math.round((info.progress || 0) * 100);
+          setProgress(pct, `${stage}: loading`, `${pct}% total`);
+        }
+      };
+    }
+
+    async function loadModel() {
+      if (!device) {
+        throw new Error("WebGPU not available in this browser.");
+      }
+
+      if (!processorPromise) {
+        processorPromise = AutoProcessor.from_pretrained(modelId, {
+          progress_callback: makeProgressHandler("Processor")
+        });
+      }
+
+      if (!modelPromise) {
+        modelPromise = Gemma4ForConditionalGeneration.from_pretrained(modelId, {
+          device,
+          dtype: "q4f16",
+          progress_callback: makeProgressHandler("Model")
+        });
+      }
+
+      return Promise.all([processorPromise, modelPromise]);
+    }
+
+    async function run() {
+      btn.disabled = true;
+      out.textContent = "";
+      setProgress(0, "Starting", "Loading processor and model...");
+
+      try {
+        const [processor, model] = await loadModel();
+
+        setProgress(100, "Generating", "Model loaded. Running inference...");
+
+        const messages = [
+          {
+            role: "user",
+            content: [{ type: "text", text: promptEl.value }]
+          }
+        ];
+
+        const chat = processor.apply_chat_template(messages, {
+          add_generation_prompt: true,
+          enable_thinking: false
+        });
+
+        const inputs = await processor(chat, null, null, {
+          add_special_tokens: false
+        });
+
+        out.textContent = "";
+
+        const streamer = new TextStreamer(processor.tokenizer, {
+          skip_prompt: true,
+          skip_special_tokens: true,
+          callback_function: (text) => {
+            out.textContent += text;
+          }
+        });
+
+        await model.generate({
+          ...inputs,
+          max_new_tokens: 200,
+          do_sample: false,
+          streamer
+        });
+
+        setProgress(100, "Complete", "Generation finished");
+      } catch (err) {
+        setProgress(0, "Error", err.message || String(err));
+        out.textContent = err.message || String(err);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    btn.addEventListener("click", run);
+  </script>
+</body>
+</html>
