@@ -3,140 +3,1260 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Song Memories Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <!-- Leaflet CSS -->
+  <title>Song Memory Atlas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  
   <style>
+    :root {
+      --bg: #f3efe7;
+      --panel: rgba(255, 250, 242, 0.88);
+      --panel-strong: #fffaf2;
+      --text: #241b16;
+      --muted: #6d5d52;
+      --line: rgba(68, 46, 32, 0.16);
+      --accent: #cb5f34;
+      --accent-deep: #9f3f19;
+      --accent-soft: #f2cfbb;
+      --shadow: 0 18px 48px rgba(62, 38, 26, 0.12);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f7f7f7;
+      height: 100vh;
+      overflow: hidden;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(203, 95, 52, 0.18), transparent 24%),
+        radial-gradient(circle at top right, rgba(48, 119, 104, 0.12), transparent 20%),
+        linear-gradient(180deg, #f7f2ea 0%, #efe4d5 100%);
     }
-    
-    header {
-      padding: 16px;
-      background: #111;
-      color: #fff;
+
+    .shell {
+      position: relative;
+      min-height: 100vh;
     }
-    
-    header h1 {
+
+    .sidebar {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      bottom: 20px;
+      z-index: 600;
+      width: min(440px, calc(100vw - 40px));
+      padding: 20px;
+      background: transparent;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(95, 62, 42, 0.12);
+      border-radius: 28px 0 0 28px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      box-shadow: 0 22px 60px rgba(41, 25, 17, 0.18);
+    }
+
+    .hero {
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(145deg, rgba(255, 248, 239, 0.94), rgba(251, 239, 224, 0.82)),
+        linear-gradient(145deg, rgba(203, 95, 52, 0.08), rgba(159, 63, 25, 0.03));
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(95, 62, 42, 0.08);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 11px;
+      color: var(--accent-deep);
+    }
+
+    h1 {
       margin: 0;
-      font-size: 20px;
+      font-size: clamp(32px, 4vw, 44px);
+      line-height: 0.94;
+      font-weight: 600;
     }
-    
-    .controls {
-      display: flex;
-      gap: 8px;
-      padding: 12px;
-      background: #fff;
-      border-bottom: 1px solid #ddd;
-      flex-wrap: wrap;
+
+    .subtitle {
+      margin: 16px 0 0;
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--muted);
     }
-    
-    .controls input {
-      flex: 1;
+
+    .status,
+    .spotify-note {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .status {
+      min-height: 47px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(95, 62, 42, 0.08);
+      color: var(--muted);
+    }
+
+    .status[data-tone="success"] {
+      color: #245949;
+      border-color: rgba(36, 89, 73, 0.18);
+      background: rgba(232, 247, 241, 0.92);
+    }
+
+    .status[data-tone="error"] {
+      color: #7b2d17;
+      border-color: rgba(123, 45, 23, 0.16);
+      background: rgba(252, 236, 229, 0.96);
+    }
+
+    .spotify-note {
+      background: rgba(203, 95, 52, 0.08);
+      border: 1px solid rgba(203, 95, 52, 0.14);
+      color: var(--muted);
+    }
+
+    .panel {
+      margin-top: 22px;
+      padding: 22px;
+      border-radius: var(--radius-lg);
+      background: var(--panel-strong);
+      border: 1px solid rgba(95, 62, 42, 0.08);
+      box-shadow: var(--shadow);
+    }
+
+    .panel h2 {
+      margin: 0 0 4px;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .panel-intro {
+      margin: 0 0 18px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .field-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid rgba(93, 66, 49, 0.16);
+      border-radius: 14px;
+      background: #fffdf9;
+      color: var(--text);
+      padding: 12px 14px;
+      font: inherit;
+      transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: rgba(203, 95, 52, 0.7);
+      box-shadow: 0 0 0 4px rgba(203, 95, 52, 0.12);
+      transform: translateY(-1px);
+    }
+
+    textarea {
+      min-height: 104px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .autocomplete {
+      position: relative;
+    }
+
+    .suggestions {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      z-index: 50;
+      display: none;
+      margin: 0;
       padding: 8px;
-      font-size: 14px;
+      list-style: none;
+      border-radius: 16px;
+      border: 1px solid rgba(93, 66, 49, 0.14);
+      background: rgba(255, 252, 247, 0.98);
+      box-shadow: 0 16px 36px rgba(62, 38, 26, 0.14);
+      backdrop-filter: blur(8px);
     }
-    
-    .controls button {
-      padding: 8px 12px;
-      font-size: 14px;
+
+    .suggestions.is-visible {
+      display: block;
+    }
+
+    .suggestion-btn {
+      width: 100%;
+      padding: 10px 12px;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      line-height: 1.4;
+      text-align: left;
       cursor: pointer;
     }
-    
+
+    .suggestion-btn:hover,
+    .suggestion-btn:focus-visible {
+      outline: none;
+      background: rgba(203, 95, 52, 0.1);
+    }
+
+    .field-help {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .label-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+
+    .tooltip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .tooltip-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      border: 1px solid rgba(93, 66, 49, 0.18);
+      background: rgba(255, 252, 247, 0.9);
+      color: var(--accent-deep);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: help;
+    }
+
+    .tooltip-content {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      z-index: 70;
+      width: min(220px, calc(100vw - 88px));
+      max-width: calc(100vw - 88px);
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(93, 66, 49, 0.14);
+      background: rgba(36, 27, 22, 0.94);
+      color: rgba(255, 247, 240, 0.94);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+      box-shadow: 0 14px 28px rgba(41, 25, 17, 0.18);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 160ms ease, visibility 160ms ease;
+    }
+
+    .tooltip:hover .tooltip-content,
+    .tooltip:focus-within .tooltip-content {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    select {
+      width: 100%;
+      border: 1px solid rgba(93, 66, 49, 0.16);
+      border-radius: 14px;
+      background: #fffdf9;
+      color: var(--text);
+      padding: 12px 14px;
+      font: inherit;
+      transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: rgba(203, 95, 52, 0.7);
+      box-shadow: 0 0 0 4px rgba(203, 95, 52, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .inline-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .primary-btn {
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      box-shadow: 0 14px 30px rgba(159, 63, 25, 0.26);
+    }
+
+    .secondary-btn {
+      color: var(--text);
+      background: rgba(96, 69, 51, 0.08);
+      border: 1px solid rgba(96, 69, 51, 0.12);
+    }
+
+    .list-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .list-head p {
+      margin: 0;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .count-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(203, 95, 52, 0.1);
+      color: var(--accent-deep);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .memory-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .memory-card,
+    .empty-state {
+      border-radius: 18px;
+      border: 1px solid rgba(95, 62, 42, 0.08);
+      background: rgba(255, 255, 255, 0.8);
+      padding: 18px;
+    }
+
+    .memory-card {
+      box-shadow: 0 10px 30px rgba(77, 51, 38, 0.08);
+    }
+
+    .memory-card h3 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.15;
+    }
+
+    .memory-meta {
+      margin: 10px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .memory-copy {
+      margin: 14px 0 0;
+      display: grid;
+      gap: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .memory-copy p {
+      margin: 0;
+    }
+
+    .tagline {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent-deep);
+    }
+
+    .memory-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .link-btn,
+    .ghost-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .link-btn {
+      color: white;
+      background: linear-gradient(135deg, #1db954, #168f41);
+    }
+
+    .ghost-btn {
+      color: var(--text);
+      background: rgba(91, 67, 51, 0.08);
+      border: 1px solid rgba(91, 67, 51, 0.12);
+    }
+
+    .empty-state {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .map-shell {
+      position: relative;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
     #map {
-      height: calc(100vh - 130px);
+      height: 100%;
       width: 100%;
     }
-    
-    .hint {
-      padding: 8px 12px;
-      font-size: 12px;
-      color: #666;
-      background: #fafafa;
-      border-top: 1px solid #eee;
+
+    .map-overlay {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 500;
+      max-width: 320px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(31, 22, 18, 0.78);
+      color: rgba(255, 247, 240, 0.92);
+      backdrop-filter: blur(10px);
+    }
+
+    .map-overlay h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .map-overlay p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 16px;
+    }
+
+    .leaflet-popup-content {
+      margin: 14px 16px;
+      min-width: 240px;
+      max-width: 280px;
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.5;
+    }
+
+    .popup-title {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .popup-meta,
+    .popup-copy {
+      margin: 0 0 10px;
+      color: #59493f;
+      font-size: 13px;
+    }
+
+    .popup-copy:last-child {
+      margin-bottom: 0;
+    }
+
+    .spotify-embed {
+      display: block;
+      width: 100%;
+      height: 152px;
+      margin-top: 12px;
+      border: 0;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    @media (max-width: 1100px) {
+      .sidebar {
+        width: min(420px, calc(100vw - 32px));
+      }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+      }
+
+      .shell {
+        display: block;
+      }
+
+      .sidebar {
+        position: relative;
+        top: auto;
+        left: auto;
+        bottom: auto;
+        width: calc(100vw - 24px);
+        margin: 5px;
+        padding: 16px;
+        border-radius: 22px;
+      }
+
+      .tooltip-content {
+        width: min(220px, calc(100vw - 64px));
+        max-width: calc(100vw - 64px);
+      }
+
+      .map-overlay {
+        left: 12px;
+        right: 12px;
+        max-width: none;
+      }
+
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero,
+      .panel {
+        padding: 18px;
+      }
+
+      .map-shell {
+        height: 72vh;
+        min-height: 480px;
+      }
     }
   </style>
 </head>
 
 <body>
-  
-  <header>
-    <h1>🎵 Song Memories Map</h1>
-  </header>
-  
-  <div class="controls">
-    <input id="songInput" type="text" placeholder="Song (e.g. 'Yellow – Coldplay')" />
-    <input id="placeInput" type="text" placeholder="Place (e.g. 'Paris')" />
-    <button id="searchBtn">Pin Memory</button>
+  <div class="shell">
+    <main class="map-shell">
+      <div id="map"></div>
+      <div class="map-overlay">
+        <h2>Places that still sound familiar</h2>
+        <p>
+          Every pin holds a place, a song, and the moment that glued them together. Your memories stay in this
+          browser through local storage.
+        </p>
+      </div>
+    </main>
+
+    <aside class="sidebar">
+      <section class="hero">
+        <p class="eyebrow">A personal music map</p>
+        <h1>Song Memory Atlas</h1>
+        <p class="subtitle">
+          Save the song, the place, and the small story around it. Each memory becomes a pin on the map and a page in
+          your own listening diary.
+        </p>
+        <div id="statusMessage" class="status" data-tone="neutral">
+          Add your first memory to begin building the map.
+        </div>
+        <div class="spotify-note">
+          Spotify is not connected yet, so this version accepts an optional Spotify track link. That keeps the flow
+          useful now and leaves room for a future real integration.
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Add a memory</h2>
+        <p class="panel-intro">
+          Describe the song in your own words, note where you were, and capture what was happening around you.
+        </p>
+
+        <form id="memoryForm">
+          <div class="field-grid">
+            <label>
+              Song title
+              <input id="songInput" name="song" type="text" placeholder="Yellow" required />
+            </label>
+
+            <label>
+              Artist
+              <input id="artistInput" name="artist" type="text" placeholder="Coldplay" required />
+            </label>
+          </div>
+
+          <div class="field-grid">
+            <label class="autocomplete">
+              Place
+              <input id="placeInput" name="place" type="text" placeholder="Paris, near Canal Saint-Martin" required />
+              <ul id="placeSuggestions" class="suggestions" aria-label="Place suggestions"></ul>
+            </label>
+
+            <label class="field-stack">
+              <span class="label-row">
+                <span>When</span>
+                <span class="tooltip">
+                  <span class="tooltip-trigger" tabindex="0" aria-label="When field help">i</span>
+                  <span class="tooltip-content">
+                    Use an exact date when you know it, or switch to month and year for vaguer memories.
+                  </span>
+                </span>
+              </span>
+              <select id="whenModeSelect" name="whenMode" aria-label="When precision">
+                <option value="date">Exact date</option>
+                <option value="month">Month and year</option>
+              </select>
+              <input id="whenInput" name="whenValue" type="date" />
+            </label>
+          </div>
+
+          <label>
+            Song description
+            <textarea id="songDescriptionInput" name="songDescription"
+              placeholder="What does the song sound like or feel like to you?" required></textarea>
+          </label>
+
+          <label>
+            What were you doing?
+            <textarea id="activityInput" name="activity"
+              placeholder="A couple of sentences about what was happening when you were listening to it." required></textarea>
+          </label>
+
+          <label>
+            Spotify link (optional)
+            <input id="spotifyUrlInput" name="spotifyUrl" type="url"
+              placeholder="https://open.spotify.com/track/..." />
+          </label>
+
+          <div class="inline-actions">
+            <button id="searchSpotifyBtn" class="secondary-btn" type="button">🔍︎ Spotify</button>
+            <button class="primary-btn" type="submit">📌 Add</button>
+            <button id="clearFormBtn" class="secondary-btn" type="button">Clear</button>
+          </div>
+
+          <div class="actions">
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="list-head">
+          <div>
+            <h2>Memory collection</h2>
+            <p>Tap a card to jump to its place on the map.</p>
+          </div>
+          <div id="memoryCount" class="count-pill">0 memories</div>
+        </div>
+        <div id="memoryList" class="memory-list"></div>
+      </section>
+    </aside>
   </div>
-  
-  <div id="map"></div>
-  
-  <div class="hint">
-    Enter a song and a place. We’ll drop a pin where you listened to it.
-  </div>
-  
-  <!-- Leaflet JS -->
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
   <script>
-    // Initialize map
-    const map = L.map("map").setView([20, 0], 2);
-    
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors"
+    const STORAGE_KEY = "song-memory-atlas";
+
+    const statusMessage = document.getElementById("statusMessage");
+    const memoryForm = document.getElementById("memoryForm");
+    const memoryList = document.getElementById("memoryList");
+    const memoryCount = document.getElementById("memoryCount");
+    const clearFormBtn = document.getElementById("clearFormBtn");
+    const searchSpotifyBtn = document.getElementById("searchSpotifyBtn");
+    const placeInput = document.getElementById("placeInput");
+    const placeSuggestions = document.getElementById("placeSuggestions");
+    const whenModeSelect = document.getElementById("whenModeSelect");
+    const whenInput = document.getElementById("whenInput");
+
+    const map = L.map("map", {
+      zoomControl: false
+    }).setView([20, 0], 2);
+
+    L.control.zoom({
+      position: "bottomright"
     }).addTo(map);
-    
-    let currentMarker = null;
-    
-    document.getElementById("searchBtn").addEventListener("click", async () => {
-      const song = document.getElementById("songInput").value.trim();
-      const place = document.getElementById("placeInput").value.trim();
-      
-      if (!song || !place) {
-        alert("Please enter both a song and a place.");
-        return;
-      }
-      
-      // Geocode place using Nominatim
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`;
-      
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (!data.length) {
-          alert("Place not found.");
-          return;
-        }
-        
-        const lat = data[0].lat;
-        const lon = data[0].lon;
-        
-        if (currentMarker) {
-          map.removeLayer(currentMarker);
-        }
-        
-        currentMarker = L.marker([lat, lon]).addTo(map);
-        currentMarker.bindPopup(
-          `<strong>🎧 Song:</strong> ${song}<br/>
-         <strong>📍 Place:</strong> ${place}`
-        ).openPopup();
-        
-        map.setView([lat, lon], 13);
-        
-      } catch (error) {
-        console.error(error);
-        alert("Something went wrong searching for the place.");
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    const markersLayer = L.layerGroup().addTo(map);
+
+    let memories = loadMemories();
+    let markerIndex = {};
+    let placeSuggestionTimer = null;
+    let activePlaceResults = [];
+    let selectedPlaceResult = null;
+
+    renderMemories();
+
+    memoryForm.addEventListener("submit", handleSubmit);
+    clearFormBtn.addEventListener("click", () => {
+      memoryForm.reset();
+      selectedPlaceResult = null;
+      hidePlaceSuggestions();
+      setStatus("Form cleared. Add a new memory whenever you are ready.");
+    });
+    searchSpotifyBtn.addEventListener("click", openDraftSpotifySearch);
+    placeInput.addEventListener("input", handlePlaceInput);
+    placeInput.addEventListener("focus", () => {
+      if (activePlaceResults.length > 0) {
+        showPlaceSuggestions();
       }
     });
+    whenModeSelect.addEventListener("change", syncWhenModeUI);
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".autocomplete")) {
+        hidePlaceSuggestions();
+      }
+    });
+
+    syncWhenModeUI();
+
+    function loadMemories() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+          return [];
+        }
+
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        console.error("Could not load saved memories.", error);
+        return [];
+      }
+    }
+
+    function saveMemories() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(memories));
+    }
+
+    function setStatus(message, tone = "neutral") {
+      statusMessage.textContent = message;
+      statusMessage.dataset.tone = tone;
+    }
+
+    async function handleSubmit(event) {
+      event.preventDefault();
+
+      const formData = new FormData(memoryForm);
+      const whenMode = String(formData.get("whenMode") || "date");
+      const draft = {
+        song: String(formData.get("song") || "").trim(),
+        artist: String(formData.get("artist") || "").trim(),
+        place: String(formData.get("place") || "").trim(),
+        songDescription: String(formData.get("songDescription") || "").trim(),
+        activity: String(formData.get("activity") || "").trim(),
+        spotifyUrl: String(formData.get("spotifyUrl") || "").trim()
+      };
+      const whenInfo = buildWhenInfo(whenMode, String(formData.get("whenValue") || "").trim());
+
+      if (!draft.song || !draft.artist || !draft.place || !whenInfo.label || !draft.songDescription || !draft.activity) {
+        setStatus("Fill in every required field before pinning the memory.", "error");
+        return;
+      }
+
+      if (draft.spotifyUrl && !isValidUrl(draft.spotifyUrl)) {
+        setStatus("The Spotify link does not look valid yet. Paste the full URL or leave it blank.", "error");
+        return;
+      }
+
+      setStatus("Looking up the place and preparing your memory pin...");
+
+      try {
+        const location = await resolvePlace(draft.place);
+
+        const memory = {
+          id: createId(),
+          ...draft,
+          when: whenInfo.label,
+          whenMode: whenInfo.mode,
+          whenValue: whenInfo.rawValue,
+          latitude: Number(location.lat),
+          longitude: Number(location.lon),
+          label: location.display_name,
+          createdAt: new Date().toISOString()
+        };
+
+        memories.unshift(memory);
+        saveMemories();
+        renderMemories();
+        focusMemory(memory.id);
+        memoryForm.reset();
+        selectedPlaceResult = null;
+        hidePlaceSuggestions();
+        syncWhenModeUI();
+
+        setStatus(`Saved "${memory.song}" in ${memory.place}.`, "success");
+      } catch (error) {
+        console.error(error);
+        setStatus(error.message || "Something went wrong while searching for the place.", "error");
+      }
+    }
+
+    function openDraftSpotifySearch() {
+      const song = document.getElementById("songInput").value.trim();
+      const artist = document.getElementById("artistInput").value.trim();
+      const query = [song, artist].filter(Boolean).join(" ");
+
+      if (!query) {
+        setStatus("Add at least a song title or artist before searching on Spotify.", "error");
+        return;
+      }
+
+      window.open(createSpotifySearchUrl(query), "_blank", "noopener,noreferrer");
+      setStatus(`Opened Spotify search for "${query}".`, "success");
+    }
+
+    async function geocodePlace(place) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(place)}`;
+      const response = await fetch(url, {
+        headers: {
+          Accept: "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("The place lookup service is unavailable right now.");
+      }
+
+      const data = await response.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("Place not found. Try a more specific place name.");
+      }
+
+      return data[0];
+    }
+
+    async function fetchPlaceSuggestions(query) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`;
+      const response = await fetch(url, {
+        headers: {
+          Accept: "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Could not load place suggestions right now.");
+      }
+
+      return await response.json();
+    }
+
+    async function resolvePlace(place) {
+      if (selectedPlaceResult && selectedPlaceResult.display_name === place) {
+        return selectedPlaceResult;
+      }
+
+      return await geocodePlace(place);
+    }
+
+    function handlePlaceInput() {
+      const query = placeInput.value.trim();
+      selectedPlaceResult = null;
+
+      if (placeSuggestionTimer) {
+        window.clearTimeout(placeSuggestionTimer);
+      }
+
+      if (query.length < 3) {
+        activePlaceResults = [];
+        hidePlaceSuggestions();
+        return;
+      }
+
+      placeSuggestionTimer = window.setTimeout(async () => {
+        try {
+          const results = await fetchPlaceSuggestions(query);
+          if (placeInput.value.trim() !== query) {
+            return;
+          }
+
+          activePlaceResults = Array.isArray(results) ? results : [];
+          renderPlaceSuggestions(activePlaceResults);
+        } catch (error) {
+          console.error(error);
+          activePlaceResults = [];
+          hidePlaceSuggestions();
+        }
+      }, 280);
+    }
+
+    function renderPlaceSuggestions(results) {
+      placeSuggestions.innerHTML = "";
+
+      if (!results.length) {
+        hidePlaceSuggestions();
+        return;
+      }
+
+      results.forEach((result) => {
+        const item = document.createElement("li");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "suggestion-btn";
+        button.textContent = result.display_name;
+        button.addEventListener("click", () => {
+          placeInput.value = result.display_name;
+          selectedPlaceResult = result;
+          hidePlaceSuggestions();
+          setStatus(`Selected place: ${result.display_name}`);
+        });
+        item.appendChild(button);
+        placeSuggestions.appendChild(item);
+      });
+
+      showPlaceSuggestions();
+    }
+
+    function showPlaceSuggestions() {
+      placeSuggestions.classList.add("is-visible");
+    }
+
+    function hidePlaceSuggestions() {
+      placeSuggestions.classList.remove("is-visible");
+    }
+
+    function syncWhenModeUI() {
+      const mode = whenModeSelect.value === "month" ? "month" : "date";
+      const currentValue = whenInput.value;
+      whenInput.type = mode;
+      whenInput.required = true;
+      if (currentValue && !isInputValueCompatible(mode, currentValue)) {
+        whenInput.value = "";
+      }
+    }
+
+    function buildWhenInfo(mode, rawValue) {
+      if (mode === "month") {
+        return {
+          mode,
+          rawValue,
+          label: formatMonthValue(rawValue)
+        };
+      }
+
+      return {
+        mode: "date",
+        rawValue,
+        label: formatDateValue(rawValue)
+      };
+    }
+
+    function formatDateValue(value) {
+      if (!value) {
+        return "";
+      }
+
+      const [year, month, day] = value.split("-").map(Number);
+      if (!year || !month || !day) {
+        return "";
+      }
+
+      const date = new Date(Date.UTC(year, month - 1, day));
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }).format(date);
+    }
+
+    function formatMonthValue(value) {
+      if (!value) {
+        return "";
+      }
+
+      const [year, month] = value.split("-").map(Number);
+      if (!year || !month) {
+        return "";
+      }
+
+      const date = new Date(Date.UTC(year, month - 1, 1));
+      return new Intl.DateTimeFormat("en-GB", {
+        month: "long",
+        year: "numeric"
+      }).format(date);
+    }
+
+    function isInputValueCompatible(mode, value) {
+      return mode === "month" ? /^\d{4}-\d{2}$/.test(value) : /^\d{4}-\d{2}-\d{2}$/.test(value);
+    }
+
+    function renderMemories() {
+      markerIndex = {};
+      markersLayer.clearLayers();
+      memoryList.innerHTML = "";
+
+      memoryCount.textContent = `${memories.length} ${memories.length === 1 ? "memory" : "memories"}`;
+
+      if (memories.length === 0) {
+        const emptyState = document.createElement("div");
+        emptyState.className = "empty-state";
+        emptyState.innerHTML = `
+          <strong>Your atlas is empty.</strong><br />
+          Start with a song, a place, and a small scene from your life. The memory will appear here and on the map.
+        `;
+        memoryList.appendChild(emptyState);
+        return;
+      }
+
+      const bounds = [];
+
+      memories.forEach((memory) => {
+        const marker = L.marker([memory.latitude, memory.longitude]).addTo(markersLayer);
+        marker.bindPopup(buildPopupMarkup(memory));
+        markerIndex[memory.id] = marker;
+        bounds.push([memory.latitude, memory.longitude]);
+
+        const card = document.createElement("article");
+        card.className = "memory-card";
+        card.innerHTML = `
+          <div class="tagline">${escapeHtml(memory.when)}</div>
+          <h3>${escapeHtml(memory.song)} <span style="font-weight: 400;">by ${escapeHtml(memory.artist)}</span></h3>
+          <p class="memory-meta">${escapeHtml(memory.place)}</p>
+          <div class="memory-copy">
+            <p><strong>Song:</strong> ${escapeHtml(memory.songDescription)}</p>
+            <p><strong>Moment:</strong> ${escapeHtml(memory.activity)}</p>
+          </div>
+          <div class="memory-actions"></div>
+        `;
+
+        const actions = card.querySelector(".memory-actions");
+
+        const jumpBtn = document.createElement("button");
+        jumpBtn.type = "button";
+        jumpBtn.className = "ghost-btn";
+        jumpBtn.textContent = "🗺️ Show";
+        jumpBtn.addEventListener("click", () => focusMemory(memory.id));
+        actions.appendChild(jumpBtn);
+
+        if (memory.spotifyUrl) {
+          const spotifyLink = document.createElement("a");
+          spotifyLink.className = "link-btn";
+          spotifyLink.href = memory.spotifyUrl;
+          spotifyLink.target = "_blank";
+          spotifyLink.rel = "noreferrer";
+          spotifyLink.textContent = "Open Spotify";
+          actions.appendChild(spotifyLink);
+        } else {
+          const spotifySearchLink = document.createElement("a");
+          spotifySearchLink.className = "ghost-btn";
+          spotifySearchLink.href = createSpotifySearchUrl(`${memory.song} ${memory.artist}`);
+          spotifySearchLink.target = "_blank";
+          spotifySearchLink.rel = "noreferrer";
+          spotifySearchLink.textContent = "Search on Spotify";
+          actions.appendChild(spotifySearchLink);
+        }
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "ghost-btn";
+        deleteBtn.textContent = "🗑️";
+        deleteBtn.addEventListener("click", () => deleteMemory(memory.id));
+        actions.appendChild(deleteBtn);
+
+        memoryList.appendChild(card);
+      });
+
+      if (bounds.length === 1) {
+        map.setView(bounds[0], 11);
+      } else {
+        map.fitBounds(bounds, {
+          padding: [40, 40]
+        });
+      }
+    }
+
+    function buildPopupMarkup(memory) {
+      const trackId = getSpotifyTrackId(memory.spotifyUrl);
+      const spotifyLine = memory.spotifyUrl
+        ? `<p class="popup-copy"><a href="${escapeAttribute(memory.spotifyUrl)}" target="_blank" rel="noreferrer">Open Spotify track</a></p>`
+        : `<p class="popup-copy"><a href="${escapeAttribute(createSpotifySearchUrl(`${memory.song} ${memory.artist}`))}" target="_blank" rel="noreferrer">Search this song on Spotify</a></p>`;
+      const spotifyEmbed = trackId
+        ? `<iframe
+            class="spotify-embed"
+            src="https://open.spotify.com/embed/track/${escapeAttribute(trackId)}?utm_source=generator"
+            loading="lazy"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          ></iframe>`
+        : "";
+
+      return `
+        <div class="popup-title">${escapeHtml(memory.song)} by ${escapeHtml(memory.artist)}</div>
+        <p class="popup-meta">${escapeHtml(memory.place)}<br />${escapeHtml(memory.when)}</p>
+        <p class="popup-copy"><strong>Song:</strong> ${escapeHtml(memory.songDescription)}</p>
+        <p class="popup-copy"><strong>Moment:</strong> ${escapeHtml(memory.activity)}</p>
+        ${spotifyLine}
+        ${spotifyEmbed}
+      `;
+    }
+
+    function focusMemory(memoryId) {
+      const memory = memories.find((item) => item.id === memoryId);
+      const marker = markerIndex[memoryId];
+
+      if (!memory || !marker) {
+        return;
+      }
+
+      map.setView([memory.latitude, memory.longitude], 12, {
+        animate: true
+      });
+      marker.openPopup();
+    }
+
+    function deleteMemory(memoryId) {
+      const memory = memories.find((item) => item.id === memoryId);
+      if (!memory) {
+        return;
+      }
+
+      const confirmed = window.confirm(`Delete "${memory.song}" from your atlas?`);
+      if (!confirmed) {
+        return;
+      }
+
+      memories = memories.filter((item) => item.id !== memoryId);
+      saveMemories();
+      renderMemories();
+      setStatus(`Deleted "${memory.song}".`, "success");
+    }
+
+    function createId() {
+      return `memory-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    }
+
+    function createSpotifySearchUrl(query) {
+      return `https://open.spotify.com/search/${encodeURIComponent(query)}`;
+    }
+
+    function getSpotifyTrackId(url) {
+      if (!url) {
+        return "";
+      }
+
+      try {
+        const parsed = new URL(url);
+        if (!parsed.hostname.includes("spotify.com")) {
+          return "";
+        }
+
+        const segments = parsed.pathname.split("/").filter(Boolean);
+        const trackIndex = segments.indexOf("track");
+        if (trackIndex === -1 || !segments[trackIndex + 1]) {
+          return "";
+        }
+
+        return segments[trackIndex + 1];
+      } catch {
+        return "";
+      }
+    }
+
+    function isValidUrl(value) {
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value);
+    }
   </script>
-  
 </body>
 
 </html>
