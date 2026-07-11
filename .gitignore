@@ -1,2 +1,12 @@
 .DS_Store
 common_resources/.DS_Store
+
+# Local agent/editor tooling state. Keep durable public guidance in AGENTS.md
+# and repo automation in .github/ instead.
+.agents/
+.claude/
+.cline/
+.clinerules/
+.codex/
+.opencode/
+*.code-workspace

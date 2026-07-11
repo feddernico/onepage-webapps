@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D Surface Slice – Partial Derivatives</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f5f5f5;
+    }
+    h1 {
+      font-size: 1.3rem;
+      margin-bottom: 0.25rem;
+    }
+    p {
+      font-size: 0.9rem;
+      max-width: 700px;
+    }
+    .controls {
+      margin: 0.5rem 0 0.75rem;
+      font-size: 0.9rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+    }
+    label {
+      font-weight: 600;
+      margin-right: 0.3rem;
+    }
+    input[type="range"] {
+      width: 200px;
+    }
+    #canvas {
+      background: #ffffff;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border: 1px solid #ccc;
+      display: block;
+    }
+    .note {
+      font-size: 0.8rem;
+      color: #555;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>3D Surface Slice for Partial Derivatives</h1>
+  <p>
+    Surface: <code>z = f(x,y) = sin(x)·cos(y)</code>.  
+    The translucent plane is the slice <code>y = y₀</code>. The thick dark curve is the intersection
+    (a “slice” curve), and the blue line is a secant line between two points
+    <code>(x, y₀, f(x,y₀))</code> and <code>(x+h, y₀, f(x+h,y₀))</code>.
+  </p>
+
+  <div class="controls">
+    <div>
+      <label for="y0">y₀ (slice position):</label>
+      <input id="y0" type="range" min="-3.14" max="3.14" step="0.01" value="0">
+      <span id="y0val">0.00</span>
+    </div>
+    <div>
+      <label for="h">h (secant step):</label>
+      <input id="h" type="range" min="0.1" max="1.5" step="0.05" value="0.7">
+      <span id="hval">0.70</span>
+    </div>
+  </div>
+  <div class="note">
+    Imagine standing at the black point on the slice. As h → 0, the blue secant line becomes the tangent line,
+    and its slope is ∂f/∂x at that point.
+  </div>
+
+  <canvas id="canvas" width="600" height="450"></canvas>
+
+  <script>
+    // ----- 1. Math: the surface function -----
+    function f(x, y) {
+      return Math.sin(x) * Math.cos(y); // you can change this later
+    }
+
+    // Domain
+    const X_MIN = -Math.PI, X_MAX = Math.PI;
+    const Y_MIN = -Math.PI, Y_MAX = Math.PI;
+
+    // Sampling resolution
+    const NX = 35;
+    const NY = 35;
+
+    // ----- 2. Basic 3D "engine": simple perspective projection -----
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // Camera parameters for fake 3D
+    const camera = {
+      x: 6,
+      y: -8,
+      z: 6,
+      // Where camera looks
+      targetX: 0,
+      targetY: 0,
+      targetZ: 0,
+      // Perspective
+      fov: 60 * Math.PI / 180,
+      near: 1,
+      far: 50
+    };
+
+    function makeCameraBasis() {
+      // Build a very simple camera basis (right, up, forward)
+      const fx = camera.targetX - camera.x;
+      const fy = camera.targetY - camera.y;
+      const fz = camera.targetZ - camera.z;
+      const fl = Math.hypot(fx, fy, fz);
+      const fxn = fx / fl, fyn = fy / fl, fzn = fz / fl;
+
+      const upx0 = 0, upy0 = 0, upz0 = 1;
+      // right = f x up
+      let rx = fyn * upz0 - fzn * upy0;
+      let ry = fzn * upx0 - fxn * upz0;
+      let rz = fxn * upy0 - fyn * upx0;
+      const rl = Math.hypot(rx, ry, rz);
+      rx /= rl; ry /= rl; rz /= rl;
+
+      // recompute up as r x f
+      let ux = ry * fzn - rz * fyn;
+      let uy = rz * fxn - rx * fzn;
+      let uz = rx * fyn - ry * fxn;
+      const ul = Math.hypot(ux, uy, uz);
+      ux /= ul; uy /= ul; uz /= ul;
+
+      return { fx: fxn, fy: fyn, fz: fzn, rx, ry, rz, ux, uy, uz };
+    }
+
+    const basis = makeCameraBasis();
+
+    function projectPoint(x, y, z) {
+      // World to camera coordinates
+      const dx = x - camera.x;
+      const dy = y - camera.y;
+      const dz = z - camera.z;
+
+      const cx = dx * basis.rx + dy * basis.ry + dz * basis.rz; // right
+      const cy = dx * basis.ux + dy * basis.uy + dz * basis.uz; // up
+      const cz = dx * basis.fx + dy * basis.fy + dz * basis.fz; // forward
+
+      if (cz <= 0.2) return null; // behind camera
+
+      const aspect = W / H;
+      const f = 1 / Math.tan(camera.fov / 2);
+      const px = (f * (cx / cz)) * aspect;
+      const py = f * (cy / cz);
+
+      // Map to screen
+      const sx = (px + 1) * 0.5 * W;
+      const sy = (1 - (py + 1) * 0.5) * H;
+      return { x: sx, y: sy, depth: cz };
+    }
+
+    // ----- 3. Build the mesh -----
+    const mesh = [];
+    let globalZmin = Infinity, globalZmax = -Infinity;
+    for (let i = 0; i <= NX; i++) {
+      const x = X_MIN + (X_MAX - X_MIN) * (i / NX);
+      const row = [];
+      for (let j = 0; j <= NY; j++) {
+        const y = Y_MIN + (Y_MAX - Y_MIN) * (j / NY);
+        const z = f(x, y);
+        row.push({ x, y, z });
+        if (z < globalZmin) globalZmin = z;
+        if (z > globalZmax) globalZmax = z;
+      }
+      mesh.push(row);
+    }
+
+    function colorForZ(z) {
+      const t = (z - globalZmin) / (globalZmax - globalZmin + 1e-6);
+      // interpolate from blue -> orange
+      const r = Math.round(255 * (0.2 + 0.6 * t));
+      const g = Math.round(255 * (0.3 + 0.5 * t));
+      const b = Math.round(255 * (1 - t));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    // ----- 4. Drawing -----
+    function draw(y0, hStep) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, W, H);
+
+      // Draw axes (roughly)
+      drawAxes();
+
+      // Draw surface as grid of quads
+      for (let i = 0; i < NX; i++) {
+        for (let j = 0; j < NY; j++) {
+          const p00 = mesh[i][j];
+          const p10 = mesh[i+1][j];
+          const p01 = mesh[i][j+1];
+          const p11 = mesh[i+1][j+1];
+
+          const v00 = projectPoint(p00.x, p00.y, p00.z);
+          const v10 = projectPoint(p10.x, p10.y, p10.z);
+          const v01 = projectPoint(p01.x, p01.y, p01.z);
+          const v11 = projectPoint(p11.x, p11.y, p11.z);
+          if (!v00 || !v10 || !v01 || !v11) continue;
+
+          ctx.beginPath();
+          ctx.moveTo(v00.x, v00.y);
+          ctx.lineTo(v10.x, v10.y);
+          ctx.lineTo(v11.x, v11.y);
+          ctx.lineTo(v01.x, v01.y);
+          ctx.closePath();
+          ctx.fillStyle = colorForZ((p00.z + p10.z + p01.z + p11.z) / 4);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(0,0,0,0.1)";
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+
+      // Draw slice plane y = y0 as translucent rectangle
+      drawSlicePlane(y0);
+
+      // Draw intersection curve and secant line
+      drawSliceCurveAndSecant(y0, hStep);
+    }
+
+    function drawAxes() {
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1.2;
+
+      // x-axis from (-π,0,0) to (π,0,0)
+      drawSegment3D(X_MIN, 0, 0, X_MAX, 0, 0);
+
+      // y-axis from (0,-π,0) to (0,π,0)
+      drawSegment3D(0, Y_MIN, 0, 0, Y_MAX, 0);
+
+      // z-axis from (0,0,-1) to (0,0,1)
+      drawSegment3D(0, 0, -1, 0, 0, 1);
+    }
+
+    function drawSegment3D(x1, y1, z1, x2, y2, z2, strokeStyle="#000") {
+      const p1 = projectPoint(x1, y1, z1);
+      const p2 = projectPoint(x2, y2, z2);
+      if (!p1 || !p2) return;
+      ctx.strokeStyle = strokeStyle;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+    }
+
+    function drawSlicePlane(y0) {
+      const x1 = X_MIN, x2 = X_MAX;
+      const z1 = globalZmin - 0.3, z2 = globalZmax + 0.3;
+
+      const corners = [
+        projectPoint(x1, y0, z1),
+        projectPoint(x2, y0, z1),
+        projectPoint(x2, y0, z2),
+        projectPoint(x1, y0, z2)
+      ];
+      if (corners.some(p => p === null)) return;
+
+      ctx.beginPath();
+      ctx.moveTo(corners[0].x, corners[0].y);
+      ctx.lineTo(corners[1].x, corners[1].y);
+      ctx.lineTo(corners[2].x, corners[2].y);
+      ctx.lineTo(corners[3].x, corners[3].y);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(0, 150, 255, 0.08)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0, 120, 200, 0.5)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    function drawSliceCurveAndSecant(y0, hStep) {
+      // Slice: y = y0, x in [X_MIN, X_MAX]
+      const N = 80;
+      const xs = [];
+      const zs = [];
+      for (let i = 0; i <= N; i++) {
+        const t = i / N;
+        const x = X_MIN + (X_MAX - X_MIN) * t;
+        xs.push(x);
+        zs.push(f(x, y0));
+      }
+
+      // Draw the intersection curve
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const x = xs[i];
+        const z = zs[i];
+        const p = projectPoint(x, y0, z);
+        if (!p) continue;
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+
+      // Choose a point near center for secant
+      const midIndex = Math.floor(N / 2);
+      const x0 = xs[midIndex];
+      const z0 = zs[midIndex];
+
+      const x1 = x0 + hStep;
+      const x2 = x0 - hStep;
+
+      const z1 = f(x1, y0);
+      const z2 = f(x2, y0);
+
+      const p0 = projectPoint(x0, y0, z0);
+      const p1 = projectPoint(x1, y0, z1);
+      const p2 = projectPoint(x2, y0, z2);
+      if (!p0 || !p1 || !p2) return;
+
+      // Draw secant line between the two points
+      ctx.strokeStyle = "#0066cc";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+
+      // Mark the two secant points
+      ctx.fillStyle = "#0066cc";
+      [p1, p2].forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, 2*Math.PI);
+        ctx.fill();
+      });
+
+      // Mark the central point (limit point) in black
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(p0.x, p0.y, 4.5, 0, 2*Math.PI);
+      ctx.fill();
+    }
+
+    // ----- 5. UI wiring -----
+    const y0Slider = document.getElementById("y0");
+    const y0Val = document.getElementById("y0val");
+    const hSlider = document.getElementById("h");
+    const hVal = document.getElementById("hval");
+
+    function redraw() {
+      const y0 = parseFloat(y0Slider.value);
+      const hStep = parseFloat(hSlider.value);
+      y0Val.textContent = y0.toFixed(2);
+      hVal.textContent = hStep.toFixed(2);
+      draw(y0, hStep);
+    }
+
+    y0Slider.addEventListener("input", redraw);
+    hSlider.addEventListener("input", redraw);
+
+    redraw();
+  </script>
+</body>
+</html>
