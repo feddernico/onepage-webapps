@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signal vs Noise — Accuracy, Precision, Recall & F1</title>
+
+<style>
+:root {
+  --blue: #2780e3;
+  --link: #2761e3;
+  --link-hover: #1f4eb6;
+  --charcoal: #343a40;
+  --ink: #1e1e1e;
+  --text: #343a40;
+  --muted: rgba(52, 58, 64, 0.72);
+  --nav-offset: 5.5rem;
+  --line: #dee2e6;
+  --soft: #f8f9fa;
+  --soft-blue: #d4e6f9;
+  --soft-green: #d9f0d1;
+  --soft-violet: #eaddf1;
+  --soft-orange: #ffe3d1;
+  --code: #7d12ba;
+  --radius: 9px;
+  --shadow: 0 0.75rem 2rem rgba(52, 58, 64, 0.12);
+  --content: min(1120px, calc(100vw - 32px));
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--text);
+  background: #fff;
+}
+
+button, input { font: inherit; }
+
+button {
+  cursor: pointer;
+  border: 0;
+}
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--charcoal);
+  color: #fff;
+  box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.14);
+}
+
+.navbar-inner {
+  width: var(--content);
+  min-height: 56px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.95rem;
+}
+
+.nav-links a {
+  color: rgba(255, 255, 255, 0.86);
+  text-decoration: none;
+}
+
+.nav-links a:hover { color: #fff; }
+
+.hero {
+  padding: 4.3rem 0 3.5rem;
+  background:
+    radial-gradient(circle at 85% 5%, rgba(39, 128, 227, 0.22), transparent 27rem),
+    linear-gradient(135deg, #f8f9fa, #fff);
+  border-bottom: 1px solid var(--line);
+}
+
+.hero-inner { width: var(--content); margin: 0 auto; }
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--blue);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+h1, h2, h3, p { margin-top: 0; }
+
+h1 {
+  max-width: 760px;
+  margin-bottom: 0.65rem;
+  color: var(--ink);
+  font-size: clamp(2.3rem, 5vw, 4.1rem);
+  font-weight: 400;
+  line-height: 1.06;
+}
+
+.hero p:last-child {
+  max-width: 675px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  font-weight: 300;
+}
+
+main {
+  width: var(--content);
+  margin: 2.4rem auto 4rem;
+}
+
+section[id],
+header[id] {
+  scroll-margin-top: var(--nav-offset);
+}
+
+.section {
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.section-heading {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+
+h2 {
+  margin-bottom: 0;
+  color: var(--ink);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.section-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.memory-grid,
+.example-grid,
+.results-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.memory-grid { grid-template-columns: repeat(4, 1fr); }
+
+.memory-card {
+  min-height: 210px;
+  padding: 1.15rem;
+  border: 1px solid var(--line);
+  border-top: 5px solid var(--blue);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.memory-card.precision { border-top-color: #7653a8; }
+.memory-card.recall { border-top-color: #4c9b45; }
+.memory-card.f1 { border-top-color: #e06c28; }
+
+.metric-letter {
+  display: block;
+  margin-bottom: 0.6rem;
+  color: var(--blue);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.precision .metric-letter { color: #7653a8; }
+.recall .metric-letter { color: #347b30; }
+.f1 .metric-letter { color: #bd531a; }
+
+.memory-card h3 {
+  margin-bottom: 0.45rem;
+  color: var(--ink);
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.memory-card p {
+  margin-bottom: 0.7rem;
+  font-size: 0.98rem;
+}
+
+.memory-card strong { color: var(--ink); }
+
+.formula {
+  display: inline-block;
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+  color: var(--code);
+  background: var(--soft);
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.callout {
+  margin-top: 1.25rem;
+  padding: 0.9rem 1rem;
+  border-left: 0.25rem solid var(--blue);
+  background: rgba(39, 128, 227, 0.08);
+}
+
+.callout p { margin: 0; }
+
+.three-steps {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.82fr) minmax(450px, 1.35fr) minmax(300px, 0.95fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.step-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.step-number {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--blue);
+  font-weight: 700;
+}
+
+.step-kicker {
+  margin: 0 0 0.05rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.prediction-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.prediction-summary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin: 0.35rem 0 1rem;
+}
+
+.prediction-card {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.positive-card {
+  border-color: #b2e2a3;
+  background: var(--soft-green);
+}
+
+.negative-card {
+  border-color: #a9ccf4;
+  background: var(--soft-blue);
+}
+
+.prediction-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.prediction-card strong {
+  display: block;
+  margin: 0.15rem 0;
+  color: var(--ink);
+  font-size: 2.2rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.prediction-card span:last-child {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.mini-callout {
+  margin-top: auto;
+  padding: 0.8rem;
+  border-left: 0.25rem solid var(--blue);
+  background: rgba(39, 128, 227, 0.08);
+  font-size: 0.92rem;
+}
+
+.mini-callout p {
+  margin: 0;
+}
+
+.three-steps .matrix {
+  border-spacing: 3px;
+  font-size: 0.78rem;
+}
+
+.three-steps .matrix th {
+  padding: 0.2rem;
+}
+
+.three-steps .cell {
+  min-height: 116px;
+  padding: 0.55rem;
+}
+
+.three-steps .cell small {
+  min-height: 2.5em;
+  font-size: 0.72rem;
+}
+
+.three-steps .controls {
+  margin-top: auto;
+}
+
+.three-steps .controls .btn {
+  width: 100%;
+}
+
+@media (max-width: 1050px) {
+  .three-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .prediction-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .three-steps .matrix {
+    font-size: 0.9rem;
+  }
+
+  .three-steps .cell {
+    min-height: 132px;
+    padding: 0.7rem;
+  }
+
+  .three-steps .controls .btn {
+    width: auto;
+  }
+}
+
+.panel {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.panel-header {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--soft);
+}
+
+.panel-header h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.matrix-wrap { padding: 1rem; }
+
+.matrix {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 7px;
+  text-align: center;
+}
+
+.matrix th {
+  padding: 0.35rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.matrix .axis {
+  text-align: left;
+  color: var(--charcoal);
+}
+
+.matrix td {
+  position: relative;
+  width: 42%;
+  padding: 0;
+}
+
+.cell {
+  width: 100%;
+  min-height: 132px;
+  padding: 0.7rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.tp { background: var(--soft-green); border-color: #b2e2a3; }
+.fp { background: var(--soft-orange); border-color: #efbfa6; }
+.fn { background: var(--soft-violet); border-color: #d6bbe4; }
+.tn { background: var(--soft-blue); border-color: #a9ccf4; }
+
+.cell-label {
+  display: block;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.cell small {
+  display: block;
+  min-height: 2.7em;
+  margin: 0.16rem 0 0.5rem;
+  color: rgba(30, 30, 30, 0.7);
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.cell input {
+  width: 100%;
+  padding: 0.42rem 0.48rem;
+  border: 1px solid rgba(52, 58, 64, 0.3);
+  border-radius: 4px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.78);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.cell input:focus {
+  outline: 3px solid rgba(39, 128, 227, 0.25);
+  border-color: var(--blue);
+}
+
+.controls {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  padding: 0 1rem 1rem;
+}
+
+.btn {
+  min-height: 2.4rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.btn-primary { color: #fff; background: var(--blue); }
+.btn-primary:hover { background: var(--link-hover); }
+
+.btn-light {
+  color: var(--text);
+  border-color: var(--line);
+  background: var(--soft);
+}
+
+.btn-light:hover { background: #e9ecef; }
+
+.results-grid { grid-template-columns: repeat(2, 1fr); padding: 1rem; }
+
+.result {
+  min-height: 125px;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--soft);
+}
+
+.result-name {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.result-value {
+  display: block;
+  margin: 0.2rem 0;
+  color: var(--ink);
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.result-copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.interpretation {
+  margin: 0 1rem 1rem;
+  padding: 0.9rem 1rem;
+  border-left: 4px solid var(--blue);
+  background: rgba(39, 128, 227, 0.08);
+  font-size: 0.96rem;
+}
+
+.interpretation p { margin: 0; }
+
+.example-grid { grid-template-columns: repeat(3, 1fr); }
+
+.example {
+  display: flex;
+  flex-direction: column;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.example-tag {
+  display: inline-flex;
+  align-self: flex-start;
+  margin-bottom: 0.65rem;
+  padding: 0.14rem 0.42rem;
+  border: 1px solid #a9ccf4;
+  border-radius: 4px;
+  color: var(--text);
+  background: var(--soft-blue);
+  font-size: 0.82rem;
+}
+
+.example h3 {
+  margin-bottom: 0.45rem;
+  color: var(--ink);
+  font-size: 1.22rem;
+  font-weight: 400;
+}
+
+.example p {
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.example button { margin-top: auto; align-self: flex-start; }
+
+.cheat-sheet {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.cheat-sheet th,
+.cheat-sheet td {
+  padding: 0.8rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.cheat-sheet th {
+  color: var(--ink);
+  background: var(--soft);
+  font-weight: 700;
+}
+
+.cheat-sheet tr:last-child td { border-bottom: 0; }
+
+.footer {
+  padding: 1.35rem 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--soft);
+}
+
+.footer-inner {
+  width: var(--content);
+  margin: 0 auto;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 900px) {
+  .memory-grid { grid-template-columns: repeat(2, 1fr); }
+  .workspace { grid-template-columns: 1fr; }
+  .example-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+
+  .navbar-inner {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 0.75rem 0;
+  }
+
+  .nav-links { gap: 0.75rem; }
+  .hero { padding: 3rem 0 2.5rem; }
+  .section { padding: 1.6rem 0; }
+  .section-heading { display: block; }
+  .section-note { margin-top: 0.3rem; }
+  .prediction-summary { grid-template-columns: 1fr; }
+
+  .memory-grid, .results-grid { grid-template-columns: 1fr; }
+
+  .matrix {
+    border-spacing: 3px;
+    font-size: 0.82rem;
+  }
+
+  .matrix th { padding: 0.15rem; }
+  .cell { min-height: 125px; padding: 0.55rem; }
+}
+</style>
+
+</head>
+<body>
+
+<nav class="navbar" aria-label="Page navigation">
+  <div class="navbar-inner">
+    <a class="brand" href="#top">Signal vs Noise</a>
+    <div class="nav-links">
+      <a href="#remember">Remember</a>
+      <a href="#calculator">Try it</a>
+      <a href="#examples">Examples</a>
+      <a href="#cheat-sheet">Cheat sheet</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="hero-inner">
+    <p class="eyebrow">Machine learning metric refresher</p>
+    <h1>Never mix up accuracy, precision, recall, and F1 again.</h1>
+    <p>Use the four questions below, then change the confusion matrix to see exactly what each metric rewards and misses.</p>
+  </div>
+</header>
+
+<main>
+  <section class="section" id="remember">
+    <div class="section-heading">
+      <h2>The memory hook</h2>
+      <p class="section-note">Start with the question, not the equation.</p>
+    </div>
+
+    <div class="memory-grid">
+      <article class="memory-card">
+        <span class="metric-letter">Overall correctness</span>
+        <h3>Accuracy</h3>
+        <p><strong>“How often is the model right?”</strong> It counts every correct prediction, both positives and negatives.</p>
+        <span class="formula">(TP + TN) / all cases</span>
+      </article>
+
+      <article class="memory-card precision">
+        <span class="metric-letter">Trust positive alerts</span>
+        <h3>Precision</h3>
+        <p><strong>“When it says yes, is it right?”</strong> High precision means few false alarms.</p>
+        <span class="formula">TP / (TP + FP)</span>
+      </article>
+
+      <article class="memory-card recall">
+        <span class="metric-letter">Find actual positives</span>
+        <h3>Recall</h3>
+        <p><strong>“Of all real yeses, how many did it find?”</strong> High recall means few misses.</p>
+        <span class="formula">TP / (TP + FN)</span>
+      </article>
+
+      <article class="memory-card f1">
+        <span class="metric-letter">Balance the two</span>
+        <h3>F1 score</h3>
+        <p><strong>“Is it both trustworthy and complete?”</strong> It balances precision and recall; a weak one pulls it down.</p>
+        <span class="formula">2PR / (P + R)</span>
+      </article>
+    </div>
+
+    <aside class="callout">
+      <p><strong>Quick mnemonic:</strong> <strong>precision</strong> is about the predictions you <em>picked</em>; <strong>recall</strong> is about the real positives you <em>retrieved</em>. Accuracy can look excellent even when the positive class is rare.</p>
+    </aside>
+  </section>
+
+  <section class="section" id="calculator">
+    <div class="section-heading">
+      <h2>Make the metrics concrete</h2>
+      <p class="section-note">Edit any value. All results update instantly.</p>
+    </div>
+
+    <div class="three-steps">
+      <section class="panel step-panel" aria-labelledby="predictions-heading">
+        <div class="panel-header">
+          <span class="step-number">1</span>
+          <div>
+            <p class="step-kicker">Model output</p>
+            <h3 id="predictions-heading">The model classifies</h3>
+          </div>
+        </div>
+
+        <div class="prediction-content">
+          <p>The model reviews 1,000 cases and labels each one as either <strong>positive</strong> or <strong>negative</strong>.</p>
+
+          <div class="prediction-summary">
+            <article class="prediction-card positive-card">
+              <span class="prediction-label">Predicted positive</span>
+              <strong id="predicted-positive">100</strong>
+              <span>The model said “yes”</span>
+            </article>
+
+            <article class="prediction-card negative-card">
+              <span class="prediction-label">Predicted negative</span>
+              <strong id="predicted-negative">900</strong>
+              <span>The model said “no”</span>
+            </article>
+          </div>
+
+          <aside class="mini-callout">
+            <p><strong>Important:</strong> predictions alone cannot tell us whether the model is good. We must compare them with what was actually true.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="panel step-panel" aria-labelledby="matrix-heading">
+        <div class="panel-header">
+          <span class="step-number">2</span>
+          <div>
+            <p class="step-kicker">Predictions vs reality</p>
+            <h3 id="matrix-heading">Build the confusion matrix</h3>
+          </div>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th></th>
+                <th colspan="2">Reality</th>
+              </tr>
+              <tr>
+                <th class="axis">Model says</th>
+                <th>Actually positive</th>
+                <th>Actually negative</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th class="axis">Positive</th>
+                <td>
+                  <div class="cell tp">
+                    <span class="cell-label">True positive (TP)</span>
+                    <small>Correctly said “yes”</small>
+                    <input id="tp" type="number" min="0" value="80" aria-label="True positives">
+                  </div>
+                </td>
+                <td>
+                  <div class="cell fp">
+                    <span class="cell-label">False positive (FP)</span>
+                    <small>False alarm</small>
+                    <input id="fp" type="number" min="0" value="20" aria-label="False positives">
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <th class="axis">Negative</th>
+                <td>
+                  <div class="cell fn">
+                    <span class="cell-label">False negative (FN)</span>
+                    <small>Missed a real positive</small>
+                    <input id="fn" type="number" min="0" value="20" aria-label="False negatives">
+                  </div>
+                </td>
+                <td>
+                  <div class="cell tn">
+                    <span class="cell-label">True negative (TN)</span>
+                    <small>Correctly said “no”</small>
+                    <input id="tn" type="number" min="0" value="880" aria-label="True negatives">
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="controls">
+          <button class="btn btn-primary" type="button" data-preset="balanced">Balanced model</button>
+          <button class="btn btn-light" type="button" data-preset="screening">Cancer screening</button>
+          <button class="btn btn-light" type="button" data-preset="spam">Spam filter</button>
+          <button class="btn btn-light" type="button" data-preset="reset">Reset</button>
+        </div>
+      </section>
+
+      <section class="panel step-panel" aria-labelledby="results-heading">
+        <div class="panel-header">
+          <span class="step-number">3</span>
+          <div>
+            <p class="step-kicker">Performance scores</p>
+            <h3 id="results-heading">Calculate the metrics</h3>
+          </div>
+        </div>
+
+        <div class="results-grid">
+          <article class="result">
+            <span class="result-name">Accuracy</span>
+            <strong class="result-value" id="accuracy">—</strong>
+            <p class="result-copy">Correct out of all cases</p>
+          </article>
+
+          <article class="result">
+            <span class="result-name">Precision</span>
+            <strong class="result-value" id="precision">—</strong>
+            <p class="result-copy">Positive alerts you can trust</p>
+          </article>
+
+          <article class="result">
+            <span class="result-name">Recall</span>
+            <strong class="result-value" id="recall">—</strong>
+            <p class="result-copy">Real positives found</p>
+          </article>
+
+          <article class="result">
+            <span class="result-name">F1 score</span>
+            <strong class="result-value" id="f1">—</strong>
+            <p class="result-copy">Balance of precision and recall</p>
+          </article>
+        </div>
+
+        <div class="interpretation">
+          <p id="interpretation">Enter values to see an interpretation.</p>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <section class="section" id="examples">
+    <div class="section-heading">
+      <h2>Which metric matters most?</h2>
+      <p class="section-note">The cost of a mistake decides the priority.</p>
+    </div>
+
+    <div class="example-grid">
+      <article class="example">
+        <span class="example-tag">False negatives are costly</span>
+        <h3>Screening for disease</h3>
+        <p>A missed illness can delay care. Favour <strong>recall</strong>: catch as many real cases as possible, then investigate the false alarms.</p>
+        <button class="btn btn-light" type="button" data-preset="screening">Load screening example</button>
+      </article>
+
+      <article class="example">
+        <span class="example-tag">False positives are costly</span>
+        <h3>Spam filtering</h3>
+        <p>A false alarm can hide an important email. Favour <strong>precision</strong>: emails marked spam should very likely be spam.</p>
+        <button class="btn btn-light" type="button" data-preset="spam">Load spam example</button>
+      </article>
+
+      <article class="example">
+        <span class="example-tag">Classes are imbalanced</span>
+        <h3>Fraud detection</h3>
+        <p>Most transactions are legitimate, so accuracy may be misleading. Use <strong>precision, recall, and F1</strong> to judge fraud detection directly.</p>
+        <button class="btn btn-light" type="button" data-preset="fraud">Load fraud example</button>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="cheat-sheet">
+    <div class="section-heading">
+      <h2>The one-minute cheat sheet</h2>
+      <p class="section-note">Keep this distinction in your head.</p>
+    </div>
+
+    <table class="cheat-sheet">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Ask this</th>
+          <th>Optimise it when...</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Accuracy</strong></td>
+          <td>How often am I correct overall?</td>
+          <td>Positive and negative classes are reasonably balanced and both error types matter similarly.</td>
+        </tr>
+        <tr>
+          <td><strong>Precision</strong></td>
+          <td>Can I trust a positive prediction?</td>
+          <td>False positives are expensive, disruptive, or damaging.</td>
+        </tr>
+        <tr>
+          <td><strong>Recall</strong></td>
+          <td>Did I catch the real positives?</td>
+          <td>False negatives are dangerous or costly.</td>
+        </tr>
+        <tr>
+          <td><strong>F1</strong></td>
+          <td>Is there a good balance between trust and coverage?</td>
+          <td>You need one score for an imbalanced problem and both precision and recall matter.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">A small local-first refresher for classification metrics. Tip: press <strong>R</strong> anytime to reset the matrix.</div>
+</footer>
+
+<script>
+(() => {
+  const state = {
+    defaults: { tp: 80, fp: 20, fn: 20, tn: 880 },
+    presets: {
+      balanced: { tp: 80, fp: 20, fn: 20, tn: 880 },
+      screening: { tp: 96, fp: 180, fn: 4, tn: 720 },
+      spam: { tp: 60, fp: 3, fn: 40, tn: 897 },
+      fraud: { tp: 72, fp: 48, fn: 28, tn: 9852 }
+    }
+  };
+
+  const inputs = ["tp", "fp", "fn", "tn"].reduce((acc, id) => {
+    acc[id] = document.getElementById(id);
+    return acc;
+  }, {});
+
+  const percent = value => Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : "—";
+
+  function values() {
+    return Object.fromEntries(
+      Object.entries(inputs).map(([key, input]) => [key, Math.max(0, Number(input.value) || 0)])
+    );
+  }
+
+  function update() {
+    const { tp, fp, fn, tn } = values();
+    const total = tp + fp + fn + tn;
+    const accuracy = total ? (tp + tn) / total : NaN;
+    const precision = tp + fp ? tp / (tp + fp) : NaN;
+    const recall = tp + fn ? tp / (tp + fn) : NaN;
+    const f1 = Number.isFinite(precision) && Number.isFinite(recall) && precision + recall
+      ? (2 * precision * recall) / (precision + recall)
+      : NaN;
+
+    document.getElementById("accuracy").textContent = percent(accuracy);
+    document.getElementById("precision").textContent = percent(precision);
+    document.getElementById("recall").textContent = percent(recall);
+    document.getElementById("f1").textContent = percent(f1);
+
+    const message = document.getElementById("interpretation");
+
+    if (!total) {
+      message.textContent = "Add at least one outcome to calculate the metrics.";
+      return;
+    }
+
+    const accuracyMessage = `Accuracy is ${percent(accuracy)}, based on ${tp + tn} correct predictions out of ${total}.`;
+    let focus = "";
+
+    if (Number.isFinite(precision) && Number.isFinite(recall)) {
+      if (precision - recall > 0.12) {
+        focus = " Precision is noticeably higher than recall: positive alerts are reliable, but the model is missing many real positives.";
+      } else if (recall - precision > 0.12) {
+        focus = " Recall is noticeably higher than precision: the model catches most positives, but creates more false alarms.";
+      } else {
+        focus = " Precision and recall are fairly balanced.";
+      }
+    } else {
+      focus = " There are not enough positive predictions or actual positives to calculate every positive-class metric.";
+    }
+
+    message.textContent = accuracyMessage + focus;
+  }
+
+  function loadPreset(name) {
+    const preset = name === "reset" ? state.defaults : state.presets[name];
+    if (!preset) return;
+
+    Object.entries(preset).forEach(([key, value]) => {
+      inputs[key].value = value;
+    });
+
+    update();
+    document.getElementById("calculator").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  Object.values(inputs).forEach(input => input.addEventListener("input", update));
+
+  document.querySelectorAll("[data-preset]").forEach(button => {
+    button.addEventListener("click", () => loadPreset(button.dataset.preset));
+  });
+
+  window.addEventListener("keydown", event => {
+    if (event.key.toLowerCase() === "r" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
+      loadPreset("reset");
+    }
+  });
+
+  update();
+})();
+</script>
+
+</body>
+</html>
