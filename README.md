@@ -24,14 +24,14 @@ This repository contains a collection of simple, single-page web applications bu
    ```
 
 2. **Run an app:**
-   - Method 1: Open any `.html` file in your browser, or
+   - Method 1: Open an app's `index.html` file in your browser, or
    - Method 2: Use a simple static server (for example, with Python):
 
      ```bash
      python3 -m http.server
      ```
 
-   - Then navigate to `http://localhost:8000` in your browser.
+   - Then navigate to an app folder, such as `http://localhost:8000/productivity/prompt-stash/`.
 
 ## Directory Structure
 
@@ -40,13 +40,43 @@ onepage-webapps/
 ├── common_resources/
 │   ├── css
 │   └── js
-├── app1.html
-├── app2.html
-├── ...
+├── productivity/
+│   └── prompt-stash/
+│       ├── index.html
+│       ├── app.yml
+│       └── thumbnail.png
+├── writing/
+│   └── voice-refiner/
+│       ├── index.html
+│       ├── app.yml
+│       └── thumbnail.png
+├── family/
+│   └── babylog/
+│       ├── index.html
+│       ├── app.yml
+│       └── thumbnail.png
+├── lab/
+│   └── newest-weird-thing/
+│       ├── index.html
+│       └── app.yml
 └── README.md
 ```
 
-- There is a common_resources folder that contains javascript and CSS that are reused across the various apss, and then each app is just an HTML file.
+- `common_resources/` contains JavaScript and CSS reused across apps.
+- Each app lives in its own category folder and exposes `index.html` as the entry point.
+- Each app should include an `app.yml` metadata file:
+
+  ```yaml
+  title: BabyLog
+  slug: babylog
+  category: Family
+  status: stable
+  description: Tiny tracker for baby logs.
+  featured: true
+  date: 2026-07-11
+  ```
+
+- Add `thumbnail.png` when an app is ready to appear in galleries or indexes.
 
 ## Contributing
 

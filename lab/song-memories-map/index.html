@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Song Memories Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f7f7f7;
+    }
+    
+    header {
+      padding: 16px;
+      background: #111;
+      color: #fff;
+    }
+    
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      flex-wrap: wrap;
+    }
+    
+    .controls input {
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+    }
+    
+    .controls button {
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    #map {
+      height: calc(100vh - 130px);
+      width: 100%;
+    }
+    
+    .hint {
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #666;
+      background: #fafafa;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+
+<body>
+  
+  <header>
+    <h1>🎵 Song Memories Map</h1>
+  </header>
+  
+  <div class="controls">
+    <input id="songInput" type="text" placeholder="Song (e.g. 'Yellow – Coldplay')" />
+    <input id="placeInput" type="text" placeholder="Place (e.g. 'Paris')" />
+    <button id="searchBtn">Pin Memory</button>
+  </div>
+  
+  <div id="map"></div>
+  
+  <div class="hint">
+    Enter a song and a place. We’ll drop a pin where you listened to it.
+  </div>
+  
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <script>
+    // Initialize map
+    const map = L.map("map").setView([20, 0], 2);
+    
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors"
+    }).addTo(map);
+    
+    let currentMarker = null;
+    
+    document.getElementById("searchBtn").addEventListener("click", async () => {
+      const song = document.getElementById("songInput").value.trim();
+      const place = document.getElementById("placeInput").value.trim();
+      
+      if (!song || !place) {
+        alert("Please enter both a song and a place.");
+        return;
+      }
+      
+      // Geocode place using Nominatim
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`;
+      
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!data.length) {
+          alert("Place not found.");
+          return;
+        }
+        
+        const lat = data[0].lat;
+        const lon = data[0].lon;
+        
+        if (currentMarker) {
+          map.removeLayer(currentMarker);
+        }
+        
+        currentMarker = L.marker([lat, lon]).addTo(map);
+        currentMarker.bindPopup(
+          `<strong>🎧 Song:</strong> ${song}<br/>
+         <strong>📍 Place:</strong> ${place}`
+        ).openPopup();
+        
+        map.setView([lat, lon], 13);
+        
+      } catch (error) {
+        console.error(error);
+        alert("Something went wrong searching for the place.");
+      }
+    });
+  </script>
+  
+</body>
+
+</html>
