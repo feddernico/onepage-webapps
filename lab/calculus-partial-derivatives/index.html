@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Partial Derivative Slices Demo</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .layout {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 6px;
+      padding: 0.75rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    #surface-panel {
+      flex: 2 1 320px;
+    }
+
+    #slice-panel {
+      flex: 1.2 1 260px;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      display: block;
+      background: #fafafa;
+    }
+
+    .controls {
+      margin-bottom: 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    label {
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+
+    input[type="range"] {
+      width: 200px;
+    }
+
+    .info {
+      font-size: 0.8rem;
+      color: #555;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Partial Derivatives: Slicing a Surface</h1>
+  <p style="max-width: 680px; font-size: 0.9rem;">
+    We graph the surface <code>z = f(x,y) = sin(x)·cos(y)</code>.  
+    Choose a slice parallel to the x-axis (fix y = y₀) or parallel to the y-axis (fix x = x₀).  
+    The curve in the right plot is exactly the slice; its slope at the red point is the corresponding partial derivative.
+  </p>
+
+  <div class="layout">
+    <div id="surface-panel" class="panel">
+      <div class="controls">
+        <div>
+          <label>Slice direction:</label>
+          <label><input type="radio" name="sliceDir" value="x" checked> parallel to x-axis (∂f/∂x)</label>
+          <label><input type="radio" name="sliceDir" value="y"> parallel to y-axis (∂f/∂y)</label>
+        </div>
+      </div>
+      <div class="controls">
+        <label id="slice-label">y₀:</label>
+        <input id="slice-slider" type="range" min="-3.14" max="3.14" step="0.01" value="0">
+        <span id="slice-value">0.00</span>
+      </div>
+      <div class="info">
+        Surface view: each square is a point (x,y) colored by height z. The thick line shows the intersection with the vertical plane x = x₀ or y = y₀.
+      </div>
+      <canvas id="surface-canvas" width="500" height="400"></canvas>
+    </div>
+
+    <div id="slice-panel" class="panel">
+      <div class="info">
+        Slice curve: z vs x (if y = y₀ fixed) or z vs y (if x = x₀ fixed).  
+        The red dot is at the slice point; its instantaneous slope is the partial derivative.
+      </div>
+      <canvas id="slice-canvas" width="320" height="260"></canvas>
+    </div>
+  </div>
+
+  <script>
+    // ----- 1. Define the function f(x,y) and its partials -----
+    function f(x, y) {
+      return Math.sin(x) * Math.cos(y);  // change this if you want a different surface
+    }
+
+    function fx(x, y) {
+      // ∂/∂x [sin(x) cos(y)] = cos(x) cos(y)
+      return Math.cos(x) * Math.cos(y);
+    }
+
+    function fy(x, y) {
+      // ∂/∂y [sin(x) cos(y)] = sin(x) * (-sin(y))
+      return Math.sin(x) * (-Math.sin(y));
+    }
+
+    // Domain for x and y
+    const X_MIN = -Math.PI, X_MAX = Math.PI;
+    const Y_MIN = -Math.PI, Y_MAX = Math.PI;
+
+    // Sampling grid
+    const GRID_NX = 40;
+    const GRID_NY = 40;
+
+    // ----- 2. Get DOM elements -----
+    const surfaceCanvas = document.getElementById("surface-canvas");
+    const surfaceCtx = surfaceCanvas.getContext("2d");
+
+    const sliceCanvas = document.getElementById("slice-canvas");
+    const sliceCtx = sliceCanvas.getContext("2d");
+
+    const sliceSlider = document.getElementById("slice-slider");
+    const sliceValueSpan = document.getElementById("slice-value");
+    const sliceLabel = document.getElementById("slice-label");
+    const sliceDirInputs = document.querySelectorAll("input[name='sliceDir']");
+
+    // Current slice state
+    let sliceDir = "x"; // "x" means slice is parallel to x-axis (fix y=y0), "y" means parallel to y-axis (fix x=x0)
+    let slicePos = 0;   // y0 or x0, depending on sliceDir
+
+    // ----- 3. Utility: map height to color -----
+    function colorForZ(z) {
+      // simple blue-white-red colormap centered at 0
+      const scale = 1.2; // adjust for contrast
+      const t = Math.max(-1, Math.min(1, z * scale));
+      // t = -1 (blue), 0 (white), 1 (red)
+      const r = t > 0 ? 255 : Math.round(255 * (1 + t));
+      const b = t < 0 ? 255 : Math.round(255 * (1 - t));
+      const g = 230;
+      return `rgb(${r},${g},${b})`;
+    }
+
+    // ----- 4. Draw surface as a height map with slice line -----
+    function drawSurface() {
+      const w = surfaceCanvas.width;
+      const h = surfaceCanvas.height;
+
+      surfaceCtx.clearRect(0, 0, w, h);
+
+      // Sample z values on grid
+      let zMin = Infinity, zMax = -Infinity;
+      const grid = [];
+      for (let i = 0; i <= GRID_NX; i++) {
+        const x = X_MIN + (X_MAX - X_MIN) * (i / GRID_NX);
+        grid[i] = [];
+        for (let j = 0; j <= GRID_NY; j++) {
+          const y = Y_MIN + (Y_MAX - Y_MIN) * (j / GRID_NY);
+          const z = f(x, y);
+          grid[i][j] = z;
+          if (z < zMin) zMin = z;
+          if (z > zMax) zMax = z;
+        }
+      }
+
+      // Draw colored height map (top-down)
+      for (let i = 0; i < GRID_NX; i++) {
+        for (let j = 0; j < GRID_NY; j++) {
+          const x0 = i / GRID_NX * w;
+          const y0 = j / GRID_NY * h;
+          const z = grid[i][j];
+          surfaceCtx.fillStyle = colorForZ(z);
+          surfaceCtx.fillRect(x0, y0, w / GRID_NX + 1, h / GRID_NY + 1);
+        }
+      }
+
+      // Compute slice curve projection in this top-down view
+      surfaceCtx.lineWidth = 3;
+      surfaceCtx.strokeStyle = "#000";
+      surfaceCtx.setLineDash([6, 4]);
+
+      surfaceCtx.beginPath();
+      if (sliceDir === "x") {
+        // Slice is y = y0, so line is horizontal in top-down view
+        const t = (slicePos - Y_MIN) / (Y_MAX - Y_MIN);
+        const yPix = t * h;
+        surfaceCtx.moveTo(0, yPix);
+        surfaceCtx.lineTo(w, yPix);
+      } else {
+        // Slice is x = x0, so line is vertical
+        const t = (slicePos - X_MIN) / (X_MAX - X_MIN);
+        const xPix = t * w;
+        surfaceCtx.moveTo(xPix, 0);
+        surfaceCtx.lineTo(xPix, h);
+      }
+      surfaceCtx.stroke();
+      surfaceCtx.setLineDash([]);
+    }
+
+    // ----- 5. Draw 2D slice curve -----
+    function drawSlice() {
+      const w = sliceCanvas.width;
+      const h = sliceCanvas.height;
+      sliceCtx.clearRect(0, 0, w, h);
+
+      const N = 200;
+      const xs = [];
+      const zs = [];
+
+      let xMin, xMax;
+      if (sliceDir === "x") {
+        xMin = X_MIN;
+        xMax = X_MAX;
+      } else {
+        xMin = Y_MIN;
+        xMax = Y_MAX;
+      }
+
+      let zMin = Infinity, zMax = -Infinity;
+
+      for (let i = 0; i <= N; i++) {
+        const t = i / N;
+        const s = xMin + (xMax - xMin) * t;
+        let z;
+        if (sliceDir === "x") {
+          // y = slicePos fixed
+          z = f(s, slicePos);
+        } else {
+          // x = slicePos fixed
+          z = f(slicePos, s);
+        }
+        xs.push(s);
+        zs.push(z);
+        if (z < zMin) zMin = z;
+        if (z > zMax) zMax = z;
+      }
+
+      // add some padding in z
+      const zPad = 0.2;
+      zMin -= zPad;
+      zMax += zPad;
+
+      function xToPix(x) {
+        return (x - xMin) / (xMax - xMin) * w;
+      }
+      function zToPix(z) {
+        // z high -> small y (top of canvas)
+        return h - (z - zMin) / (zMax - zMin) * h;
+      }
+
+      // Axes
+      sliceCtx.strokeStyle = "#888";
+      sliceCtx.lineWidth = 1;
+      sliceCtx.beginPath();
+      // horizontal axis (z vs variable)
+      sliceCtx.moveTo(0, zToPix(0));
+      sliceCtx.lineTo(w, zToPix(0));
+      sliceCtx.stroke();
+
+      // Draw curve
+      sliceCtx.strokeStyle = "#0077cc";
+      sliceCtx.lineWidth = 2;
+      sliceCtx.beginPath();
+      sliceCtx.moveTo(xToPix(xs[0]), zToPix(zs[0]));
+      for (let i = 1; i <= N; i++) {
+        sliceCtx.lineTo(xToPix(xs[i]), zToPix(zs[i]));
+      }
+      sliceCtx.stroke();
+
+      // Red point at center (x0, y0) along slice
+      const midIndex = Math.floor(N / 2);
+      const s0 = xs[midIndex];
+      const z0 = zs[midIndex];
+      const x0Pix = xToPix(s0);
+      const z0Pix = zToPix(z0);
+
+      sliceCtx.fillStyle = "#cc0000";
+      sliceCtx.beginPath();
+      sliceCtx.arc(x0Pix, z0Pix, 4, 0, 2 * Math.PI);
+      sliceCtx.fill();
+
+      // Approximate tangent line at center using partial derivative
+      let slope;
+      if (sliceDir === "x") {
+        // derivative w.r.t x at (x0, y0)
+        slope = fx(s0, slicePos);
+      } else {
+        // derivative w.r.t y at (x0, y0)
+        slope = fy(slicePos, s0);
+      }
+
+      const dxPix = w * 0.2;
+      const dx = (xMax - xMin) * 0.2;
+      const zLeft = z0 - slope * dx;
+      const zRight = z0 + slope * dx;
+
+      sliceCtx.strokeStyle = "#cc0000";
+      sliceCtx.lineWidth = 1.5;
+      sliceCtx.setLineDash([5, 3]);
+      sliceCtx.beginPath();
+      sliceCtx.moveTo(x0Pix - dxPix, zToPix(zLeft));
+      sliceCtx.lineTo(x0Pix + dxPix, zToPix(zRight));
+      sliceCtx.stroke();
+      sliceCtx.setLineDash([]);
+
+      // Label
+      sliceCtx.fillStyle = "#333";
+      sliceCtx.font = "12px system-ui";
+      const varName = sliceDir === "x" ? "x" : "y";
+      const otherName = sliceDir === "x" ? "y" : "x";
+      sliceCtx.fillText(`${varName}-slice at ${otherName}₀ = ${slicePos.toFixed(2)}`, 8, 16);
+      sliceCtx.fillText(`slope at center ≈ ${slope.toFixed(2)}`, 8, 32);
+    }
+
+    // ----- 6. Event handlers -----
+    function updateSlicePos() {
+      slicePos = parseFloat(sliceSlider.value);
+      sliceValueSpan.textContent = slicePos.toFixed(2);
+      drawSurface();
+      drawSlice();
+    }
+
+    sliceSlider.addEventListener("input", updateSlicePos);
+
+    sliceDirInputs.forEach(input => {
+      input.addEventListener("change", () => {
+        sliceDir = input.value;
+        sliceLabel.textContent = sliceDir === "x" ? "y₀:" : "x₀:";
+        updateSlicePos();
+      });
+    });
+
+    // Initial draw
+    updateSlicePos();
+  </script>
+</body>
+</html>
