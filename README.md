@@ -1,95 +1,170 @@
 # Onepage Webapps
 
-One page webapps created using only **HTML5**, **CSS**, and **JavaScript**.
+**Onepage Webapps** is a collection of small, self-contained browser apps. Each app is meant to be understandable as a single page, easy to run locally, and simple enough to copy, modify, or learn from.
 
-## Overview
+The constraint is deliberate: plain HTML, CSS, and JavaScript first. Some apps use CDN libraries when they make the app materially better, but there is no shared build system, backend, package manager requirement, or framework ceremony. Open a folder, open `index.html`, and the app should explain itself by working.
 
-This repository contains a collection of simple, single-page web applications built without any external frameworks or libraries. Each app is fully self-contained, demonstrating what can be achieved using just the core web technologies.
+## Contents
 
-## Features
+- [Why this exists](#why-this-exists)
+- [Status](#status)
+- [Apps](#apps)
+- [Running an app](#running-an-app)
+- [Repository layout](#repository-layout)
+- [App metadata](#app-metadata)
+- [Adding a new app](#adding-a-new-app)
+- [Development notes](#development-notes)
+- [Public workflow files](#public-workflow-files)
+- [License](#license)
 
-- 100% client-side: No backend required
-- Pure HTML5, CSS, and JavaScript (Vanilla JS)
-- Minimal dependencies
-- Easy to deploy and use
-- Great for learning and prototyping
+## Why this exists
 
-## Getting Started
+Small tools have a nice property: they can stay close to the problem that created them. A baby log, a prompt stash, a writing helper, a music sketchpad, a map experiment; none of these need to become products before they are useful.
 
-1. **Clone the repository:**
+This repository is a place for those tools to live in public. The goal is not one polished mega-app. The goal is a shelf of focused web apps that are:
 
-   ```bash
-   git clone https://github.com/feddernico/onepage-webapps.git
-   cd onepage-webapps
-   ```
+- easy to inspect
+- easy to run
+- easy to remix
+- mostly dependency-light
+- organized enough to grow without becoming a junk drawer
 
-2. **Run an app:**
-   - Method 1: Open an app's `index.html` file in your browser, or
-   - Method 2: Use a simple static server (for example, with Python):
+## Status
 
-     ```bash
-     python3 -m http.server
-     ```
+This is a living collection. Some apps are stable utilities, some are experiments, and some are preserved drafts. Each app declares its status in `app.yml` so future indexes, galleries, or deployment scripts can decide what to show.
 
-   - Then navigate to an app folder, such as `http://localhost:8000/productivity/prompt-stash/`.
+The repo structure recently moved from one flat `.html` file per app to one folder per app. That makes it easier to add metadata, thumbnails, tests, and app-specific assets without losing the one-page spirit.
 
-## Directory Structure
+## Apps
 
+| App | Category | Status | Path |
+| --- | --- | --- | --- |
+| BabyLog | Family | stable | `family/babylog/` |
+| LLM Toolbox | Productivity | stable | `productivity/llm-toolbox/` |
+| LocalAI Lead Responder | Productivity | stable | `productivity/localai-lead-responder/` |
+| Prompt Stash | Productivity | stable | `productivity/prompt-stash/` |
+| Todo List | Productivity | stable | `productivity/todo-list/` |
+| Qraft | Writing | experimental | `writing/qraft/` |
+| Voice Refiner | Writing | stable | `writing/voice-refiner/` |
+| Writing Coach | Writing | stable | `writing/writing-coach/` |
+| AetherDepth | Lab | experimental | `lab/aetherdepth/` |
+| AI Video Generator | Lab | experimental | `lab/ai-video-generator/` |
+| Artemis II | Lab | experimental | `lab/artemis-ii/` |
+| Partial Derivative Slices Demo | Lab | experimental | `lab/calculus-partial-derivatives/` |
+| Song Memory Atlas | Lab | experimental | `lab/song-memory-atlas/` |
+| Stave | Lab | experimental | `lab/stave/` |
+
+Draft and backup variants may also exist when they are useful to preserve development history, but stable apps should be the ones linked from public indexes.
+
+## Running an app
+
+Clone the repo:
+
+```sh
+git clone https://github.com/feddernico/onepage-webapps.git
+cd onepage-webapps
 ```
+
+Then either open an app's `index.html` directly in a browser, or run a tiny static server:
+
+```sh
+python3 -m http.server
+```
+
+Open one of the app folders:
+
+```text
+http://localhost:8000/productivity/prompt-stash/
+http://localhost:8000/family/babylog/
+http://localhost:8000/writing/voice-refiner/
+```
+
+Some browser APIs are happier over `localhost` than `file://`, so the static server is the safest default.
+
+## Repository layout
+
+```text
 onepage-webapps/
-├── common_resources/
-│   ├── css
-│   └── js
-├── productivity/
-│   └── prompt-stash/
-│       ├── index.html
-│       ├── app.yml
-│       └── thumbnail.png
-├── writing/
-│   └── voice-refiner/
-│       ├── index.html
-│       ├── app.yml
-│       └── thumbnail.png
-├── family/
-│   └── babylog/
-│       ├── index.html
-│       ├── app.yml
-│       └── thumbnail.png
-├── lab/
-│   └── newest-weird-thing/
-│       ├── index.html
-│       └── app.yml
-└── README.md
+  common_resources/
+    js/
+  productivity/
+    prompt-stash/
+      index.html
+      app.yml
+      thumbnail.png
+  writing/
+    voice-refiner/
+      index.html
+      app.yml
+      thumbnail.png
+  family/
+    babylog/
+      index.html
+      app.yml
+      thumbnail.png
+  lab/
+    newest-weird-thing/
+      index.html
+      app.yml
 ```
 
-- `common_resources/` contains JavaScript and CSS reused across apps.
-- Each app lives in its own category folder and exposes `index.html` as the entry point.
-- Each app should include an `app.yml` metadata file:
+`common_resources/` is for shared JavaScript, CSS, images, or data that more than one app genuinely uses. Everything app-specific should stay inside that app's folder.
 
-  ```yaml
-  title: BabyLog
-  slug: babylog
-  category: Family
-  status: stable
-  description: Tiny tracker for baby logs.
-  featured: true
-  date: 2026-07-11
-  ```
+## App metadata
 
-- Add `thumbnail.png` when an app is ready to appear in galleries or indexes.
+Every app should include an `app.yml` file beside `index.html`:
 
-## Contributing
+```yaml
+title: BabyLog
+slug: babylog
+category: Family
+status: stable
+description: Tiny tracker for baby logs.
+featured: true
+date: 2026-07-11
+```
 
-Contributions are welcome! If you have a cool one-page webapp idea or improvement, feel free to open a pull request.
+Use these fields consistently:
 
-1. Fork the repository
-2. Add your app in a new folder (follow the structure)
-3. Submit a PR with a short description of your app
+- `title`: display name
+- `slug`: URL-safe app id, matching the folder name when possible
+- `category`: top-level category folder, title-cased
+- `status`: `stable`, `experimental`, or `draft`
+- `description`: one short sentence
+- `featured`: whether the app should appear prominently in future indexes
+- `date`: date the app or metadata entry was last meaningfully shaped
+
+Add `thumbnail.png` when an app is ready to be shown in a gallery.
+
+## Adding a new app
+
+1. Pick a category: `productivity`, `writing`, `family`, or `lab`.
+2. Create a slugged folder: `category/my-new-app/`.
+3. Add `index.html`.
+4. Add `app.yml`.
+5. Put app-specific assets in the same folder.
+6. Use `common_resources/` only for resources shared by multiple apps.
+
+If an app grows beyond one file, that is fine. The important convention is that the folder is the app boundary and `index.html` remains the entry point.
+
+## Development notes
+
+- Prefer vanilla HTML, CSS, and JavaScript.
+- Keep external dependencies explicit in the app file unless they are shared across apps.
+- Update relative paths when moving an app between folders.
+- Keep local agent/editor tooling out of commits; durable public guidance belongs in `AGENTS.md`.
+- QUnit assets currently live in `qunit/` for existing tests.
+
+## Public workflow files
+
+This repo includes public agent/workflow guidance:
+
+- `AGENTS.md` for durable repo instructions
+- `.github/` prompts and skills for OpenSpec-oriented workflows
+- `openspec/config.yaml` for the project OpenSpec configuration
+
+Local tool state such as `.claude/`, `.codex/`, `.opencode/`, editor workspaces, caches, and dependency folders should stay untracked.
 
 ## License
 
-[MIT](LICENSE)
-
----
-
-Let me know if you have specific apps or folders you want listed, or if you’d like more customization!
+This repository is released under the [MIT License](LICENSE).
