@@ -1,0 +1,2808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherDepth - 3D Spatial Photo Parallax Generator</title>
+    
+    <!-- Google Fonts & Lucide Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Three.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #06050e;
+            --panel-bg: rgba(13, 11, 28, 0.7);
+            --panel-border: rgba(139, 92, 246, 0.15);
+            --accent-primary: #8b5cf6;
+            --accent-primary-glow: rgba(139, 92, 246, 0.5);
+            --accent-secondary: #06b6d4;
+            --accent-secondary-glow: rgba(6, 182, 212, 0.5);
+            --text-main: #f3f1f9;
+            --text-muted: #9f9bb3;
+            --danger: #ef4444;
+            --success: #10b981;
+            --card-radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Ambient Glow Blobs */
+        .glow-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(140px);
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.4;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .glow-1 {
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: var(--accent-primary);
+        }
+        .glow-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 45vw;
+            height: 45vw;
+            background: var(--accent-secondary);
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(5%, 5%) scale(1.1); }
+            100% { transform: translate(-5%, -5%) scale(0.9); }
+        }
+
+        /* Scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--panel-border);
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 2rem;
+            background: rgba(6, 5, 14, 0.8);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--panel-border);
+            z-index: 10;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            color: var(--accent-primary);
+            filter: drop-shadow(0 0 8px var(--accent-primary-glow));
+        }
+
+        .logo-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+        .status-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+        .status-dot.loading {
+            background: var(--accent-secondary);
+            box-shadow: 0 0 8px var(--accent-secondary-glow);
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        .status-dot.error {
+            background: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* File Protocol Warning */
+        #protoWarn {
+            display: none;
+            padding: 0.75rem 2rem;
+            background: rgba(239, 68, 68, 0.15);
+            border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            font-size: 0.85rem;
+            text-align: center;
+            z-index: 11;
+        }
+        #protoWarn code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            color: #fee2e2;
+            font-family: monospace;
+        }
+
+        /* Main Workspace Container */
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 380px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid var(--panel-border);
+            display: flex;
+            flex-direction: column;
+            z-index: 5;
+            transition: var(--transition);
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--panel-border);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1rem 0.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+            transition: var(--transition);
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .tab-btn i {
+            font-size: 1.1rem;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .tab-panel {
+            display: none;
+            flex-direction: column;
+            gap: 1.5rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .tab-panel.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Section Container */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .control-group:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .group-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Preset Gallery */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .preset-thumb {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .preset-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .preset-thumb:hover img {
+            transform: scale(1.15);
+        }
+
+        .preset-thumb.active {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 10px var(--accent-primary-glow);
+        }
+
+        .preset-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0));
+            padding: 0.3rem;
+            font-size: 0.65rem;
+            text-align: center;
+            color: white;
+            font-weight: 500;
+        }
+
+        /* Upload Dropzone */
+        .dropzone {
+            border: 2px dashed var(--panel-border);
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.01);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .dropzone:hover {
+            border-color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.04);
+        }
+
+        .dropzone i {
+            font-size: 1.75rem;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .dropzone:hover i {
+            color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .dropzone span {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .dropzone p {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* Range Slider Styling */
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .slider-val {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .slider-wrapper i {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.08);
+            outline: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text-main);
+            border: 2px solid var(--accent-primary);
+            box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+            transition: var(--transition);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--accent-primary);
+            transform: scale(1.15);
+        }
+
+        /* Toggle Button (Checkbox) */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            padding: 0.25rem 0;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 34px;
+            transition: var(--transition);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-muted);
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: white;
+        }
+
+        /* Selection Buttons */
+        .btn-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-select {
+            flex: 1;
+            padding: 0.5rem 0.25rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+        }
+
+        .btn-select:hover {
+            color: var(--text-main);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-select.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 10px var(--accent-primary-glow);
+        }
+
+        /* Primary Action Buttons */
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #7c3aed 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.2);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Central Display Canvas Workspace */
+        .preview-area {
+            flex: 1;
+            position: relative;
+            background: #020106;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            max-height: 80vh;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 100px rgba(139, 92, 246, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #webgl-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Draggable Split Divider */
+        #split-divider {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            background: white;
+            box-shadow: 0 0 8px rgba(255,255,255,0.8), 0 0 20px var(--accent-secondary);
+            cursor: ew-resize;
+            z-index: 6;
+            display: none;
+        }
+
+        .split-handle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            color: #0d0b1c;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            pointer-events: none;
+        }
+
+        /* Editing Canvas overlay */
+        .editor-wrapper {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none; /* Only visible in Edit mode */
+            pointer-events: none;
+        }
+
+        .editor-wrapper.active {
+            display: block;
+        }
+
+        #editor-bg-image {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            opacity: 0.15;
+            display: block;
+            pointer-events: none;
+        }
+
+        #editor-paint-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            pointer-events: auto;
+            cursor: crosshair;
+        }
+
+        /* Brush cursor overlay */
+        #brush-cursor {
+            position: fixed;
+            border: 2px solid white;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            mix-blend-mode: difference;
+            display: none;
+        }
+
+        /* Workspace Controls overlay */
+        .canvas-toolbar {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(6, 5, 14, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            z-index: 7;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+
+        .toolbar-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .toolbar-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .toolbar-btn.active {
+            color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 0 0.2rem;
+        }
+
+        /* Model Download overlay */
+        .model-loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(6, 5, 14, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            padding: 2rem;
+            transition: var(--transition);
+        }
+
+        .loading-card {
+            background: rgba(18, 16, 35, 0.6);
+            border: 1px solid var(--panel-border);
+            padding: 2.5rem;
+            border-radius: var(--card-radius);
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(139, 92, 246, 0.15);
+            border-top: 3px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 4px;
+            transition: width 0.1s ease;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Preset color circles for brush values */
+        .color-presets {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.25rem;
+        }
+
+        .color-preset {
+            flex: 1;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: bold;
+            color: #777;
+            transition: var(--transition);
+        }
+        .color-preset.bg { background: #000; color: #fff; }
+        .color-preset.mid { background: #808080; color: #fff; }
+        .color-preset.fg { background: #fff; color: #000; }
+
+        .color-preset:hover {
+            transform: scale(1.05);
+            border-color: white;
+        }
+
+        .color-preset.active {
+            border: 2px solid var(--accent-primary);
+            box-shadow: 0 0 6px var(--accent-primary-glow);
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+        }
+        .tooltip:before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0d0b1c;
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+            padding: 0.35rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .tooltip:hover:before {
+            opacity: 1;
+            bottom: 135%;
+        }
+
+        /* Responsive Mobile Layout */
+        @media (max-width: 900px) {
+            body {
+                overflow-y: auto;
+                height: auto;
+            }
+
+            .workspace {
+                flex-direction: column;
+                height: auto;
+                overflow: visible;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--panel-border);
+            }
+
+            .preview-area {
+                height: 60vh;
+                padding: 1rem;
+            }
+
+            .canvas-container {
+                max-height: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient glow elements -->
+    <div class="glow-blob glow-1"></div>
+    <div class="glow-blob glow-2"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="logo-container">
+            <i data-lucide="layers" class="logo-icon"></i>
+            <span class="logo-text">AetherDepth</span>
+        </div>
+        <div class="status-badge">
+            <div id="status-dot" class="status-dot"></div>
+            <span id="status-text">AI Offline</span>
+        </div>
+    </header>
+
+    <!-- Localhost warning for AI features -->
+    <div id="protoWarn">
+        <i data-lucide="alert-triangle" style="display:inline-block; vertical-align:middle; width:16px; height:16px; margin-right:4px;"></i>
+        <strong>Running on file:// protocol</strong>. AI model downloading requires browser storage caching which is blocked locally. To enable automatic depth generation, please serve this page from a local server (e.g. <code>python3 -m http.server 8000</code> or <code>npx http-server</code>). Manual depth editing works offline.
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+        
+        <!-- Sidebar Controls -->
+        <div class="sidebar">
+            <!-- Navigation Tabs -->
+            <div class="sidebar-tabs">
+                <button class="tab-btn active" data-tab="tab-input">
+                    <i data-lucide="image"></i>
+                    Input
+                </button>
+                <button class="tab-btn" data-tab="tab-effect">
+                    <i data-lucide="sparkles"></i>
+                    Effect
+                </button>
+                <button class="tab-btn" data-tab="tab-edit" id="btn-tab-edit">
+                    <i data-lucide="paint-brush"></i>
+                    Edit Brush
+                </button>
+                <button class="tab-btn" data-tab="tab-export">
+                    <i data-lucide="download"></i>
+                    Export
+                </button>
+            </div>
+
+            <!-- Scrollable Control Panel Content -->
+            <div class="sidebar-content">
+                
+                <!-- TAB 1: Input -->
+                <div class="tab-panel active" id="tab-input">
+                    <div class="control-group">
+                        <span class="group-title">1. Choose Preset Photo</span>
+                        <div class="preset-grid">
+                            <div class="preset-thumb active" data-url="preset-portrait">
+                                <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=400&q=80" alt="Portrait">
+                                <span class="preset-label">Portrait</span>
+                            </div>
+                            <div class="preset-thumb" data-url="preset-neon">
+                                <img src="https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=400&q=80" alt="Street">
+                                <span class="preset-label">Cyberpunk</span>
+                            </div>
+                            <div class="preset-thumb" data-url="preset-cat">
+                                <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=400&q=80" alt="Cat">
+                                <span class="preset-label">Fauna</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="group-title">2. Or Upload Custom Image</span>
+                        <div class="dropzone" id="dropzone">
+                            <i data-lucide="upload-cloud"></i>
+                            <span>Drag & drop image here</span>
+                            <p>PNG, JPG up to 10MB</p>
+                            <input type="file" id="file-input" accept="image/*" style="display:none">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="group-title">AI Estimation Engine</span>
+                        <div class="slider-container" style="margin-bottom: 0.5rem;">
+                            <span class="slider-header">Model Accuracy</span>
+                            <div class="btn-row">
+                                <button class="btn-select active" id="btn-model-v2" data-model="v2">DepthAnythingV2 (Better)</button>
+                                <button class="btn-select" id="btn-model-fast" data-model="fast">DepthAnythingV1 (Fast)</button>
+                            </div>
+                        </div>
+                        <button class="btn-primary" id="btn-generate-depth" style="margin-top:0.25rem">
+                            <i data-lucide="brain"></i>
+                            Run AI Depth Analysis
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Effect Controls -->
+                <div class="tab-panel" id="tab-effect">
+                    <div class="control-group">
+                        <span class="group-title">Spatial Motion</span>
+                        
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Parallax Strength X</span>
+                                <span class="slider-val" id="val-strength-x">0.02</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="move-horizontal"></i>
+                                <input type="range" id="slider-strength-x" min="0" max="0.1" step="0.005" value="0.02">
+                            </div>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Parallax Strength Y</span>
+                                <span class="slider-val" id="val-strength-y">0.02</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="move-vertical"></i>
+                                <input type="range" id="slider-strength-y" min="0" max="0.1" step="0.005" value="0.02">
+                            </div>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Focus Plane (Zero shift)</span>
+                                <span class="slider-val" id="val-focus">0.50</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="focus"></i>
+                                <input type="range" id="slider-focus" min="0" max="1" step="0.05" value="0.5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="group-title">Autopilot & Orbit</span>
+                        
+                        <div class="toggle-container">
+                            <span>Auto-Orbit (Gentle Sway)</span>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-orbit" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Orbit Speed</span>
+                                <span class="slider-val" id="val-orbit-speed">1.0x</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="rotate-cw"></i>
+                                <input type="range" id="slider-orbit-speed" min="0.1" max="3" step="0.1" value="1.0">
+                            </div>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Motion Smoothing (Friction)</span>
+                                <span class="slider-val" id="val-smoothing">8%</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="activity"></i>
+                                <input type="range" id="slider-smoothing" min="1" max="25" step="1" value="8">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="group-title">Viewport Scaling</span>
+                        
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Edge Scale (Zoom bleed)</span>
+                                <span class="slider-val" id="val-zoom">7%</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="maximize-2"></i>
+                                <input type="range" id="slider-zoom" min="0" max="20" step="1" value="7">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Depth Editor -->
+                <div class="tab-panel" id="tab-edit">
+                    <div class="control-group">
+                        <span class="group-title">Brush Mode</span>
+                        <div class="btn-row">
+                            <button class="btn-select active" id="brush-mode-paint">
+                                <i data-lucide="edit-3"></i> Paint
+                            </button>
+                            <button class="btn-select" id="brush-mode-erase">
+                                <i data-lucide="eraser"></i> Erase
+                            </button>
+                            <button class="btn-select" id="brush-mode-blur">
+                                <i data-lucide="droplet"></i> Blur
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="group-title">Brush Dimensions</span>
+
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Size</span>
+                                <span class="slider-val" id="val-brush-size">40px</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="expand"></i>
+                                <input type="range" id="slider-brush-size" min="5" max="200" value="40">
+                            </div>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Hardness (Feather)</span>
+                                <span class="slider-val" id="val-brush-hardness">20%</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="circle-dot"></i>
+                                <input type="range" id="slider-brush-hardness" min="0" max="100" value="20">
+                            </div>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Opacity</span>
+                                <span class="slider-val" id="val-brush-opacity">50%</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="opacity"></i>
+                                <input type="range" id="slider-brush-opacity" min="5" max="100" value="50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="group-title">Depth Color Value</span>
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Gray Value (Distance)</span>
+                                <span class="slider-val" id="val-brush-val">255</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="palette"></i>
+                                <input type="range" id="slider-brush-val" min="0" max="255" value="255">
+                            </div>
+                        </div>
+                        <div class="color-presets">
+                            <div class="color-preset bg" data-val="0">Far (0)</div>
+                            <div class="color-preset mid" data-val="128">Mid (128)</div>
+                            <div class="color-preset fg active" data-val="255">Near (255)</div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="group-title">Actions</span>
+                        <div class="btn-row">
+                            <button class="btn-secondary" id="btn-undo" disabled>
+                                <i data-lucide="undo-2"></i> Undo
+                            </button>
+                            <button class="btn-secondary" id="btn-redo" disabled>
+                                <i data-lucide="redo-2"></i> Redo
+                            </button>
+                        </div>
+                        <button class="btn-secondary" id="btn-clear-depth" style="margin-top: 0.5rem; color: var(--danger); border-color: rgba(239, 68, 68, 0.2)">
+                            <i data-lucide="trash-2"></i> Clear Depth Map
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB 4: Export Options -->
+                <div class="tab-panel" id="tab-export">
+                    <div class="control-group">
+                        <span class="group-title">Global Adjustments</span>
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Contrast</span>
+                                <span class="slider-val" id="val-contrast">1.0x</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="contrast"></i>
+                                <input type="range" id="slider-contrast" min="0.2" max="3" step="0.1" value="1.0">
+                            </div>
+                        </div>
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Brightness Offset</span>
+                                <span class="slider-val" id="val-brightness">0.0</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="sun"></i>
+                                <input type="range" id="slider-brightness" min="-0.5" max="0.5" step="0.05" value="0.0">
+                            </div>
+                        </div>
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Soft Blur Filter</span>
+                                <span class="slider-val" id="val-blur">0.0px</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="blur"></i>
+                                <input type="range" id="slider-blur" min="0" max="10" step="0.5" value="0">
+                            </div>
+                        </div>
+                        <div class="toggle-container">
+                            <span>Invert Depth Direction</span>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-invert">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="group-title">Downloads</span>
+                        <button class="btn-secondary" id="btn-download-depth">
+                            <i data-lucide="image"></i>
+                            Save Depth Map (PNG)
+                        </button>
+                        <button class="btn-primary" id="btn-export-html" style="margin-top:0.5rem">
+                            <i data-lucide="globe"></i>
+                            Export Standalone 3D Page
+                        </button>
+                        <p style="font-size:0.7rem; color:var(--text-muted); text-align:center; margin-top:0.25rem">
+                            Generates a self-contained 3D parallax webpage (HTML file) that runs offline.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Display Preview Area -->
+        <div class="preview-area">
+            
+            <!-- Canvas Container -->
+            <div class="canvas-container" id="canvas-container">
+                <!-- 3D Preview (WebGL) -->
+                <canvas id="webgl-canvas"></canvas>
+
+                <!-- Interactive 2D Mask Editor Overlay -->
+                <div class="editor-wrapper" id="editor-wrapper">
+                    <img id="editor-bg-image" src="" alt="Background tracing Image">
+                    <canvas id="editor-paint-canvas"></canvas>
+                </div>
+
+                <!-- Draggable split view divider bar -->
+                <div id="split-divider">
+                    <div class="split-handle">
+                        <i data-lucide="chevrons-left-right" style="width:16px; height:16px"></i>
+                    </div>
+                </div>
+
+                <!-- Status/Downloading Model overlay -->
+                <div class="model-loading-overlay" id="loading-overlay" style="display:none">
+                    <div class="loading-card">
+                        <div class="spinner"></div>
+                        <h3 id="loader-title" style="margin-bottom:0.5rem; font-family:'Outfit',sans-serif">Downloading Neural Network</h3>
+                        <p id="loader-desc" style="font-size:0.85rem; color:var(--text-muted)">Please wait while we initialize model files (~30MB)...</p>
+                        
+                        <div class="progress-bar-container" id="loader-progress-container">
+                            <div class="progress-bar-fill" id="loader-progress-bar"></div>
+                        </div>
+                        <div class="progress-text" id="loader-progress-text">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toolbar floating under the canvas -->
+            <div class="canvas-toolbar">
+                <button class="toolbar-btn tooltip active" id="tool-view-3d" data-tooltip="3D Spatial Parallax">
+                    <i data-lucide="orbit"></i>
+                </button>
+                <button class="toolbar-btn tooltip" id="tool-view-depth" data-tooltip="Depth Map View">
+                    <i data-lucide="eye"></i>
+                </button>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn tooltip" id="tool-split-img" data-tooltip="Split: Photo vs 3D">
+                    <i data-lucide="columns"></i>
+                </button>
+                <button class="toolbar-btn tooltip" id="tool-split-depth" data-tooltip="Split: Depth vs 3D">
+                    <i data-lucide="layout-split"></i>
+                </button>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn tooltip" id="tool-gyro" data-tooltip="Gyroscope Tilt Tracking">
+                    <i data-lucide="smartphone"></i>
+                </button>
+                <button class="toolbar-btn tooltip" id="tool-fullscreen" data-tooltip="Toggle Fullscreen">
+                    <i data-lucide="expand"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Brush size pointer overlay circle -->
+    <div id="brush-cursor"></div>
+
+    <script type="module">
+        // Register Lucide Icons
+        lucide.createIcons();
+
+        // ----------------------------------------------------
+        // WebGL & Three.js Core Implementation
+        // ----------------------------------------------------
+        let container, canvas, renderer, scene, camera, material, mesh;
+        let originalTexture = null, depthTexture = null;
+
+        // Interactive control variables
+        let isOrbitActive = true;
+        let isGyroActive = false;
+        let orbitTime = 0;
+        let splitMode = 0; // 0 = normal, 1 = image split, 2 = depth split
+        let splitPos = -1.0; // default hidden split
+        
+        let mouseTarget = new THREE.Vector2(0, 0);
+        let mouseCurrent = new THREE.Vector2(0, 0);
+        let smoothFactor = 0.08;
+
+        const defaultPortraitUrl = 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=1200&q=80';
+        const defaultNeonUrl = 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=1200&q=80';
+        const defaultCatUrl = 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1200&q=80';
+
+        // Depth Map 2D Canvas storage
+        const depthCanvas = document.createElement('canvas');
+        const depthCtx = depthCanvas.getContext('2d', { willReadFrequently: true });
+        let imageWidth = 800;
+        let imageHeight = 800;
+
+        function initWebGL() {
+            container = document.getElementById('canvas-container');
+            canvas = document.getElementById('webgl-canvas');
+
+            // Setup renderer
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(container.clientWidth, container.clientHeight);
+
+            scene = new THREE.Scene();
+            
+            // Setup orthographic camera (covers exactly -1 to 1 clip space)
+            camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+            // Shaders
+            const vertexShader = `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = vec4(position, 1.0);
+                }
+            `;
+
+            const fragmentShader = `
+                uniform sampler2D uImage;
+                uniform sampler2D uDepthMap;
+                uniform vec2 uMouse;
+                uniform vec2 uStrength;
+                uniform float uFocusPoint;
+                uniform float uContrast;
+                uniform float uBrightness;
+                uniform int uInvert;
+                uniform float uScale;
+                uniform float uBlurOffset;
+                uniform vec2 uAspect;
+                uniform float uSplitPosition;
+                uniform int uSplitMode; // 0 = 3D only, 1 = Original vs 3D, 2 = Depth vs 3D
+                uniform int uViewDepthOnly; // 0 = false, 1 = true
+                varying vec2 vUv;
+
+                void main() {
+                    // Aspect ratio cover fitting + bleed scale zoom
+                    vec2 scaledUv = (vUv - 0.5) * uAspect * uScale + 0.5;
+
+                    // If viewing depth map only
+                    if (uViewDepthOnly == 1) {
+                        float d = texture2D(uDepthMap, vUv).r;
+                        gl_FragColor = vec4(vec3(d), 1.0);
+                        return;
+                    }
+
+                    // Check if we are in split mode and current pixel is on the left
+                    if (uSplitPosition >= 0.0 && vUv.x < uSplitPosition) {
+                        if (uSplitMode == 1) {
+                            // Show raw original image stretch-fitted
+                            gl_FragColor = texture2D(uImage, vUv);
+                            return;
+                        } else if (uSplitMode == 2) {
+                            // Show raw depth map stretch-fitted
+                            float d = texture2D(uDepthMap, vUv).r;
+                            gl_FragColor = vec4(vec3(d), 1.0);
+                            return;
+                        }
+                    }
+
+                    // Sample depth with optional 9-tap blur filter
+                    float depth = 0.0;
+                    if (uBlurOffset > 0.0) {
+                        float totalWeight = 0.0;
+                        for(float x = -2.0; x <= 2.0; x += 1.0) {
+                            for(float y = -2.0; y <= 2.0; y += 1.0) {
+                                vec2 offset = vec2(x, y) * uBlurOffset;
+                                float weight = 1.0 / (1.0 + length(offset));
+                                depth += texture2D(uDepthMap, scaledUv + offset).r * weight;
+                                totalWeight += weight;
+                            }
+                        }
+                        depth /= totalWeight;
+                    } else {
+                        depth = texture2D(uDepthMap, scaledUv).r;
+                    }
+
+                    // Apply Brightness & Contrast
+                    depth = (depth - 0.5) * uContrast + 0.5 + uBrightness;
+                    depth = clamp(depth, 0.0, 1.0);
+
+                    // Apply inversion if checked
+                    if (uInvert == 1) {
+                        depth = 1.0 - depth;
+                    }
+
+                    // Calculate spatial shift
+                    vec2 displacement = uMouse * (depth - uFocusPoint) * uStrength;
+                    vec2 displacedUv = clamp(scaledUv + displacement, vec2(0.0), vec2(1.0));
+
+                    gl_FragColor = texture2D(uImage, displacedUv);
+                }
+            `;
+
+            // Dummy black textures to start
+            const placeholderCanvas = document.createElement('canvas');
+            placeholderCanvas.width = 2;
+            placeholderCanvas.height = 2;
+            originalTexture = new THREE.CanvasTexture(placeholderCanvas);
+            depthTexture = new THREE.CanvasTexture(placeholderCanvas);
+
+            material = new THREE.ShaderMaterial({
+                uniforms: {
+                    uImage: { value: originalTexture },
+                    uDepthMap: { value: depthTexture },
+                    uMouse: { value: mouseCurrent },
+                    uStrength: { value: new THREE.Vector2(0.02, 0.02) },
+                    uFocusPoint: { value: 0.5 },
+                    uContrast: { value: 1.0 },
+                    uBrightness: { value: 0.0 },
+                    uInvert: { value: 0 },
+                    uScale: { value: 0.93 }, // 7% crop zoom
+                    uBlurOffset: { value: 0.0 },
+                    uAspect: { value: new THREE.Vector2(1, 1) },
+                    uSplitPosition: { value: -1.0 },
+                    uSplitMode: { value: 0 },
+                    uViewDepthOnly: { value: 0 }
+                },
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                depthWrite: false,
+                depthTest: false
+            });
+
+            const geometry = new THREE.PlaneGeometry(2, 2);
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            // Resize listener
+            window.addEventListener('resize', handleResize);
+            
+            // Animation loop
+            renderer.setAnimationLoop(animate);
+        }
+
+        function handleResize() {
+            if (!renderer || !originalTexture.image) return;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            updateAspectUniform();
+        }
+
+        function updateAspectUniform() {
+            if (!originalTexture || !originalTexture.image) return;
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+            const iw = originalTexture.image.width;
+            const ih = originalTexture.image.height;
+
+            const canvasAspect = cw / ch;
+            const imageAspect = iw / ih;
+
+            let scaleX = 1;
+            let scaleY = 1;
+
+            if (canvasAspect > imageAspect) {
+                scaleY = imageAspect / canvasAspect;
+            } else {
+                scaleX = canvasAspect / imageAspect;
+            }
+
+            material.uniforms.uAspect.value.set(scaleX, scaleY);
+        }
+
+        // Animate rendering and smooth mouse/orbit movement
+        function animate() {
+            orbitTime += 0.015 * parseFloat(document.getElementById('slider-orbit-speed').value);
+
+            if (isOrbitActive && !isGyroActive) {
+                // Circular Orbit Sway
+                mouseTarget.x = Math.sin(orbitTime) * 0.45;
+                mouseTarget.y = Math.cos(orbitTime) * 0.3;
+            }
+
+            // Smooth linear interpolation (lerp)
+            mouseCurrent.x += (mouseTarget.x - mouseCurrent.x) * smoothFactor;
+            mouseCurrent.y += (mouseTarget.y - mouseCurrent.y) * smoothFactor;
+
+            renderer.render(scene, camera);
+        }
+
+        // Mouse/Pointer event listener for interactive tilting
+        document.getElementById('canvas-container').addEventListener('pointermove', (e) => {
+            if (isGyroActive || (document.getElementById('btn-tab-edit').classList.contains('active') && isPaintActive)) return;
+            
+            // Deactivate orbit while user is manually hovering
+            if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
+                isOrbitActive = false;
+                document.getElementById('toggle-orbit').checked = false;
+
+                const rect = container.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+                
+                mouseTarget.x = x * 0.8; // clamp movement scaling
+                mouseTarget.y = y * 0.8;
+            }
+        });
+
+        document.getElementById('canvas-container').addEventListener('pointerleave', () => {
+            if (!isGyroActive && !document.getElementById('btn-tab-edit').classList.contains('active')) {
+                // Resume orbit sway when mouse leaves
+                isOrbitActive = true;
+                document.getElementById('toggle-orbit').checked = true;
+            }
+        });
+
+        // ----------------------------------------------------
+        // Web Worker Depth AI Analysis Setup
+        // ----------------------------------------------------
+        const workerCode = `
+            // Load Transformers.js inside the Web Worker
+            import { pipeline, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
+            
+            env.allowLocalModels = false;
+
+            let pipe = null;
+            let currentModel = '';
+
+            self.onmessage = async function(e) {
+                const { type, payload } = e.data;
+
+                if (type === 'init') {
+                    const modelName = payload;
+                    if (pipe && currentModel === modelName) {
+                        self.postMessage({ type: 'ready' });
+                        return;
+                    }
+                    
+                    try {
+                        self.postMessage({ type: 'status', message: 'Downloading depth model (approx. 50MB)...' });
+                        
+                        pipe = await pipeline('depth-estimation', modelName, {
+                            progress_callback: (progressData) => {
+                                if (progressData.status === 'progress') {
+                                    self.postMessage({ 
+                                        type: 'progress', 
+                                        file: progressData.file, 
+                                        progress: progressData.progress 
+                                    });
+                                }
+                            }
+                        });
+                        
+                        currentModel = modelName;
+                        self.postMessage({ type: 'ready' });
+                    } catch (err) {
+                        self.postMessage({ type: 'error', error: err.message });
+                    }
+                } else if (type === 'predict') {
+                    if (!pipe) {
+                        self.postMessage({ type: 'error', error: 'Model not initialized' });
+                        return;
+                    }
+
+                    try {
+                        self.postMessage({ type: 'status', message: 'Running depth-estimation model...' });
+                        
+                        // payload contains { dataBuffer, width, height, channels }
+                        const { dataBuffer, width, height, channels } = payload;
+                        
+                        // Construct RawImage for Transformers.js pipeline
+                        const raw = new RawImage(new Uint8ClampedArray(dataBuffer), width, height, channels);
+                        
+                        // Run monocular depth estimation
+                        const result = await pipe(raw);
+                        
+                        // Send grayscale Uint8Array output back
+                        const depthRaw = result.depth;
+                        
+                        self.postMessage({ 
+                            type: 'result', 
+                            width: depthRaw.width, 
+                            height: depthRaw.height, 
+                            data: depthRaw.data 
+                        });
+                    } catch (err) {
+                        self.postMessage({ type: 'error', error: err.message });
+                    }
+                }
+            };
+        `;
+
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const worker = new Worker(URL.createObjectURL(blob), { type: 'module' });
+
+        let isModelReady = false;
+        let selectedModel = 'onnx-community/depth-anything-v2-small';
+
+        // UI Loader Helpers
+        const overlay = document.getElementById('loading-overlay');
+        const loaderTitle = document.getElementById('loader-title');
+        const loaderDesc = document.getElementById('loader-desc');
+        const progressBar = document.getElementById('loader-progress-bar');
+        const progressText = document.getElementById('loader-progress-text');
+        const progressContainer = document.getElementById('loader-progress-container');
+
+        // Check if page loaded on file protocol
+        if (window.location.protocol === 'file:') {
+            document.getElementById('protoWarn').style.display = 'block';
+        }
+
+        // Web Worker listener
+        worker.onmessage = function(e) {
+            const { type, message, progress, error, width, height, data } = e.data;
+
+            if (type === 'status') {
+                updateLoaderStatus(message);
+            } else if (type === 'progress') {
+                updateLoaderProgress(progress);
+            } else if (type === 'ready') {
+                isModelReady = true;
+                updateStatusBadge('ready');
+                hideLoader();
+                // Trigger auto run if there's a loaded image waiting
+                if (pendingDepthRun) {
+                    runAiDepth();
+                }
+            } else if (type === 'error') {
+                updateStatusBadge('error');
+                updateLoaderStatus('Error: ' + error, true);
+                console.error(error);
+                pendingDepthRun = false;
+            } else if (type === 'result') {
+                // Draw estimated depth values onto Canvas
+                loadDepthMapFromArray(data, width, height);
+                updateStatusBadge('ready');
+                hideLoader();
+                pendingDepthRun = false;
+            }
+        };
+
+        function initModel(modelName) {
+            isModelReady = false;
+            updateStatusBadge('loading');
+            showLoader('Initializing AI Model', `Loading ${modelName.split('/').pop()} from Hugging Face...`);
+            worker.postMessage({ type: 'init', payload: modelName });
+        }
+
+        // Start initial model download
+        if (window.location.protocol !== 'file:') {
+            initModel(selectedModel);
+        }
+
+        function showLoader(title, description) {
+            loaderTitle.textContent = title;
+            loaderDesc.textContent = description;
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+            progressContainer.style.display = 'block';
+            overlay.style.display = 'flex';
+        }
+
+        function hideLoader() {
+            overlay.style.display = 'none';
+        }
+
+        function updateLoaderStatus(msg, isError = false) {
+            loaderDesc.textContent = msg;
+            if (isError) {
+                loaderTitle.textContent = 'Operation Failed';
+                progressBar.style.backgroundColor = 'var(--danger)';
+                progressContainer.style.display = 'none';
+            } else {
+                progressBar.style.backgroundColor = 'var(--accent-primary)';
+            }
+            overlay.style.display = 'flex';
+        }
+
+        function updateLoaderProgress(pct) {
+            const formatted = Math.round(pct) + '%';
+            progressBar.style.width = formatted;
+            progressText.textContent = formatted;
+        }
+
+        function updateStatusBadge(state) {
+            const dot = document.getElementById('status-dot');
+            const txt = document.getElementById('status-text');
+
+            dot.className = 'status-dot';
+            if (state === 'ready') {
+                dot.classList.add('active');
+                txt.textContent = 'AI Ready';
+            } else if (state === 'loading') {
+                dot.classList.add('loading');
+                txt.textContent = 'AI Initializing';
+            } else if (state === 'error') {
+                dot.classList.add('error');
+                txt.textContent = 'AI Error';
+            } else {
+                txt.textContent = 'AI Offline';
+            }
+        }
+
+        // ----------------------------------------------------
+        // Assets Loader & Depth Map Handlers
+        // ----------------------------------------------------
+        let currentImageElement = null;
+        let pendingDepthRun = false;
+
+        function loadPhoto(url, isPreset = false) {
+            showLoader('Loading Photo', 'Fetching image assets...');
+            
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+                currentImageElement = img;
+                imageWidth = img.naturalWidth;
+                imageHeight = img.naturalHeight;
+
+                // 1. Update original texture in WebGL
+                if (originalTexture) originalTexture.dispose();
+                originalTexture = new THREE.Texture(img);
+                originalTexture.needsUpdate = true;
+                material.uniforms.uImage.value = originalTexture;
+
+                // 2. Clear out depth map canvas & paint overlay to match
+                setupEditorDimensions(imageWidth, imageHeight);
+                
+                // Clear depth map canvas to default gray (50% depth focus)
+                depthCanvas.width = imageWidth;
+                depthCanvas.height = imageHeight;
+                depthCtx.fillStyle = '#808080';
+                depthCtx.fillRect(0, 0, imageWidth, imageHeight);
+                
+                // Update depth map texture in WebGL
+                if (depthTexture) depthTexture.dispose();
+                depthTexture = new THREE.CanvasTexture(depthCanvas);
+                material.uniforms.uDepthMap.value = depthTexture;
+
+                // Initialize Brush Undo Redo states
+                initUndoStack();
+
+                // 3. Aspect Ratio adjustment
+                updateAspectUniform();
+                hideLoader();
+
+                // 4. Trigger Auto AI depth generation if model is loaded and is a preset or custom image
+                if (isModelReady) {
+                    runAiDepth();
+                } else if (window.location.protocol !== 'file:') {
+                    pendingDepthRun = true;
+                }
+            };
+            img.onerror = function() {
+                updateLoaderStatus('Error fetching the image. Please verify CORS configurations or select a different image.', true);
+            };
+            img.src = url;
+        }
+
+        // Load Preset Gallery click triggers
+        document.querySelectorAll('.preset-thumb').forEach(thumb => {
+            thumb.addEventListener('click', (e) => {
+                document.querySelectorAll('.preset-thumb').forEach(t => t.classList.remove('active'));
+                thumb.classList.add('active');
+                
+                const type = thumb.getAttribute('data-url');
+                let targetUrl = '';
+                if (type === 'preset-portrait') targetUrl = defaultPortraitUrl;
+                else if (type === 'preset-neon') targetUrl = defaultNeonUrl;
+                else if (type === 'preset-cat') targetUrl = defaultCatUrl;
+
+                loadPhoto(targetUrl, true);
+            });
+        });
+
+        // Trigger AI analysis pipeline
+        function runAiDepth() {
+            if (!currentImageElement) return;
+            if (!isModelReady) {
+                updateLoaderStatus('AI model is still loading. The depth estimation will trigger automatically when initialization is complete.');
+                pendingDepthRun = true;
+                return;
+            }
+
+            showLoader('Analyzing Photo Depth', 'Preprocessing image pixels...');
+
+            // Create offscreen canvas to extract raw ImageData
+            const procCanvas = document.createElement('canvas');
+            procCanvas.width = Math.min(imageWidth, 1024); // Cap max dimensions to keep inference fast
+            procCanvas.height = Math.round(procCanvas.width * (imageHeight / imageWidth));
+            const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
+            procCtx.drawImage(currentImageElement, 0, 0, procCanvas.width, procCanvas.height);
+
+            const imgData = procCtx.getImageData(0, 0, procCanvas.width, procCanvas.height);
+            
+            // Pass array buffer for high performance rendering without locks
+            worker.postMessage({
+                type: 'predict',
+                payload: {
+                    dataBuffer: imgData.data.buffer,
+                    width: imgData.width,
+                    height: imgData.height,
+                    channels: 4
+                }
+            }, [imgData.data.buffer]);
+        }
+
+        // Load generated AI output into Canvas
+        function loadDepthMapFromArray(array, w, h) {
+            depthCanvas.width = imageWidth;
+            depthCanvas.height = imageHeight;
+
+            // Draw to temp canvas first
+            const temp = document.createElement('canvas');
+            temp.width = w;
+            temp.height = h;
+            const tCtx = temp.getContext('2d', { willReadFrequently: true });
+            const imgData = tCtx.createImageData(w, h);
+            
+            // Output array is grayscale values (1 channel)
+            for (let i = 0; i < array.length; i++) {
+                const val = array[i];
+                const idx = i * 4;
+                imgData.data[idx] = val;
+                imgData.data[idx+1] = val;
+                imgData.data[idx+2] = val;
+                imgData.data[idx+3] = 255;
+            }
+            tCtx.putImageData(imgData, 0, 0);
+
+            // Stretch fit/draw onto main depth canvas
+            depthCtx.drawImage(temp, 0, 0, imageWidth, imageHeight);
+            
+            // Refresh WebGL texture
+            depthTexture.needsUpdate = true;
+            
+            // Synchronize with Paint Editor Overlay Canvas
+            syncPaintCanvasWithDepth();
+            saveUndoState();
+        }
+
+        // ----------------------------------------------------
+        // Mask Painting Editor Engine (2D Canvas Overlay)
+        // ----------------------------------------------------
+        const paintCanvas = document.getElementById('editor-paint-canvas');
+        const paintCtx = paintCanvas.getContext('2d', { willReadFrequently: true });
+        const editorWrapper = document.getElementById('editor-wrapper');
+        const brushCursor = document.getElementById('brush-cursor');
+
+        let isPaintActive = false;
+        let lastPaintPos = { x: 0, y: 0 };
+        
+        // Brush Configuration variables
+        let brushSize = 40;
+        let brushHardness = 0.2; // feather percentage
+        let brushOpacity = 0.5;
+        let brushValue = 255; // default foreground
+        let brushMode = 'paint'; // paint, erase, blur
+
+        // Adjust Paint Canvas and Container Dimensions
+        function setupEditorDimensions(w, h) {
+            editorWrapper.style.aspectRatio = `${w} / ${h}`;
+            paintCanvas.width = w;
+            paintCanvas.height = h;
+        }
+
+        // Sync paint canvas from depth map storage canvas
+        function syncPaintCanvasWithDepth() {
+            paintCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
+            paintCtx.drawImage(depthCanvas, 0, 0);
+        }
+
+        // Pointer event listener triggers
+        paintCanvas.addEventListener('pointerdown', (e) => {
+            isPaintActive = true;
+            paintCanvas.setPointerCapture(e.pointerId);
+            
+            const pos = getCanvasMouseCoords(e);
+            lastPaintPos = pos;
+            
+            // Draw initial stamp
+            drawBrushStroke(pos.x, pos.y, pos.x, pos.y);
+        });
+
+        paintCanvas.addEventListener('pointermove', (e) => {
+            updateBrushCursor(e);
+            if (!isPaintActive) return;
+
+            const pos = getCanvasMouseCoords(e);
+            
+            // Draw continuous stamp line
+            drawBrushStroke(lastPaintPos.x, lastPaintPos.y, pos.x, pos.y);
+            lastPaintPos = pos;
+        });
+
+        paintCanvas.addEventListener('pointerup', (e) => {
+            if (!isPaintActive) return;
+            isPaintActive = false;
+            paintCanvas.releasePointerCapture(e.pointerId);
+
+            // Sync brush strokes to WebGL Depth Map
+            depthCtx.clearRect(0, 0, depthCanvas.width, depthCanvas.height);
+            depthCtx.drawImage(paintCanvas, 0, 0);
+            depthTexture.needsUpdate = true;
+            
+            // Push state for Undo Redo stack
+            saveUndoState();
+        });
+
+        paintCanvas.addEventListener('pointerleave', () => {
+            brushCursor.style.display = 'none';
+        });
+
+        paintCanvas.addEventListener('pointerenter', () => {
+            if (document.getElementById('btn-tab-edit').classList.contains('active')) {
+                brushCursor.style.display = 'block';
+            }
+        });
+
+        // Translate Pointer events coordinates to Canvas Pixels
+        function getCanvasMouseCoords(e) {
+            const rect = paintCanvas.getBoundingClientRect();
+            // Normalized range [0, 1]
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+            return {
+                x: x * paintCanvas.width,
+                y: y * paintCanvas.height
+            };
+        }
+
+        // Move cursor feedback circle
+        function updateBrushCursor(e) {
+            brushCursor.style.width = `${brushSize * (paintCanvas.getBoundingClientRect().width / paintCanvas.width)}px`;
+            brushCursor.style.height = `${brushSize * (paintCanvas.getBoundingClientRect().height / paintCanvas.height)}px`;
+            brushCursor.style.left = `${e.clientX}px`;
+            brushCursor.style.top = `${e.clientY}px`;
+        }
+
+        // Continuous drawing loop with circle stamps
+        function drawBrushStroke(x0, y0, x1, y1) {
+            const dist = Math.hypot(x1 - x0, y1 - y0);
+            // Draw overlapping circles every 5% spacing of brush size for continuous fluid stroke
+            const steps = Math.max(1, Math.ceil(dist / (brushSize * 0.05)));
+            
+            for (let i = 0; i <= steps; i++) {
+                const t = steps === 0 ? 0 : i / steps;
+                const x = x0 + (x1 - x0) * t;
+                const y = y0 + (y1 - y0) * t;
+                
+                if (brushMode === 'blur') {
+                    applyLocalBlur(x, y);
+                } else {
+                    applyBrushStamp(x, y);
+                }
+            }
+        }
+
+        // Draw standard paint or erase stamp on canvas
+        function applyBrushStamp(x, y) {
+            const r = brushSize / 2;
+            const val = brushMode === 'erase' ? 0 : brushValue; // Erase defaults to solid black background depth
+
+            if (brushHardness >= 0.95) {
+                // Hard brush circle
+                paintCtx.fillStyle = `rgba(${val},${val},${val},${brushOpacity})`;
+                paintCtx.beginPath();
+                paintCtx.arc(x, y, r, 0, Math.PI * 2);
+                paintCtx.fill();
+            } else {
+                // Radial gradient soft brush
+                const grad = paintCtx.createRadialGradient(x, y, r * brushHardness, x, y, r);
+                grad.addColorStop(0, `rgba(${val},${val},${val},${brushOpacity * 0.15})`); // Lower opacity per stamp for smooth blending accumulation
+                grad.addColorStop(1, `rgba(${val},${val},${val},0)`);
+                
+                paintCtx.fillStyle = grad;
+                paintCtx.beginPath();
+                paintCtx.arc(x, y, r, 0, Math.PI * 2);
+                paintCtx.fill();
+            }
+        }
+
+        // Localized blur brush using temporary canvas masking and CSS filter
+        const blurCanvas = document.createElement('canvas');
+        const maskCanvas = document.createElement('canvas');
+        const blurCtx = blurCanvas.getContext('2d', { willReadFrequently: true });
+        const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
+
+        function applyLocalBlur(x, y) {
+            const r = brushSize / 2;
+            const size = Math.round(brushSize);
+            
+            const startX = Math.round(x - r);
+            const startY = Math.round(y - r);
+
+            // Resize temporary buffers
+            blurCanvas.width = size;
+            blurCanvas.height = size;
+            maskCanvas.width = size;
+            maskCanvas.height = size;
+
+            // 1. Copy surrounding image region to blur buffer
+            blurCtx.clearRect(0, 0, size, size);
+            blurCtx.drawImage(paintCanvas, startX, startY, size, size, 0, 0, size, size);
+
+            // 2. Blur the copied region using canvas filter
+            const blurTemp = document.createElement('canvas');
+            blurTemp.width = size;
+            blurTemp.height = size;
+            const btCtx = blurTemp.getContext('2d');
+            btCtx.filter = 'blur(4px)';
+            btCtx.drawImage(blurCanvas, 0, 0);
+
+            // 3. Render radial alpha mask
+            maskCtx.clearRect(0, 0, size, size);
+            const grad = maskCtx.createRadialGradient(r, r, r * brushHardness, r, r, r);
+            grad.addColorStop(0, `rgba(0,0,0,${brushOpacity})`);
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            maskCtx.fillStyle = grad;
+            maskCtx.beginPath();
+            maskCtx.arc(r, r, r, 0, Math.PI * 2);
+            maskCtx.fill();
+
+            // 4. Clip blurred region to brush radial mask
+            btCtx.globalCompositeOperation = 'destination-in';
+            btCtx.drawImage(maskCanvas, 0, 0);
+
+            // 5. Draw back on active paint canvas
+            paintCtx.drawImage(blurTemp, startX, startY);
+        }
+
+        // ----------------------------------------------------
+        // Editor Undo / Redo Manager (ImageData Stack)
+        // ----------------------------------------------------
+        let undoStack = [];
+        let redoStack = [];
+        const maxHistory = 10;
+
+        function initUndoStack() {
+            undoStack = [];
+            redoStack = [];
+            updateHistoryButtons();
+        }
+
+        function saveUndoState() {
+            const state = paintCtx.getImageData(0, 0, paintCanvas.width, paintCanvas.height);
+            undoStack.push(state);
+            if (undoStack.length > maxHistory) {
+                undoStack.shift();
+            }
+            redoStack = []; // Clear redo stack on new action
+            updateHistoryButtons();
+        }
+
+        function triggerUndo() {
+            if (undoStack.length > 1) { // Keep initial state
+                const current = undoStack.pop();
+                redoStack.push(current);
+
+                const previous = undoStack[undoStack.length - 1];
+                paintCtx.putImageData(previous, 0, 0);
+
+                // Sync with WebGL
+                depthCtx.clearRect(0, 0, depthCanvas.width, depthCanvas.height);
+                depthCtx.drawImage(paintCanvas, 0, 0);
+                depthTexture.needsUpdate = true;
+                
+                updateHistoryButtons();
+            }
+        }
+
+        function triggerRedo() {
+            if (redoStack.length > 0) {
+                const next = redoStack.pop();
+                undoStack.push(next);
+
+                paintCtx.putImageData(next, 0, 0);
+
+                // Sync with WebGL
+                depthCtx.clearRect(0, 0, depthCanvas.width, depthCanvas.height);
+                depthCtx.drawImage(paintCanvas, 0, 0);
+                depthTexture.needsUpdate = true;
+                
+                updateHistoryButtons();
+            }
+        }
+
+        function updateHistoryButtons() {
+            document.getElementById('btn-undo').disabled = undoStack.length <= 1;
+            document.getElementById('btn-redo').disabled = redoStack.length === 0;
+        }
+
+        // ----------------------------------------------------
+        // UI Controls & Interaction Wireframes
+        // ----------------------------------------------------
+
+        // Tab selection triggers
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+                btn.classList.add('active');
+                const target = btn.getAttribute('data-tab');
+                document.getElementById(target).classList.add('active');
+
+                // Toggle mask painting overlay depending on Tab
+                if (target === 'tab-edit') {
+                    syncPaintCanvasWithDepth();
+                    editorWrapper.classList.add('active');
+                    brushCursor.style.display = 'block';
+                    
+                    // Stop orbit while editing to make it easier to paint
+                    isOrbitActive = false;
+                    document.getElementById('toggle-orbit').checked = false;
+                } else {
+                    editorWrapper.classList.remove('active');
+                    brushCursor.style.display = 'none';
+                }
+            });
+        });
+
+        // Toggle elements sync with uniforms
+        document.getElementById('slider-strength-x').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('val-strength-x').textContent = val.toFixed(3);
+            material.uniforms.uStrength.value.x = val;
+        });
+
+        document.getElementById('slider-strength-y').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('val-strength-y').textContent = val.toFixed(3);
+            material.uniforms.uStrength.value.y = val;
+        });
+
+        document.getElementById('slider-focus').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('val-focus').textContent = val.toFixed(2);
+            material.uniforms.uFocusPoint.value = val;
+        });
+
+        document.getElementById('toggle-orbit').addEventListener('change', (e) => {
+            isOrbitActive = e.target.checked;
+        });
+
+        document.getElementById('slider-orbit-speed').addEventListener('input', (e) => {
+            document.getElementById('val-orbit-speed').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
+        });
+
+        document.getElementById('slider-smoothing').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            document.getElementById('val-smoothing').textContent = val + '%';
+            smoothFactor = val / 100;
+        });
+
+        document.getElementById('slider-zoom').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            document.getElementById('val-zoom').textContent = val + '%';
+            material.uniforms.uScale.value = 1 - (val / 100);
+        });
+
+        // Global Adjustments
+        document.getElementById('slider-contrast').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('val-contrast').textContent = val.toFixed(1) + 'x';
+            material.uniforms.uContrast.value = val;
+        });
+
+        document.getElementById('slider-brightness').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('val-brightness').textContent = val.toFixed(2);
+            material.uniforms.uBrightness.value = val;
+        });
+
+        document.getElementById('slider-blur').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('val-blur').textContent = val.toFixed(1) + 'px';
+            material.uniforms.uBlurOffset.value = val / 1000; // scaled offset mapping
+        });
+
+        document.getElementById('toggle-invert').addEventListener('change', (e) => {
+            material.uniforms.uInvert.value = e.target.checked ? 1 : 0;
+        });
+
+        // Brush Tuning Sync
+        document.getElementById('slider-brush-size').addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            document.getElementById('val-brush-size').textContent = brushSize + 'px';
+        });
+
+        document.getElementById('slider-brush-hardness').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            brushHardness = val / 100;
+            document.getElementById('val-brush-hardness').textContent = val + '%';
+        });
+
+        document.getElementById('slider-brush-opacity').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            brushOpacity = val / 100;
+            document.getElementById('val-brush-opacity').textContent = val + '%';
+        });
+
+        document.getElementById('slider-brush-val').addEventListener('input', (e) => {
+            brushValue = parseInt(e.target.value);
+            document.getElementById('val-brush-val').textContent = brushValue;
+            
+            // Sync with visual preset indicators
+            document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('active'));
+            if (brushValue === 0) document.querySelector('.color-preset.bg').classList.add('active');
+            else if (brushValue === 128) document.querySelector('.color-preset.mid').classList.add('active');
+            else if (brushValue === 255) document.querySelector('.color-preset.fg').classList.add('active');
+        });
+
+        // Color preset shortcuts
+        document.querySelectorAll('.color-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const val = parseInt(btn.getAttribute('data-val'));
+                brushValue = val;
+                document.getElementById('slider-brush-val').value = val;
+                document.getElementById('val-brush-val').textContent = val;
+            });
+        });
+
+        // Brush mode buttons
+        document.getElementById('brush-mode-paint').addEventListener('click', (e) => {
+            document.querySelectorAll('#tab-edit .btn-select').forEach(b => b.classList.remove('active'));
+            document.getElementById('brush-mode-paint').classList.add('active');
+            brushMode = 'paint';
+        });
+
+        document.getElementById('brush-mode-erase').addEventListener('click', (e) => {
+            document.querySelectorAll('#tab-edit .btn-select').forEach(b => b.classList.remove('active'));
+            document.getElementById('brush-mode-erase').classList.add('active');
+            brushMode = 'erase';
+        });
+
+        document.getElementById('brush-mode-blur').addEventListener('click', (e) => {
+            document.querySelectorAll('#tab-edit .btn-select').forEach(b => b.classList.remove('active'));
+            document.getElementById('brush-mode-blur').classList.add('active');
+            brushMode = 'blur';
+        });
+
+        // History Actions
+        document.getElementById('btn-undo').addEventListener('click', triggerUndo);
+        document.getElementById('btn-redo').addEventListener('click', triggerRedo);
+
+        document.getElementById('btn-clear-depth').addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear your current depth map mask?')) {
+                paintCtx.fillStyle = '#000000';
+                paintCtx.fillRect(0, 0, paintCanvas.width, paintCanvas.height);
+                
+                depthCtx.fillStyle = '#000000';
+                depthCtx.fillRect(0, 0, depthCanvas.width, depthCanvas.height);
+                
+                depthTexture.needsUpdate = true;
+                                saveUndoState();
+            }
+        });
+
+        // Model selection selector
+        document.querySelectorAll('[data-model]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-model]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedModel = btn.getAttribute('data-model') === 'fast' ? 'Xenova/depth-anything-small-hf' : 'onnx-community/depth-anything-v2-small';
+                if (window.location.protocol !== 'file:') {
+                    initModel(selectedModel);
+                }
+            });
+        });
+
+        // Trigger manual run AI depth buttons
+        document.getElementById('btn-generate-depth').addEventListener('click', runAiDepth);
+
+        // Upload custom image
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        
+        dropzone.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = 'var(--accent-primary)';
+            dropzone.style.background = 'rgba(139, 92, 246, 0.06)';
+        });
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = 'var(--accent-primary)';
+            dropzone.style.background = 'rgba(139, 92, 246, 0.06)';
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.style.borderColor = 'var(--panel-border)';
+            dropzone.style.background = 'rgba(255, 255, 255, 0.01)';
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = 'var(--panel-border)';
+            dropzone.style.background = 'rgba(255, 255, 255, 0.01)';
+
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleUploadedFile(file);
+            }
+        });
+
+        // Prevent browser opening files dropped outside dropzone
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => e.preventDefault());
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleUploadedFile(file);
+        });
+
+        function handleUploadedFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                // Clear active presets highlights
+                document.querySelectorAll('.preset-thumb').forEach(t => t.classList.remove('active'));
+                loadPhoto(evt.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Toolbar Buttons & Rendering view mode adjustments
+        const tool3d = document.getElementById('tool-view-3d');
+        const toolDepth = document.getElementById('tool-view-depth');
+        const toolSplitImg = document.getElementById('tool-split-img');
+        const toolSplitDepth = document.getElementById('tool-split-depth');
+        const splitDivider = document.getElementById('split-divider');
+
+        function deactivateAllViewTools() {
+            tool3d.classList.remove('active');
+            toolDepth.classList.remove('active');
+            toolSplitImg.classList.remove('active');
+            toolSplitDepth.classList.remove('active');
+            splitDivider.style.display = 'none';
+            
+            material.uniforms.uViewDepthOnly.value = 0;
+            material.uniforms.uSplitPosition.value = -1.0;
+        }
+
+        tool3d.addEventListener('click', () => {
+            deactivateAllViewTools();
+            tool3d.classList.add('active');
+        });
+
+        toolDepth.addEventListener('click', () => {
+            deactivateAllViewTools();
+            toolDepth.classList.add('active');
+            material.uniforms.uViewDepthOnly.value = 1;
+        });
+
+        toolSplitImg.addEventListener('click', () => {
+            deactivateAllViewTools();
+            toolSplitImg.classList.add('active');
+            splitDivider.style.display = 'block';
+            splitDivider.style.left = '50%';
+            
+            material.uniforms.uSplitMode.value = 1; // Original Image
+            material.uniforms.uSplitPosition.value = 0.5;
+        });
+
+        toolSplitDepth.addEventListener('click', () => {
+            deactivateAllViewTools();
+            toolSplitDepth.classList.add('active');
+            splitDivider.style.display = 'block';
+            splitDivider.style.left = '50%';
+            
+            material.uniforms.uSplitMode.value = 2; // Depth Map
+            material.uniforms.uSplitPosition.value = 0.5;
+        });
+
+        // Drag split slider behavior
+        let isDraggingSplit = false;
+
+        splitDivider.addEventListener('pointerdown', (e) => {
+            isDraggingSplit = true;
+            splitDivider.setPointerCapture(e.pointerId);
+            e.stopPropagation();
+        });
+
+        splitDivider.addEventListener('pointermove', (e) => {
+            if (!isDraggingSplit) return;
+            
+            const rect = container.getBoundingClientRect();
+            const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+            const pct = x / rect.width;
+            
+            splitDivider.style.left = `${pct * 100}%`;
+            material.uniforms.uSplitPosition.value = pct;
+            e.stopPropagation();
+        });
+
+        splitDivider.addEventListener('pointerup', (e) => {
+            if (!isDraggingSplit) return;
+            isDraggingSplit = false;
+            splitDivider.releasePointerCapture(e.pointerId);
+            e.stopPropagation();
+        });
+
+        // Gyroscope tracking mobile setup
+        const toolGyro = document.getElementById('tool-gyro');
+        
+        toolGyro.addEventListener('click', async () => {
+            if (isGyroActive) {
+                // Disable Gyro
+                isGyroActive = false;
+                toolGyro.classList.remove('active');
+                window.removeEventListener('deviceorientation', handleOrientation);
+                isOrbitActive = document.getElementById('toggle-orbit').checked;
+            } else {
+                // Enable Gyro
+                showLoader('Enabling Motion Sensors', 'Requesting device orientation access...');
+                const granted = await requestGyroscopePermission();
+                hideLoader();
+
+                if (granted) {
+                    isGyroActive = true;
+                    toolGyro.classList.add('active');
+                    isOrbitActive = false;
+                } else {
+                    alert('Sensor permission denied or gyroscope not supported on this device.');
+                }
+            }
+        });
+
+        async function requestGyroscopePermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const response = await DeviceOrientationEvent.requestPermission();
+                    if (response === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        return true;
+                    }
+                } catch (err) {
+                    console.error('Error requesting orientation permission', err);
+                }
+            } else {
+                // Standard browsers / non-iOS
+                window.addEventListener('deviceorientation', handleOrientation);
+                return true;
+            }
+            return false;
+        }
+
+        // Handle gyroscope tilt data
+        function handleOrientation(e) {
+            if (!isGyroActive) return;
+            // Gamma represents left-to-right tilt (range -90 to 90)
+            // Beta represents front-to-back tilt (range -180 to 180)
+            const x = Math.max(-30, Math.min(30, e.gamma || 0)) / 30; // map -30..30 deg -> -1..1
+            const y = Math.max(-30, Math.min(30, e.beta || 0)) / 30;
+
+            // Apply tilted mouse coordinates
+            mouseTarget.x = x * 0.8;
+            mouseTarget.y = -y * 0.8;
+        }
+
+        // Fullscreen Mode
+        const toolFullscreen = document.getElementById('tool-fullscreen');
+        
+        toolFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                container.requestFullscreen()
+                    .then(() => {
+                        toolFullscreen.classList.add('active');
+                        handleResize();
+                    })
+                    .catch(err => {
+                        alert(`Error enabling fullscreen: ${err.message}`);
+                    });
+            } else {
+                document.exitFullscreen()
+                    .then(() => {
+                        toolFullscreen.classList.remove('active');
+                        handleResize();
+                    });
+            }
+        });
+
+        // Listen for internal fullscreen changes (e.g. Esc press)
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                toolFullscreen.classList.remove('active');
+            }
+            // Resize Canvas to fit fullscreen window bounds
+            setTimeout(handleResize, 100);
+        });
+
+        // ----------------------------------------------------
+        // Downloads and Exporters Module
+        // ----------------------------------------------------
+
+        // Download Depth Map (PNG)
+        document.getElementById('btn-download-depth').addEventListener('click', () => {
+            if (!currentImageElement) return;
+
+            const link = document.createElement('a');
+            link.download = 'depth_map.png';
+            link.href = depthCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Export standalone interactive 3D Page (Single HTML File)
+        document.getElementById('btn-export-html').addEventListener('click', () => {
+            if (!currentImageElement) {
+                alert('Please load an image first before exporting.');
+                return;
+            }
+
+            showLoader('Bundling Standalone Page', 'Encoding assets to Base64 (this may take a moment)...');
+
+            // 1. Get original image dataURL
+            // Since Unsplash might be cross-origin, we draw onto offscreen canvas
+            const origCanvas = document.createElement('canvas');
+            origCanvas.width = imageWidth;
+            origCanvas.height = imageHeight;
+            const oCtx = origCanvas.getContext('2d', { willReadFrequently: true });
+            oCtx.drawImage(currentImageElement, 0, 0);
+            const origDataUrl = origCanvas.toDataURL('image/jpeg', 0.9);
+
+            // 2. Get depth image dataURL
+            const depthDataUrl = depthCanvas.toDataURL('image/png');
+
+            // Fetch settings values for export template
+            const strengthX = parseFloat(document.getElementById('slider-strength-x').value);
+            const strengthY = parseFloat(document.getElementById('slider-strength-y').value);
+            const focus = parseFloat(document.getElementById('slider-focus').value);
+            const orbit = document.getElementById('toggle-orbit').checked;
+            const orbitSpeed = parseFloat(document.getElementById('slider-orbit-speed').value);
+            const smooth = parseInt(document.getElementById('slider-smoothing').value) / 100;
+            const cropZoom = 1 - (parseInt(document.getElementById('slider-zoom').value) / 100);
+            
+            // Adjustments
+            const contrast = parseFloat(document.getElementById('slider-contrast').value);
+            const brightness = parseFloat(document.getElementById('slider-brightness').value);
+            const blur = parseFloat(document.getElementById('slider-blur').value) / 1000;
+            const invert = document.getElementById('toggle-invert').checked ? 1 : 0;
+
+            // Generate self-contained HTML Code
+            const exportedHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherDepth - Standalone 3D Photo</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>
+    <style>
+        * { margin: 0; padding: 0; overflow: hidden; width: 100vw; height: 100vh; background: #000; }
+        #canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+        #canvas:active { cursor: grabbing; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <script>
+        const imageBase64 = "${origDataUrl}";
+        const depthBase64 = "${depthDataUrl}";
+
+        const settings = {
+            strengthX: ${strengthX},
+            strengthY: ${strengthY},
+            focus: ${focus},
+            orbit: ${orbit},
+            orbitSpeed: ${orbitSpeed},
+            smooth: ${smooth},
+            cropZoom: ${cropZoom},
+            contrast: ${contrast},
+            brightness: ${brightness},
+            blur: ${blur},
+            invert: ${invert}
+        };
+
+        const canvas = document.getElementById('canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+        const vertexShader = \`
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = vec4(position, 1.0);
+            }
+        \`;
+
+        const fragmentShader = \`
+            uniform sampler2D uImage;
+            uniform sampler2D uDepthMap;
+            uniform vec2 uMouse;
+            uniform vec2 uStrength;
+            uniform float uFocusPoint;
+            uniform float uContrast;
+            uniform float uBrightness;
+            uniform int uInvert;
+            uniform float uScale;
+            uniform float uBlurOffset;
+            uniform vec2 uAspect;
+            varying vec2 vUv;
+
+            void main() {
+                vec2 scaledUv = (vUv - 0.5) * uAspect * uScale + 0.5;
+
+                float depth = 0.0;
+                if (uBlurOffset > 0.0) {
+                    float totalWeight = 0.0;
+                    for(float x = -2.0; x <= 2.0; x += 1.0) {
+                        for(float y = -2.0; y <= 2.0; y += 1.0) {
+                            vec2 offset = vec2(x, y) * uBlurOffset;
+                            float weight = 1.0 / (1.0 + length(offset));
+                            depth += texture2D(uDepthMap, scaledUv + offset).r * weight;
+                            totalWeight += weight;
+                        }
+                    }
+                    depth /= totalWeight;
+                } else {
+                    depth = texture2D(uDepthMap, scaledUv).r;
+                }
+
+                depth = (depth - 0.5) * uContrast + 0.5 + uBrightness;
+                depth = clamp(depth, 0.0, 1.0);
+                if (uInvert == 1) depth = 1.0 - depth;
+
+                vec2 displacement = uMouse * (depth - uFocusPoint) * uStrength;
+                vec2 displacedUv = clamp(scaledUv + displacement, vec2(0.0), vec2(1.0));
+
+                gl_FragColor = texture2D(uImage, displacedUv);
+            }
+        \`;
+
+        const textureLoader = new THREE.TextureLoader();
+        const originalTexture = textureLoader.load(imageBase64, () => {
+            updateAspect();
+        });
+        const depthTexture = textureLoader.load(depthBase64);
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                uImage: { value: originalTexture },
+                uDepthMap: { value: depthTexture },
+                uMouse: { value: new THREE.Vector2(0, 0) },
+                uStrength: { value: new THREE.Vector2(settings.strengthX, settings.strengthY) },
+                uFocusPoint: { value: settings.focus },
+                uContrast: { value: settings.contrast },
+                uBrightness: { value: settings.brightness },
+                uInvert: { value: settings.invert },
+                uScale: { value: settings.cropZoom },
+                uBlurOffset: { value: settings.blur },
+                uAspect: { value: new THREE.Vector2(1, 1) }
+            },
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            depthWrite: false,
+            depthTest: false
+        });
+
+        const geometry = new THREE.PlaneGeometry(2, 2);
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        let mouseTarget = new THREE.Vector2(0, 0);
+        let mouseCurrent = new THREE.Vector2(0, 0);
+        let orbitTime = 0;
+        let isOrbitActive = settings.orbit;
+
+        function updateAspect() {
+            if (!originalTexture.image) return;
+            const cw = window.innerWidth;
+            const ch = window.innerHeight;
+            const iw = originalTexture.image.width;
+            const ih = originalTexture.image.height;
+
+            const canvasAspect = cw / ch;
+            const imageAspect = iw / ih;
+
+            let scaleX = 1;
+            let scaleY = 1;
+
+            if (canvasAspect > imageAspect) {
+                scaleY = imageAspect / canvasAspect;
+            } else {
+                scaleX = canvasAspect / imageAspect;
+            }
+
+            material.uniforms.uAspect.value.set(scaleX, scaleY);
+        }
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            updateAspect();
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            isOrbitActive = false;
+            const x = (e.clientX / window.innerWidth) * 2 - 1;
+            const y = -((e.clientY / window.innerHeight) * 2 - 1);
+            
+            mouseTarget.x = x * 0.8;
+            mouseTarget.y = y * 0.8;
+        });
+
+        window.addEventListener('pointerleave', () => {
+            isOrbitActive = settings.orbit;
+        });
+
+        renderer.setAnimationLoop(() => {
+            if (isOrbitActive) {
+                orbitTime += 0.015 * settings.orbitSpeed;
+                mouseTarget.x = Math.sin(orbitTime) * 0.45;
+                mouseTarget.y = Math.cos(orbitTime) * 0.3;
+            }
+            mouseCurrent.x += (mouseTarget.x - mouseCurrent.x) * settings.smooth;
+            mouseCurrent.y += (mouseTarget.y - mouseCurrent.y) * settings.smooth;
+            material.uniforms.uMouse.value.copy(mouseCurrent);
+
+            renderer.render(scene, camera);
+        });
+    <\/script>
+</body>
+</html>`;
+
+            // Download file trigger
+            const blob = new Blob([exportedHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.download = 'spatial_photo_3d.html';
+            a.href = url;
+            a.click();
+            
+            hideLoader();
+        });
+
+        // ----------------------------------------------------
+        // Startup Initialization
+        // ----------------------------------------------------
+        
+        // Initialize WebGL Scene
+        initWebGL();
+
+        // Load Initial Default Portrait Photo
+        loadPhoto(defaultPortraitUrl, true);
+
+    </script>
+</body>
+</html>

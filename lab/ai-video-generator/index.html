@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Video Generator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #0b1021; color: #e2e8f0; line-height: 1.5; padding: 2rem 1rem; max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 0.25rem; color: #38bdf8; }
+p.sub { color: #94a3b8; font-size: 0.875rem; margin-bottom: 1.5rem; }
+label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.03em; }
+input, textarea, button { width: 100%; padding: 0.65rem 0.9rem; border-radius: 0.5rem; border: 1px solid #334155; background: #151d2e; color: #f8fafc; font-size: 0.95rem; margin-bottom: 0.9rem; }
+input:focus, textarea:focus { outline: none; border-color: #38bdf8; }
+button { background: #0ea5e9; border: none; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-bottom: 0; }
+button:hover { background: #0284c7; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.card { background: #111827; padding: 1.25rem; border-radius: 0.75rem; margin-bottom: 1rem; border: 1px solid #1f2937; }
+.warn { background: #270f0f; border-color: #7f1d1d; color: #fca5a5; }
+.warn code { background: #1f1010; padding: 0.15rem 0.35rem; border-radius: 0.25rem; color: #fecaca; }
+.log { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.82rem; color: #94a3b8; white-space: pre-wrap; max-height: 320px; overflow-y: auto; }
+.log .ok { color: #4ade80; }
+.log .err { color: #f87171; }
+.log .info { color: #38bdf8; }
+video { width: 100%; border-radius: 0.5rem; margin-top: 0.75rem; background: #000; }
+.credits { font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; }
+a { color: #38bdf8; }
+</style>
+</head>
+<body>
+
+<h1>AI Video Generator</h1>
+<p class="sub">Plan with WebLLM &middot; Source from Unsplash &middot; Render with ffmpeg.wasm</p>
+
+<div id="protoWarn" class="card warn" style="display:none">
+  <strong>Cannot run from file://</strong><br>
+  WebLLM downloads model weights via the Cache API, which browsers block on the local filesystem due to CORS policy. Please serve this file over HTTP:
+  <p style="margin-top:0.5rem"><code>python3 -m http.server 8000</code></p>
+  Then open <code>http://localhost:8000</code>
+</div>
+
+<div class="card">
+  <label>Shotstack API Key</label>
+  <input type="password" id="ssKey" placeholder="sk_shotstack_...">
+  <label>Unsplash Access Key</label>
+  <input type="password" id="usKey" placeholder="Unsplash client_id">
+  <button id="saveBtn">Save Keys to localStorage</button>
+</div>
+
+<div class="card">
+  <label>Render Method</label>
+  <select id="renderMethod" style="margin-bottom:0">
+    <option value="local">Local (Canvas — free, in-browser)</option>
+    <option value="shotstack">Shotstack (API — requires Shotstack key)</option>
+  </select>
+</div>
+
+<div class="card">
+  <label>Video Topic / Prompt</label>
+  <textarea id="topic" rows="3" placeholder="e.g., A peaceful mountain sunrise meditation"></textarea>
+  <button id="goBtn">Generate Video</button>
+</div>
+
+<div class="card">
+  <div class="log" id="log">Enter API keys and a topic to begin.</div>
+</div>
+
+<div id="result"></div>
+
+<script>
+// --- helpers always available (lives outside module, survives import failure) ---
+function log(msg, cls) {
+  var el = document.getElementById("log");
+  var span = document.createElement("div");
+  span.textContent = msg;
+  if (cls) span.className = cls;
+  el.appendChild(span);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog() { document.getElementById("log").innerHTML = ""; }
+
+document.getElementById("ssKey").value = localStorage.getItem("ssKey") || "";
+document.getElementById("usKey").value = localStorage.getItem("usKey") || "";
+
+if (location.protocol === "file:") {
+  document.getElementById("protoWarn").style.display = "block";
+}
+
+window.saveKeys = function () {
+  var ss = document.getElementById("ssKey").value.trim();
+  var us = document.getElementById("usKey").value.trim();
+  localStorage.setItem("ssKey", ss);
+  localStorage.setItem("usKey", us);
+  clearLog();
+  log("Keys saved.");
+};
+</script>
+
+<script type="module">
+import { CreateMLCEngine, prebuiltAppConfig } from "https://esm.run/@mlc-ai/web-llm";
+
+var state = {
+  engine: null,
+  ssKey: localStorage.getItem("ssKey") || "",
+  usKey: localStorage.getItem("usKey") || ""
+};
+
+document.getElementById("saveBtn").addEventListener("click", window.saveKeys);
+document.getElementById("goBtn").addEventListener("click", generate);
+
+async function clearWebLLMCaches() {
+  try {
+    var keys = await window.caches.keys();
+    var toDelete = keys.filter(function (k) { return k.toLowerCase().includes("webllm"); });
+    await Promise.all(toDelete.map(function (k) { return window.caches.delete(k); }));
+    if (toDelete.length) log("Cleared " + toDelete.length + " old WebLLM cache(s).", "info");
+  } catch (e) {
+    log("Could not clear caches: " + e.message, "err");
+  }
+}
+
+async function initEngine() {
+  if (state.engine) return;
+  if (location.protocol === "file:") {
+    throw new Error("WebLLM cannot load models from file://. Use a local HTTP server.");
+  }
+
+  await clearWebLLMCaches();
+  clearLog();
+  log("Initializing WebLLM with IndexedDB cache (first load ~1.2GB)...");
+
+  var cb = function (p) {
+    if (p.progress) log("Model load: " + (p.progress * 100).toFixed(0) + "%", "info");
+  };
+
+  try {
+    var appConfig = {
+      model_list: prebuiltAppConfig.model_list.slice(),
+      useIndexedDBCache: true
+    };
+    state.engine = await CreateMLCEngine(
+      "Llama-3.2-1B-Instruct-q4f32_1-MLC",
+      {
+        initProgressCallback: cb,
+        appConfig: appConfig
+      }
+    );
+    log("WebLLM ready.", "ok");
+  } catch (e) {
+    log("WebLLM failed to load.", "err");
+    log("If shards fail with net::ERR_FAILED, try:", "err");
+    log("  1. Reload the page and try again (transient network issue)", "err");
+    log("  2. Use Chrome, ensure 'Third-party cookies' are not blocked in Settings", "err");
+    log("  3. Try Incognito / private window (avoids extension conflicts)", "err");
+    log("  4. If behind a VPN / firewall, cas-bridge.xethub.hf.co must be allowed", "err");
+    log("  5. Clear site data and reload (chrome://settings/content/all)", "err");
+    throw e;
+  }
+}
+
+async function planVideo(topic) {
+  var messages = [
+    { role: "system", content: "You are a video planner. Output ONLY valid JSON with no markdown." },
+    { role: "user", content: "Create a 12-15 second video plan for: \"" + topic + "\". Output JSON with: title (short text overlay), keywords (array of 3-5 Unsplash search terms), duration (seconds per image, 3-5), caption (short overlay text). Example: {\"title\":\"Morning Calm\",\"keywords\":[\"mountain sunrise\",\"misty forest\",\"alpine lake\"],\"duration\":4,\"caption\":\"Breathe in nature\"}" }
+  ];
+  var reply = await state.engine.chat.completions.create({ messages: messages, temperature: 0.7 });
+  var text = reply.choices[0].message.content;
+  function extractFirstObject(str) {
+    var s = str.indexOf("{");
+    if (s === -1) return null;
+    var depth = 0;
+    for (var i = s; i < str.length; i++) {
+      if (str[i] === "{") depth++;
+      else if (str[i] === "}") { depth--; if (depth === 0) return str.substring(s, i + 1); }
+    }
+    return null;
+  }
+  var plan;
+  try {
+    plan = JSON.parse(text);
+  } catch (_) {
+    var m = text.match(/```json\s*([\s\S]*?)\s*```/);
+    if (m) {
+      plan = JSON.parse(m[1]);
+    } else {
+      var json = extractFirstObject(text);
+      if (json) {
+        plan = JSON.parse(json);
+      } else {
+        throw new Error("AI returned invalid JSON:\n" + text);
+      }
+    }
+  }
+  if (typeof plan.duration !== "number" || plan.duration < 2 || plan.duration > 8) {
+    plan.duration = 4;
+  }
+  return plan;
+}
+
+async function fetchImages(keywords) {
+  var images = [];
+  for (var i = 0; i < keywords.length; i++) {
+    var kw = keywords[i];
+    var url = "https://api.unsplash.com/search/photos?query=" + encodeURIComponent(kw) + "&per_page=1&client_id=" + state.usKey;
+    var res = await fetch(url);
+    if (!res.ok) throw new Error("Unsplash error " + res.status + " for \"" + kw + "\"");
+    var data = await res.json();
+    if (data.results && data.results[0]) {
+      images.push({ url: data.results[0].urls.regular, credit: data.results[0].user.name });
+    }
+  }
+  if (!images.length) throw new Error("No Unsplash images found.");
+  return images;
+}
+
+function buildTimeline(plan, images) {
+  var imageClips = [];
+  for (var i = 0; i < images.length; i++) {
+    imageClips.push({
+      asset: { type: "image", src: images[i].url },
+      start: i * plan.duration,
+      length: plan.duration
+    });
+  }
+
+  return {
+    timeline: {
+      background: "#000000",
+      tracks: [
+        { clips: imageClips },
+        {
+          clips: [
+            { asset: { type: "title", text: plan.title }, start: 0, length: plan.duration * 2 },
+            { asset: { type: "title", text: plan.caption }, start: (images.length - 1) * plan.duration, length: plan.duration }
+          ]
+        }
+      ]
+    },
+    output: {
+      format: "mp4",
+      resolution: "hd"
+    }
+  };
+}
+
+async function queueRender(timeline) {
+  var res = await fetch("https://api.shotstack.io/v1/render", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": state.ssKey },
+    body: JSON.stringify(timeline)
+  });
+  if (!res.ok) throw new Error("Shotstack " + res.status + ": " + await res.text());
+  return (await res.json()).response.id;
+}
+
+async function pollRender(id) {
+  while (true) {
+    var res = await fetch("https://api.shotstack.io/v1/render/" + id, {
+      headers: { "x-api-key": state.ssKey }
+    });
+    var data = await res.json();
+    var status = data.response.status;
+    if (status === "done") {
+      return { success: true, url: data.response.url };
+    }
+    if (status === "failed") {
+      return { success: false, error: data.response.error || "Unknown error" };
+    }
+    await new Promise(function (r) { return setTimeout(r, 3000); });
+  }
+}
+
+async function generate() {
+  var topic = document.getElementById("topic").value.trim();
+  if (!topic) { log("Please enter a topic.", "err"); return; }
+
+  state.usKey = localStorage.getItem("usKey") || "";
+  if (!state.usKey) {
+    log("Please save your Unsplash API key first.", "err");
+    return;
+  }
+
+  var method = document.getElementById("renderMethod").value;
+  if (method === "shotstack") {
+    state.ssKey = localStorage.getItem("ssKey") || "";
+    if (!state.ssKey) {
+      log("Please save your Shotstack API key or switch to Local render.", "err");
+      return;
+    }
+  }
+
+  clearLog();
+  var goBtn = document.getElementById("goBtn");
+  goBtn.disabled = true;
+
+  try {
+    await initEngine();
+
+    log("Planning video...");
+    var plan = await planVideo(topic);
+    log("Plan:", "info");
+    log(JSON.stringify(plan, null, 2));
+
+    log("Fetching images from Unsplash...");
+    var images = await fetchImages(plan.keywords);
+    log("Got " + images.length + " image(s).", "ok");
+
+    if (method === "shotstack") {
+      log("Building Shotstack timeline...");
+      var timeline = buildTimeline(plan, images);
+      log("Timeline:", "info");
+      log(JSON.stringify(timeline, null, 2));
+
+      log("Queuing render...");
+      var renderId = await queueRender(timeline);
+      log("Render ID: " + renderId, "info");
+
+      log("Waiting for render (this may take a minute)...");
+      var result = await pollRender(renderId);
+
+      if (result.success) {
+        log("Render complete!", "ok");
+        document.getElementById("result").innerHTML =
+          '<div class="card">' +
+            '<video controls autoplay>' +
+              '<source src="' + result.url + '" type="video/mp4">' +
+            '</video>' +
+            '<p class="credits">Images: ' + images.map(function (i) { return i.credit; }).join(", ") + '</p>' +
+          '</div>';
+      } else {
+        log("Render failed: " + result.error, "err");
+      }
+    } else {
+      await renderLocally(plan, images);
+    }
+  } catch (e) {
+    log("Error: " + e.message, "err");
+  } finally {
+    goBtn.disabled = false;
+  }
+}
+
+// --- Local rendering via Canvas + MediaRecorder (no deps) ---
+
+async function loadImage(url) {
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = function () { resolve(img); };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+async function renderLocally(plan, images) {
+  log("Loading images...");
+  var imgs = await Promise.all(images.map(function (img) {
+    return loadImage(img.url);
+  }));
+
+  var fps = 30;
+  var secsPerImg = plan.duration;
+  var totalFrames = secsPerImg * imgs.length * fps;
+
+  var c = document.createElement("canvas");
+  c.width = 1280; c.height = 720;
+  var ctx = c.getContext("2d");
+
+  var stream = c.captureStream(fps);
+  var rec = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp9" });
+  var chunks = [];
+  rec.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
+
+  var frame = 0;
+  rec.start();
+
+  function draw() {
+    var imgIdx = Math.min(Math.floor(frame / (secsPerImg * fps)), imgs.length - 1);
+    var local = frame - imgIdx * secsPerImg * fps;
+
+    ctx.drawImage(imgs[imgIdx], 0, 0, 1280, 720);
+
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.font = "bold 48px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    if (imgIdx === 0 && local < fps * 2) {
+      ctx.fillRect(0, 530, 1280, 190);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(plan.title, 640, 625);
+    }
+
+    if (imgIdx === imgs.length - 1 && local >= (secsPerImg - 2) * fps) {
+      ctx.fillRect(0, 530, 1280, 190);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(plan.caption, 640, 625);
+    }
+
+    if (frame % fps === 0) log("Rendering: " + Math.round(frame / totalFrames * 100) + "%", "info");
+
+    frame++;
+    if (frame < totalFrames) { requestAnimationFrame(draw); }
+    else { rec.stop(); }
+  }
+
+  draw();
+
+  var blob = await new Promise(function (resolve) {
+    rec.onstop = function () { resolve(new Blob(chunks, { type: "video/webm" })); };
+  });
+
+  var url = URL.createObjectURL(blob);
+  log("Render complete.", "ok");
+
+  document.getElementById("result").innerHTML =
+    '<div class="card">' +
+      '<video controls autoplay>' +
+        '<source src="' + url + '" type="video/webm">' +
+      '</video>' +
+      '<p class="credits">Images: ' + images.map(function (i) { return i.credit; }).join(", ") + '</p>' +
+      '<p><a href="' + url + '" download="video.webm">Download WebM</a></p>' +
+    '</div>';
+}
+</script>
+
+</body>
+</html>

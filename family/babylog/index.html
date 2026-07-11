@@ -156,6 +156,14 @@
             background: #fff;
             border-color: var(--accent-blue);
         }
+
+        .event-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            flex: 0 0 auto;
+        }
         
         .delete-btn {
             background: linear-gradient(135deg, #f27eb0 0%, #df5fa4 100%);
@@ -166,9 +174,11 @@
             border-radius: 50%;
             cursor: pointer;
             font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: inline-grid;
+            flex: 0 0 24px;
+            place-items: center;
+            padding: 0;
+            line-height: 1;
         }
         
         .delete-btn:hover {
@@ -718,9 +728,9 @@
                             <span class="event-emoji">${getEventEmoji(event.type)}</span>
                             <span>${getEventName(event.type)}</span>
                         </div>
-                        <div>
+                        <div class="event-actions">
                             <span class="event-time" onclick="editTime(${event.id})">${time}</span>
-                            <button class="delete-btn" onclick="deleteEvent(${event.id})">×</button>
+                            <button class="delete-btn" onclick="deleteEvent(${event.id})" aria-label="Delete ${getEventName(event.type)} event">×</button>
                         </div>
                     </div>
                 `;

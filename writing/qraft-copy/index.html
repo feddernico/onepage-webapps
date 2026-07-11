@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Qraft</title>
+<style>
+:root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --border: #dee2e6;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --editor-bg: #fafafa;
+    --preview-bg: #ffffff;
+    --code-bg: #f1f5f9;
+    --code-text: #1e293b;
+    --callout-note: #e0f2fe;
+    --callout-warning: #fef3c7;
+    --callout-important: #fce7f3;
+    --callout-tip: #d1fae5;
+    --callout-caution: #fee2e2;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1);
+    --radius: 8px;
+    --font-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+
+[data-theme="dark"] {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --accent: #60a5fa;
+    --accent-hover: #93c5fd;
+    --editor-bg: #1e293b;
+    --preview-bg: #0f172a;
+    --code-bg: #334155;
+    --code-text: #e2e8f0;
+    --callout-note: #1e3a5f;
+    --callout-warning: #5c4a1e;
+    --callout-important: #5c1e3a;
+    --callout-tip: #1e5c3a;
+    --callout-caution: #5c1e1e;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+
+body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: background 0.3s, color 0.3s;
+}
+
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+
+.toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+
+.toolbar-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+
+.toolbar-title span { color: var(--accent); }
+
+
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+
+.toolbar-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+
+.btn:hover { background: var(--code-bg); }
+.btn-primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+.btn-primary:hover { background: var(--accent-hover); }
+
+
+.btn-icon {
+    padding: 6px 8px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+
+.stats {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    align-items: center;
+}
+
+
+.main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+
+.pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+
+.pane-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+
+.pane-header-right { display: flex; gap: 6px; }
+
+
+#editor-pane { border-right: 1px solid var(--border); }
+
+
+#editor {
+    flex: 1;
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    line-height: 1.7;
+    border: none;
+    outline: none;
+    resize: none;
+    background: var(--editor-bg);
+    color: var(--text);
+    tab-size: 2;
+    width: 100%;
+}
+
+
+#editor::placeholder { color: var(--text-muted); }
+
+
+#preview {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    background: var(--preview-bg);
+    line-height: 1.7;
+    font-size: 15px;
+}
+
+
+#preview h1 { font-size: 2em; margin: 0 0 0.5em 0; font-weight: 700; border-bottom: 2px solid var(--border); padding-bottom: 0.3em; }
+#preview h2 { font-size: 1.5em; margin: 1.5em 0 0.5em 0; font-weight: 600; border-bottom: 1px solid var(--border); padding-bottom: 0.2em; }
+#preview h3 { font-size: 1.25em; margin: 1.2em 0 0.4em 0; font-weight: 600; }
+#preview h4 { font-size: 1em; margin: 1em 0 0.3em 0; font-weight: 600; }
+#preview p { margin: 0 0 1em 0; }
+#preview a { color: var(--accent); text-decoration: none; }
+#preview a:hover { text-decoration: underline; }
+#preview strong { font-weight: 700; }
+#preview em { font-style: italic; }
+#preview ul, #preview ol { margin: 0 0 1em 0; padding-left: 2em; }
+#preview li { margin-bottom: 0.25em; }
+#preview li > ul, #preview li > ol { margin-bottom: 0; }
+#preview blockquote {
+    margin: 0 0 1em 0;
+    padding: 0.5em 1em;
+    border-left: 4px solid var(--accent);
+    background: var(--code-bg);
+    border-radius: 0 var(--radius) var(--radius) 0;
+}
+#preview hr { border: none; border-top: 2px solid var(--border); margin: 1.5em 0; }
+#preview img { max-width: 100%; height: auto; border-radius: var(--radius); margin: 1em 0; }
+#preview table {
+    border-collapse: collapse;
+    margin: 0 0 1em 0;
+    width: 100%;
+    font-size: 0.9em;
+}
+#preview th, #preview td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+}
+#preview th { background: var(--code-bg); font-weight: 600; }
+#preview tr:nth-child(even) { background: var(--bg); }
+
+
+#preview pre {
+    position: relative;
+    margin: 0 0 1em 0;
+    padding: 16px;
+    background: var(--code-bg);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+
+#preview pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: var(--code-text);
+}
+
+
+#preview code {
+    padding: 2px 6px;
+    background: var(--code-bg);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    color: var(--accent);
+}
+
+
+#preview .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 12px;
+    background: var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 1em;
+}
+
+
+#preview .code-header + pre {
+    margin-top: 0;
+    border-radius: 0 0 var(--radius) var(--radius);
+}
+
+
+#preview .callout {
+    margin: 0 0 1em 0;
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    border-left: 4px solid;
+    font-size: 0.95em;
+}
+
+
+#preview .callout-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+
+#preview .callout-note { background: var(--callout-note); border-color: #3b82f6; }
+#preview .callout-warning { background: var(--callout-warning); border-color: #f59e0b; }
+#preview .callout-important { background: var(--callout-important); border-color: #ec4899; }
+#preview .callout-tip { background: var(--callout-tip); border-color: #10b981; }
+#preview .callout-caution { background: var(--callout-caution); border-color: #ef4444; }
+
+
+#preview .yaml-meta {
+    background: var(--code-bg);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin: 0 0 1.5em 0;
+    font-size: 0.9em;
+    border-left: 4px solid var(--accent);
+}
+
+
+#preview .yaml-meta table {
+    margin: 0;
+    font-size: 0.95em;
+}
+
+
+#preview .yaml-meta th {
+    width: 100px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 2px 8px 2px 0;
+}
+
+
+#preview .yaml-meta td {
+    border: none;
+    padding: 2px 0;
+}
+
+
+#preview .footnote-ref {
+    font-size: 0.85em;
+    vertical-align: super;
+    line-height: 0;
+}
+
+
+#preview .footnotes {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid var(--border);
+    font-size: 0.9em;
+    color: var(--text-muted);
+}
+
+
+#preview .math { font-style: italic; }
+#preview .math-display {
+    display: block;
+    text-align: center;
+    margin: 1em 0;
+    padding: 0.5em;
+    background: var(--code-bg);
+    border-radius: var(--radius);
+    font-size: 1.1em;
+    overflow-x: auto;
+}
+
+
+.toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 10px 20px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    font-size: 14px;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+}
+
+
+.toast.show { opacity: 1; transform: translateY(0); }
+
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 40px;
+}
+
+
+.empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+.empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+.empty-state p { font-size: 14px; max-width: 300px; }
+
+
+#file-input { display: none; }
+
+
+@media (max-width: 768px) {
+    .main { flex-direction: column; }
+    #editor-pane { border-right: none; border-bottom: 1px solid var(--border); }
+    #editor-pane, #preview-pane { min-height: 50vh; }
+    .toolbar { flex-wrap: wrap; }
+    .toolbar-center { order: 3; width: 100%; justify-content: center; }
+    .stats span { display: none; }
+}
+</style>
+</head>
+<body>
+
+
+<div class="toolbar">
+    <div class="toolbar-left">
+        <div class="toolbar-title"><span>Q</span>raft</div>
+        <div class="stats">
+            <span id="stat-words">0 words</span>
+            <span id="stat-lines">0 lines</span>
+            <span id="stat-chars">0 chars</span>
+        </div>
+    </div>
+    <div class="toolbar-center">
+        <button class="btn" id="btn-load" title="Open .qmd file">📂 Load</button>
+        <button class="btn" id="btn-download" title="Download as .qmd">💾 Save</button>
+        <button class="btn" id="btn-insert-template" title="Insert template">📄 Template</button>
+    </div>
+    <div class="toolbar-right">
+        <button class="btn btn-icon" id="btn-theme" title="Toggle dark mode">🌙</button>
+        <button class="btn btn-icon" id="btn-view-toggle" title="Toggle view: split/editor/preview">⇔</button>
+    </div>
+</div>
+
+
+<input type="file" id="file-input" accept=".qmd,.md">
+
+
+<div class="main">
+    <div class="pane" id="editor-pane">
+        <div class="pane-header">
+            <span>Editor</span>
+            <div class="pane-header-right">
+                <button class="btn btn-icon" id="btn-clear" title="Clear editor" style="font-size:13px;padding:2px 8px;">✕</button>
+            </div>
+        </div>
+        <textarea id="editor" placeholder="Start writing your Quarto document...&#10;&#10;---&#10;title: &quot;My Post&quot;&#10;author: &quot;You&quot;&#10;date: today&#10;---&#10;&#10;Write markdown here..."></textarea>
+    </div>
+    <div class="pane" id="preview-pane">
+        <div class="pane-header">
+            <span>Preview</span>
+            <div class="pane-header-right">
+                <span id="preview-time" style="font-weight:400;text-transform:none;letter-spacing:0;"></span>
+            </div>
+        </div>
+        <div id="preview">
+            <div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <h3>Start writing</h3>
+                <p>Type or paste your Quarto Markdown content in the editor to see a live preview.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="toast" id="toast"></div>
+
+
+<script>
+(function() {
+    const LS_KEY = 'qmd-editor-content';
+    const THEME_KEY = 'qmd-editor-theme';
+    const VIEW_KEY = 'qmd-editor-view';
+
+
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+    const fileInput = document.getElementById('file-input');
+    const toast = document.getElementById('toast');
+
+
+    let debounceTimer = null;
+    let viewMode = localStorage.getItem(VIEW_KEY) || 'split';
+
+
+    // ---- Helpers ----
+
+
+    function escapeHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+
+    function showToast(msg, duration) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toast._hide);
+        toast._hide = setTimeout(() => toast.classList.remove('show'), duration || 2000);
+    }
+
+
+    function updateStats() {
+        const text = editor.value;
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const lines = text ? text.split('\n').length : 0;
+        const chars = text.length;
+        document.getElementById('stat-words').textContent = words + ' words';
+        document.getElementById('stat-lines').textContent = lines + ' lines';
+        document.getElementById('stat-chars').textContent = chars + ' chars';
+    }
+
+
+    // ---- Theme ----
+
+
+    function applyTheme(dark) {
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        document.getElementById('btn-theme').textContent = dark ? '☀️' : '🌙';
+        localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
+    }
+
+
+    function toggleTheme() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        applyTheme(!isDark);
+    }
+
+
+    // ---- View mode ----
+
+
+    function applyViewMode(mode) {
+        viewMode = mode;
+        const ep = document.getElementById('editor-pane');
+        const pp = document.getElementById('preview-pane');
+        const main = document.querySelector('.main');
+
+
+        main.style.flexDirection = '';
+        ep.style.display = '';
+        pp.style.display = '';
+        ep.style.flex = '';
+        pp.style.flex = '';
+
+
+        if (mode === 'editor') {
+            pp.style.display = 'none';
+            ep.style.flex = '1';
+        } else if (mode === 'preview') {
+            ep.style.display = 'none';
+            pp.style.flex = '1';
+        } else {
+            if (window.innerWidth <= 768) {
+                main.style.flexDirection = 'column';
+            }
+            ep.style.flex = '1';
+            pp.style.flex = '1';
+        }
+        localStorage.setItem(VIEW_KEY, mode);
+    }
+
+
+    // ---- YAML frontmatter parser ----
+
+
+    function parseYaml(text) {
+        const lines = text.split('\n');
+        if (lines[0].trim() !== '---') return null;
+        let endIdx = -1;
+        for (let i = 1; i < lines.length; i++) {
+            if (lines[i].trim() === '---') { endIdx = i; break; }
+        }
+        if (endIdx === -1) return null;
+        const yamlLines = lines.slice(1, endIdx);
+        const rest = lines.slice(endIdx + 1).join('\n');
+        const data = {};
+        let currentKey = null;
+        for (const line of yamlLines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) continue;
+            const m = trimmed.match(/^(\w[\w-]*):\s*(.*)/);
+            if (m) {
+                currentKey = m[1];
+                data[currentKey] = m[2].trim().replace(/^["']|["']$/g, '');
+            } else if (currentKey && trimmed.startsWith('- ')) {
+                if (!Array.isArray(data[currentKey])) data[currentKey] = [];
+                data[currentKey].push(trimmed.slice(2).trim().replace(/^["']|["']$/g, ''));
+            }
+        }
+        return { data, body: rest };
+    }
+
+
+    function renderYamlMeta(data) {
+        let html = '<div class="yaml-meta"><table>';
+        const order = ['title','author','date','description','categories','draft','format'];
+        const keys = [...new Set([...order, ...Object.keys(data)])];
+        for (const k of keys) {
+            if (data[k] === undefined || data[k] === null) continue;
+            let val = data[k];
+            if (Array.isArray(val)) val = val.join(', ');
+            html += `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(val)}</td></tr>`;
+        }
+        html += '</table></div>';
+        return html;
+    }
+
+
+    // ---- Block-level renderer ----
+
+
+    function isInlineTag(s) {
+        return /^<(a|span|strong|em|code|del|sup|sub|img)\b/.test(s);
+    }
+
+
+    function applyInline(s) {
+        s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+        s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+        s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        s = s.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
+        s = s.replace(/__(.+?)__/g, '<strong>$1</strong>');
+        s = s.replace(/_(.+?)_/g, '<em>$1</em>');
+        s = s.replace(/~~(.+?)~~/g, '<del>$1</del>');
+        s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+        s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+        s = s.replace(/\$\$([\s\S]*?)\$\$/g, '<div class="math-display">\\($1\\)</div>');
+        s = s.replace(/\$(.+?)\$/g, '<span class="math">\\($1\\)</span>');
+        s = s.replace(/\[\^(\d+)\]/g, '<sup class="footnote-ref"><a href="#fn-$1" id="fnref-$1">[$1]</a></sup>');
+        return s;
+    }
+
+
+    function renderMarkdown(text) {
+        if (!text.trim()) return '';
+
+
+        // Preserve blocks we don't want to touch
+        const preserved = [];
+        let pIdx = 0;
+
+
+        function preserve(regex, processor) {
+            text = text.replace(regex, function() {
+                const idx = pIdx++;
+                const result = processor.apply(null, arguments);
+                preserved[idx] = result;
+                return `\x00PRESERVED${idx}\x00`;
+            });
+        }
+
+
+        // 1. Fenced code blocks (both ```python and ```{python})
+        preserve(/```(?:\{)?(\w*)\}?\n([\s\S]*?)```/g, function(_, lang, code) {
+            const langLabel = lang ? `<div class="code-header"><span>${escapeHtml(lang)}</span></div>` : '';
+            const highlighted = highlightCode(code, lang);
+            return langLabel + `<pre><code>${highlighted}</code></pre>`;
+        });
+
+
+        // 2. Callout blocks
+        preserve(/::: ?\{\.callout-(\w+)\}\n([\s\S]*?):::/g, function(_, type, content) {
+            const titleMatch = content.match(/^##\s+(.+)/m);
+            let title = titleMatch ? titleMatch[1].trim() : type;
+            let body = titleMatch ? content.replace(/^##\s+.+\n?/, '') : content;
+            const t = type.toLowerCase();
+            const rendered = renderMarkdown(body.trim());
+            return `<div class="callout callout-${t}"><div class="callout-title">${escapeHtml(title)}</div>${rendered}</div>`;
+        });
+
+
+        // 3. Horizontal rules
+        preserve(/^(?:---|\*\*\*|___)\s*$/gm, function() {
+            return '<hr>';
+        });
+
+
+        // 4. Footnote definitions
+        const footnotes = [];
+        preserve(/\[\^(\d+)\]:\s*(.+)/g, function(_, id, note) {
+            footnotes.push({ id, note: note.trim() });
+            return '';
+        });
+
+
+        // Now split into paragraphs and process each
+        const lines = text.split('\n');
+        const paras = [];
+        let curPara = [];
+
+
+        function flushPara() {
+            if (curPara.length === 0) return;
+            paras.push(curPara.join('\n'));
+            curPara = [];
+        }
+
+
+        for (let i = 0; i < lines.length; i++) {
+            const l = lines[i];
+            if (/^\s*$/.test(l)) {
+                flushPara();
+                continue;
+            }
+            // Check if this line starts a preserved block
+            const pm = l.match(/^\x00PRESERVED(\d+)\x00$/);
+            if (pm) {
+                flushPara();
+                paras.push(l);
+                continue;
+            }
+            curPara.push(l);
+        }
+        flushPara();
+
+
+        // Process each paragraph
+        const out = [];
+        for (let p = 0; p < paras.length; p++) {
+            const para = paras[p];
+
+
+            // Check if it's a preserved block
+            const pm = para.match(/^\x00PRESERVED(\d+)\x00$/);
+            if (pm) {
+                out.push(preserved[parseInt(pm[1])]);
+                continue;
+            }
+
+
+            // Heading
+            const hm = para.match(/^(#{1,5})\s+(.+)/);
+            if (hm) {
+                const level = hm[1].length;
+                const content = applyInline(hm[2]);
+                out.push(`<h${level}>${content}</h${level}>`);
+                continue;
+            }
+
+
+            // Blockquote (simple, single line)
+            if (para.split('\n').every(l => l.startsWith('>'))) {
+                const content = para.replace(/^> ?/gm, '').trim();
+                out.push(`<blockquote>${applyInline(content)}</blockquote>`);
+                continue;
+            }
+
+
+            // Table (pipe table with header separator)
+            if (para.includes('|') && para.includes('---')) {
+                const rows = para.split('\n');
+                const sepIdx = rows.findIndex(r => /^\|?[\s:-]+\|/.test(r));
+                if (sepIdx > 0) {
+                    let html = '<table><thead><tr>';
+                    const headers = rows[sepIdx - 1].split('|').filter(c => c.trim());
+                    for (const h of headers) html += `<th>${applyInline(h.trim())}</th>`;
+                    html += '</tr></thead><tbody>';
+                    for (let ri = sepIdx + 1; ri < rows.length; ri++) {
+                        const cells = rows[ri].split('|').filter(c => c.trim());
+                        if (cells.length === 0) continue;
+                        html += '<tr>';
+                        for (const c of cells) html += `<td>${applyInline(c.trim())}</td>`;
+                        html += '</tr>';
+                    }
+                    html += '</tbody></table>';
+                    out.push(html);
+                    continue;
+                }
+            }
+
+
+            // Unordered list
+            if (/^(\s*)[-*+]\s+/.test(para)) {
+                const items = para.split('\n');
+                let html = '<ul>';
+                for (const item of items) {
+                    const m = item.match(/^(\s*)[-*+]\s+(.+)/);
+                    if (m) {
+                        const indent = m[1].length;
+                        const content = applyInline(m[2]);
+                        html += `<li>${content}</li>`;
+                    }
+                }
+                html += '</ul>';
+                out.push(html);
+                continue;
+            }
+
+
+            // Ordered list
+            if (/^\s*\d+\.\s+/.test(para)) {
+                const items = para.split('\n');
+                let html = '<ol>';
+                for (const item of items) {
+                    const m = item.match(/^\s*\d+\.\s+(.+)/);
+                    if (m) html += `<li>${applyInline(m[1])}</li>`;
+                }
+                html += '</ol>';
+                out.push(html);
+                continue;
+            }
+
+
+            // Plain paragraph
+            out.push(`<p>${applyInline(para)}</p>`);
+        }
+
+
+        let result = out.join('\n');
+
+
+        // Footnotes section
+        if (footnotes.length > 0) {
+            let fnHtml = '<div class="footnotes"><hr><ol>';
+            for (const fn of footnotes) {
+                const rendered = renderMarkdown(fn.note).replace(/<\/?p>/g, '');
+                fnHtml += `<li id="fn-${fn.id}">${rendered} <a href="#fnref-${fn.id}">↩</a></li>`;
+            }
+            fnHtml += '</ol></div>';
+            result += fnHtml;
+        }
+
+
+        return result;
+    }
+
+
+    // ---- Basic syntax highlighting ----
+
+
+    function highlightCode(code, lang) {
+        const kw = {
+            python: ['def','class','import','from','return','if','elif','else','for','while','in','not','and','or','True','False','None','try','except','finally','with','as','pass','break','continue','lambda','yield','async','await','self','print','range','len','int','str','float','list','dict','set','tuple','type','is','del','raise'],
+            r: ['function','if','else','for','while','repeat','return','TRUE','FALSE','NULL','NA','Inf','NaN','library','require','c','list','data.frame','matrix','ggplot','aes','geom_point','geom_line','geom_bar','labs','theme','filter','mutate','select','arrange','summarise','group_by','%>%','<-'],
+            javascript: ['function','const','let','var','if','else','for','while','do','switch','case','break','return','new','this','class','import','export','default','from','async','await','try','catch','throw','null','undefined','true','false','typeof','instanceof','in','of'],
+            julia: ['function','end','if','else','elseif','for','while','return','true','false','nothing','using','import','export','struct','mutable','abstract','type','primitive','macro','quote','begin','let','do','try','catch','finally'],
+            sql: ['SELECT','FROM','WHERE','INSERT','INTO','VALUES','UPDATE','SET','DELETE','CREATE','TABLE','ALTER','DROP','INDEX','JOIN','LEFT','RIGHT','INNER','OUTER','ON','AND','OR','NOT','NULL','IS','IN','LIKE','BETWEEN','GROUP','BY','ORDER','HAVING','LIMIT','OFFSET','AS','DISTINCT','COUNT','SUM','AVG','MIN','MAX','CASE','WHEN','THEN','ELSE','END'],
+            bash: ['if','then','else','fi','for','while','do','done','case','esac','function','return','export','local','echo','exit','source','cd','ls','rm','mv','cp','mkdir','touch','cat','grep','sed','awk','chmod','chown'],
+        };
+
+
+        const langMap = { py:'python', js:'javascript', rb:'ruby', sh:'bash', zsh:'bash', rs:'rust', go:'go', scala:'scala', kt:'kotlin', ts:'typescript', q:'q' };
+        const l = langMap[lang] || lang;
+        const keywords = kw[l] || [];
+
+
+        let h = escapeHtml(code);
+
+
+        // Comments
+        h = h.replace(/(#[^\n]*)/g, '<span style="color:#6b7280;font-style:italic">$1</span>');
+        h = h.replace(/(\/\/[^\n]*)/g, '<span style="color:#6b7280;font-style:italic">$1</span>');
+
+
+        // Strings
+        h = h.replace(/(["'`])(?:(?!\1|\\).|\\.)*\1/g, '<span style="color:#059669">$&</span>');
+
+
+        // Numbers
+        h = h.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#d97706">$1</span>');
+
+
+        // Keywords
+        if (keywords.length > 0) {
+            const kwPat = new RegExp('\\b(' + keywords.join('|') + ')\\b', 'g');
+            h = h.replace(kwPat, '<span style="color:#7c3aed;font-weight:600">$1</span>');
+        }
+
+
+        return h;
+    }
+
+
+    // ---- Template ----
+
+
+    function insertTemplate() {
+        editor.value = `---
+title: "My Quarto Blog Post"
+author: "Your Name"
+date: "${new Date().toISOString().slice(0, 10)}"
+categories: ["blog", "quarto", "testing"]
+format: html
+draft: false
+---
+
+
+## Introduction
+
+
+This is a **Quarto Markdown** document. You can write content using standard markdown syntax with Quarto extensions.
+
+
+::: {.callout-note}
+## Note
+Quarto extends Pandoc markdown with features like callouts, cross-references, and more.
+:::
+
+
+## Code Blocks
+
+
+Here's an example in Python:
+
+
+\`\`\`{python}
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+# Create sample data
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+
+
+plt.plot(x, y)
+plt.title("Sine Wave")
+plt.show()
+\`\`\`
+
+
+And in R:
+
+
+\`\`\`{r}
+library(ggplot2)
+
+
+data(mtcars)
+ggplot(mtcars, aes(x = wt, y = mpg)) +
+  geom_point() +
+  labs(title = "MPG vs Weight")
+\`\`\`
+
+
+## Tables
+
+
+| Column A | Column B | Column C |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+
+
+## Math
+
+
+Inline math: $E = mc^2$
+
+
+Display math:
+
+
+$$\\int_{a}^{b} f(x) \\, dx = F(b) - F(a)$$
+
+
+## Callouts
+
+
+::: {.callout-warning}
+## Warning
+This is a warning callout.
+:::
+
+
+::: {.callout-important}
+## Important
+This is an important callout.
+:::
+
+
+::: {.callout-tip}
+## Tip
+This is a tip callout.
+:::
+
+
+::: {.callout-caution}
+## Caution
+This is a caution callout.
+:::
+
+
+## Lists
+
+
+- Item one
+- Item two
+  - Nested item
+  - Another nested
+- Item three
+
+
+1. First step
+2. Second step
+3. Third step
+
+
+## Conclusion
+
+
+This editor supports live preview of Quarto documents. Use it to prototype and test your blog posts[^1] before rendering with Quarto CLI.
+
+
+[^1]: Quarto is an open-source scientific and technical publishing system.
+`;
+        editor.dispatchEvent(new Event('input'));
+        showToast('Template inserted');
+    }
+
+
+    // ---- Main render ----
+
+
+    function render() {
+        const text = editor.value;
+        updateStats();
+
+
+        if (!text.trim()) {
+            preview.innerHTML = `<div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <h3>Start writing</h3>
+                <p>Type or paste your Quarto Markdown content in the editor to see a live preview.</p>
+            </div>`;
+            document.getElementById('preview-time').textContent = '';
+            return;
+        }
+
+
+        const start = performance.now();
+
+
+        const parsed = parseYaml(text);
+        let body = text;
+        let metaHtml = '';
+
+
+        if (parsed) {
+            metaHtml = renderYamlMeta(parsed.data);
+            body = parsed.body;
+        }
+
+
+        const renderedBody = renderMarkdown(body);
+        const fullHtml = metaHtml + renderedBody;
+        preview.innerHTML = fullHtml;
+
+
+        const elapsed = ((performance.now() - start) / 1000).toFixed(1);
+        document.getElementById('preview-time').textContent = `${elapsed}s`;
+    }
+
+
+    // ---- Debounced render ----
+
+
+    function scheduleRender() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(render, 150);
+    }
+
+
+    // ---- Persistence ----
+
+
+    function saveToLocal() {
+        try {
+            localStorage.setItem(LS_KEY, editor.value);
+        } catch(e) {}
+    }
+
+
+    function loadFromLocal() {
+        try {
+            const saved = localStorage.getItem(LS_KEY);
+            if (saved) {
+                editor.value = saved;
+                render();
+            }
+        } catch(e) {}
+    }
+
+
+    // ---- File operations ----
+
+
+    function isIOSLike() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+    }
+
+    async function downloadQmd() {
+      const content = editor.value;
+      if (!content.trim()) {
+        showToast('Editor is empty', 1500);
+        return;
+      }
+
+      const title = (extractTitle(content) || 'untitled')
+        .replace(/[^a-z0-9-_]+/gi, '-')
+        .replace(/^-+|-+$/g, '')
+        .toLowerCase();
+
+      const filename = `${title || 'untitled'}.qmd`;
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+
+      if ('showSaveFilePicker' in window) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: 'Quarto Markdown',
+              accept: { 'text/plain': ['.qmd', '.md'] }
+            }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          showToast('File saved');
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const supportsDownload = 'download' in document.createElement('a');
+
+      if (isIOSLike() || !supportsDownload) {
+        const win = window.open(url, '_blank');
+        if (win) {
+          showToast('Use Share → Save to Files');
+        } else {
+          showToast('Popup blocked: allow popups to save');
+        }
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+        return;
+      }
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast('File downloaded');
+    }
+
+
+    function extractTitle(text) {
+        const m = text.match(/^title:\s*["']?(.+?)["']?$/m);
+        return m ? m[1].trim() : null;
+    }
+
+
+    function loadFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            editor.value = e.target.result;
+            render();
+            saveToLocal();
+            showToast(`Loaded: ${file.name}`);
+        };
+        reader.readAsText(file);
+    }
+
+
+    // ---- Event binding ----
+
+
+    editor.addEventListener('input', function() {
+        scheduleRender();
+        saveToLocal();
+    });
+
+
+    editor.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 2;
+        }
+    });
+
+
+    document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+    document.getElementById('btn-view-toggle').addEventListener('click', function() {
+        const modes = ['split', 'editor', 'preview'];
+        const idx = modes.indexOf(viewMode);
+        const next = modes[(idx + 1) % modes.length];
+        applyViewMode(next);
+    });
+    document.getElementById('btn-load').addEventListener('click', function() {
+        fileInput.click();
+    });
+    document.getElementById('btn-download').addEventListener('click', downloadQmd);
+    document.getElementById('btn-insert-template').addEventListener('click', insertTemplate);
+    document.getElementById('btn-clear').addEventListener('click', function() {
+        if (editor.value.trim() && !confirm('Clear the editor?')) return;
+        editor.value = '';
+        render();
+        saveToLocal();
+        showToast('Editor cleared');
+    });
+
+
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            loadFile(e.target.files[0]);
+        }
+        this.value = '';
+    });
+
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            downloadQmd();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'o') {
+            e.preventDefault();
+            fileInput.click();
+        }
+    });
+
+
+    // ---- Init ----
+
+
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    applyTheme(savedTheme === 'dark');
+
+
+    const savedView = localStorage.getItem(VIEW_KEY);
+    applyViewMode(savedView || 'split');
+
+
+    loadFromLocal();
+
+
+    // Handle window resize for responsive view
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            if (viewMode === 'split' && window.innerWidth <= 768) {
+                document.querySelector('.main').style.flexDirection = 'column';
+            } else if (viewMode === 'split') {
+                document.querySelector('.main').style.flexDirection = '';
+            }
+        }, 200);
+    });
+
+
+})();
+</script>
+</body>
+</html>
