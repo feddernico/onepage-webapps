@@ -1039,6 +1039,31 @@ h2 {
   });
 
   update();
+  
+  function sendFrameHeight() {
+    const height = Math.max(
+      document.body.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.clientHeight,
+      document.documentElement.scrollHeight,
+      document.documentElement.offsetHeight
+    );
+
+    window.parent.postMessage({
+      type: 'signal-vs-noise:height',
+      height
+    }, '*');
+  }
+
+  if ('ResizeObserver' in window) {
+    const frameResizeObserver = new ResizeObserver(sendFrameHeight);
+    frameResizeObserver.observe(document.body);
+    frameResizeObserver.observe(document.documentElement);
+  }
+
+  setTimeout(sendFrameHeight, 0);
+  window.addEventListener('load', sendFrameHeight);
+  window.addEventListener('resize', sendFrameHeight);
 })();
 </script>
 
