@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PodCut — Professional Podcast Studio</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+    --blue: #2780e3;
+    --link: #2761e3;
+    --link-hover: #1f4eb6;
+    --charcoal: #343a40;
+    --studio-dark: #1a1d20;
+    --text: #343a40;
+    --text-light: #f8f9fa;
+    --muted: rgba(52,58,64,.72);
+    --line: #dee2e6;
+    --soft: #f8f9fa;
+    --soft-blue: #d4e6f9;
+    --soft-green: #d9f0d1;
+    --radius: 12px;
+    --content: min(1200px, calc(100vw - 32px));
+    --accent-glow: rgba(39, 128, 227, 0.4);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: #f0f2f5;
+    color: var(--text);
+    font: 16px/1.6 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Navbar */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--studio-dark);
+    color: #fff;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.navbar-inner {
+    width: var(--content);
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #fff;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.brand::before {
+    content: "●";
+    color: var(--blue);
+    animation: blink 2s infinite;
+}
+@keyframes blink { 50% { opacity: 0.4; } }
+
+.nav-links { display: flex; gap: 1.5rem; }
+.nav-links a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: #fff; }
+
+/* Hero Section with Background Image */
+.hero {
+    position: relative;
+    background: var(--studio-dark);
+    color: #fff;
+    padding: 6rem 0;
+    text-align: center;
+    background-image: linear-gradient(rgba(26, 29, 32, 0.85), rgba(26, 29, 32, 0.85)), url('https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&q=80&w=1100');
+    background-size: cover;
+    background-position: 25% 75%;
+}
+.hero-panel { width: var(--content); margin: auto; position: relative; z-index: 2; }
+.hero h1 { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; margin: 0; letter-spacing: -0.02em; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+.hero .lead { font-size: 1.25rem; color: rgba(255,255,255,0.9); max-width: 700px; margin: 1.5rem auto 0; font-weight: 300; }
+
+/* Main Layout */
+main {
+    width: var(--content);
+    margin: -3rem auto 4rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 3;
+}
+
+/* Studio Modules (Cards) */
+.card {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    border: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+}
+.card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 4px;
+    background: var(--line);
+}
+.card#recording::before { background: var(--blue); }
+.card#music-section::before { background: var(--soft-green); }
+.card.result::before { background: var(--charcoal); }
+
+.eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.step {
+    background: var(--charcoal);
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* Form Elements */
+label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 1rem 0 0.5rem;
+}
+.value {
+    float: right;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--blue);
+    font-weight: 700;
+}
+
+select, input[type=file] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--soft);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* Studio Sliders */
+input[type=range] {
+    width: 100%;
+    height: 6px;
+    background: var(--line);
+    border-radius: 3px;
+    outline: none;
+    -webkit-appearance: none;
+    accent-color: var(--blue);
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border: 2px solid var(--blue);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Controls & Buttons */
+.controls { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; }
+button, .download {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+button:not(.record) { background: var(--blue); color: #fff; }
+button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px var(--accent-glow); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.record {
+    background: var(--charcoal);
+    color: #fff;
+}
+.record.recording {
+    background: #e63946;
+    animation: pulse-red 1.5s infinite;
+}
+@keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(230, 57, 70, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0); } }
+
+#timer {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--charcoal);
+}
+
+/* Meter */
+.meter {
+    height: 12px;
+    background: #eee;
+    border-radius: 6px;
+    margin: 1.5rem 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+}
+.meter i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #2f9e44, #fab005, #e63946);
+    background-size: 100% 100%;
+    transition: width 0.1s ease-out;
+}
+
+/* Level Indicators */
+.level-readout { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.pill {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: var(--soft);
+    border: 1px solid var(--line);
+}
+.pill.ok { background: var(--soft-green); color: #2b8a3e; border-color: #b2f2bb; }
+.pill.warn { background: #fff9db; color: #e67700; border-color: #ffec99; }
+.pill.hot { background: #fff5f5; color: #c92a2a; border-color: #ffc9c9; }
+
+/* Result Section */
+#result { grid-column: 1 / -1; display: none; }
+#result.show { display: block; animation: slideUp 0.4s ease-out; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+.download { background: var(--studio-dark); color: #fff; }
+
+/* Audio Player Styling */
+audio { width: 100%; margin: 1rem 0; border-radius: 8px; }
+
+/* Grid Helpers */
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.full-width { grid-column: 1 / -1; }
+
+footer {
+    background: var(--studio-dark);
+    color: rgba(255,255,255,0.5);
+    padding: 4rem 0;
+    text-align: center;
+    font-size: 0.85rem;
+    margin-top: 4rem;
+}
+
+@media (max-width: 900px) {
+    main { grid-template-columns: 1fr; margin-top: 1rem; }
+    .hero { padding: 4rem 0; }
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="navbar-inner">
+        <a class="brand" href="#">PODCUT STUDIO</a>
+        <div class="nav-links">
+            <a href="#recording">RECORD</a>
+            <a href="#music-section">MUSIC</a>
+            <a href="#mastering">MASTER</a>
+        </div>
+    </div>
+</nav>
+
+<header class="hero">
+    <div class="hero-panel">
+        <p class="eyebrow" style="color: var(--blue); font-weight: 800;">The Professional Audio Suite</p>
+        <h1>Make your podcast sound finished.</h1>
+        <p class="lead">Record, tighten, and master high-quality episodes entirely in your browser. Private, local-first production for serious creators.</p>
+    </div>
+</header>
+
+<main>
+    <!-- Step 1: Music -->
+    <section class="card" id="music-section">
+        <p class="eyebrow">Source 01</p>
+        <h2><span class="step">1</span> Backing Music</h2>
+        <p class="note" style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem;">Choose a high-quality track for your background bed.</p>
+        <input id="musicFile" type="file" accept=".mp3,.m4a,.aac,.wav,.aif,.aiff,audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav">
+        <div id="musicStatus" style="margin-top: 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--blue);"></div>
+    </section>
+
+    <!-- Step 2: Record -->
+    <section class="card" id="recording">
+        <p class="eyebrow">Source 02</p>
+        <h2><span class="step">2</span> Voice Capture</h2>
+        <div class="controls">
+            <button id="record" class="record">● Start Recording</button>
+            <button id="soundcheck" type="button">Soundcheck</button>
+            <span id="timer">00:00</span>
+        </div>
+        <div class="meter" id="meterWrap"><i id="meter"></i></div>
+        <div class="level-readout">
+            <span class="pill" id="levelHint">Input Idle</span>
+            <span class="pill" id="levelDb">Peak -- dB</span>
+            <span class="pill" id="soundcheckHint">Soundcheck Required</span>
+        </div>
+        <audio id="soundcheckPreview" controls style="display:none"></audio>
+        
+        <div class="row">
+            <div>
+                <label>Input Boost <span class="value" id="boostVal">+6 dB</span></label>
+                <input id="inputBoost" type="range" min="0" max="12" step="1" value="6">
+            </div>
+            <div>
+                <label>Mic Cleanup <span class="value" id="boomVal">Medium</span></label>
+                <input id="boomClean" type="range" min="0" max="100" step="5" value="45">
+            </div>
+        </div>
+    </section>
+
+    <!-- Step 3: Master -->
+    <section class="card full-width" id="mastering">
+        <p class="eyebrow">Processing Engine</p>
+        <h2><span class="step">3</span> Tighten & Master</h2>
+        
+        <div class="row">
+            <div>
+                <label>Silence Threshold <span class="value" id="thresholdVal">−38 dB</span></label>
+                <input id="threshold" type="range" min="-55" max="-20" value="-38">
+            </div>
+            <div>
+                <label>Pause Buffer <span class="value" id="keepVal">180 ms</span></label>
+                <input id="keep" type="range" min="60" max="500" step="10" value="180">
+            </div>
+        </div>
+        
+        <div class="row">
+            <div>
+                <label>Min Pause to Cut <span class="value" id="minSilenceVal">650 ms</span></label>
+                <input id="minSilence" type="range" min="250" max="1800" step="50" value="650">
+            </div>
+            <div>
+                <label>Speech Denoise <span class="value" id="denoiseVal">Light</span></label>
+                <input id="speechDenoise" type="range" min="0" max="100" step="5" value="25">
+            </div>
+        </div>
+
+        <div class="row">
+            <div>
+                <label>Noise Floor <span class="value" id="noiseVal">50%</span></label>
+                <input id="noiseClean" type="range" min="0" max="70" step="5" value="50">
+            </div>
+            <div>
+                <label>Post Noise Gate <span class="value" id="gateVal">60%</span></label>
+                <input id="postGate" type="range" min="0" max="80" step="5" value="60">
+            </div>
+        </div>
+
+        <div class="row">
+            <div>
+                <label>Music Mix Level <span class="value" id="musicVal">−18 dB</span></label>
+                <input id="musicGain" type="range" min="-40" max="-6" value="-18">
+            </div>
+            <div>
+                <label>Auto-Ducking <span class="value" id="duckVal">Strong</span></label>
+                <input id="musicDuck" type="range" min="0" max="100" step="5" value="75">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="full-width">
+                <label>Voice Intensity <span class="value" id="intensityVal">Radio</span></label>
+                <input id="voiceIntensity" type="range" min="0" max="100" step="5" value="65">
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem; text-align: center;">
+            <button id="process" disabled style="padding: 1rem 3rem; font-size: 1.1rem;">Produce Finished Episode</button>
+            <p id="status" style="margin-top: 1rem; font-size: 0.9rem; font-weight: 600; color: var(--blue);"></p>
+        </div>
+    </section>
+
+    <!-- Step 4: Export -->
+    <section class="card result" id="result">
+        <p class="eyebrow">Output</p>
+        <h2><span class="step">4</span> Ready for Distribution</h2>
+        
+        <div class="row">
+            <div>
+                <label>Preview Version</label>
+                <select id="previewChoice">
+                    <option value="final">Mastered Mix</option>
+                    <option value="original">Original Raw</option>
+                    <option value="voice">Processed Voice</option>
+                    <option value="clean">Denoised Only</option>
+                    <option value="raw">Edited Voice</option>
+                </select>
+                <audio id="preview" controls></audio>
+            </div>
+            <div style="display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start;">
+                <a class="download" id="download" download="podcast-episode.wav">Download Master WAV</a>
+                <span class="pill" id="stats" style="margin-top: 0.5rem;"></span>
+            </div>
+        </div>
+
+        <div class="compare" id="comparePanel" style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--line);">
+            <h3>A/B Version Comparison</h3>
+            <div class="row">
+                <div>
+                    <label>Version A</label>
+                    <select id="compareA"></select>
+                    <audio id="previewA" controls></audio>
+                </div>
+                <div>
+                    <label>Version B</label>
+                    <select id="compareB"></select>
+                    <audio id="previewB" controls></audio>
+                </div>
+            </div>
+            <p class="note" id="compareNote" style="font-size: 0.85rem; color: var(--muted);"></p>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="hero-panel">
+        <p>PodCut Studio is a local-first browser tool. All processing happens on your device.</p>
+        <p style="opacity: 0.6; margin-top: 1rem;">&copy; 2026 PodCut Studio. Professional audio for everyone.</p>
+    </div>
+</footer>
+
+<script>
+    // PRESERVING ORIGINAL LOGIC
+    const $=id=>document.getElementById(id);let ctx,stream,recorder,chunks=[],voiceBuffer,musicBuffer,t0,tick,analyser,anim,recordPeak=0,recentPeak=0,previewUrls={},masterVersions=[],versionCount=0,recordMode='episode',soundcheckStop=null,soundcheckUrl=null,rnnoisePromise=null;
+    const db=v=>Math.pow(10,v/20), ampDb=v=>20*Math.log10(Math.max(v,1e-6)), fmt=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`, intensityName=v=>v<35?'Natural':v<75?'Radio':'Punchy', boomName=v=>v<20?'Off':v<40?'Light':v<75?'Medium':'Strong', duckName=v=>v<20?'Off':v<45?'Light':v<70?'Medium':'Strong', denoiseName=v=>v<10?'Off':v<40?'Light':v<75?'Medium':'Strong';
+    
+    [['musicGain','musicVal',v=>`${v} dB`],['musicDuck','duckVal',duckName],['threshold','thresholdVal',v=>`${v} dB`],['keep','keepVal',v=>`${v} ms`],['minSilence','minSilenceVal',v=>`${v} ms`],['speechDenoise','denoiseVal',denoiseName],['noiseClean','noiseVal',v=>`${v}%`],['inputBoost','boostVal',v=>`+${v} dB`],['boomClean','boomVal',boomName],['voiceIntensity','intensityVal',intensityName],['postGate','gateVal',v=>`${v}%`]].forEach(([a,b,f])=>$(a).oninput=e=>$(b).textContent=f(e.target.value));
+    
+    if(location.protocol==='file:'){$('speechDenoise').value=0;$('speechDenoise').disabled=true;$('denoiseVal').textContent='Off';}
+    
+    $('musicFile').onchange=async e=>{if(!e.target.files[0])return;ctx??=new AudioContext();try{musicBuffer=await ctx.decodeAudioData(await e.target.files[0].arrayBuffer());$('musicStatus').textContent=`Music loaded (${fmt(musicBuffer.duration)}).`}catch{$('musicStatus').textContent='Error decoding file. Use MP3/WAV.'}};
+    
+    async function openMic(){let clean={echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:{ideal:1},sampleRate:{ideal:48000}};try{return await navigator.mediaDevices.getUserMedia({audio:clean})}catch(e){return await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})}}
+    
+    $('record').onclick=()=>{if(recorder?.state==='recording'){recorder.stop();return}startCapture('episode')};$('soundcheck').onclick=()=>{if(recorder?.state==='recording')return;startCapture('soundcheck')};
+    
+    async function startCapture(mode){try{recordMode=mode;ctx??=new AudioContext();await ctx.resume();stream=await openMic();let source=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=512;source.connect(analyser);chunks=[];recordPeak=0;recentPeak=0;let type=MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'';recorder=new MediaRecorder(stream,type?{mimeType:type}:undefined);recorder.ondataavailable=e=>e.data.size&&chunks.push(e.data);recorder.onstop=finishRecord;recorder.start(250);t0=Date.now();tick=setInterval(()=>$('timer').textContent=fmt((Date.now()-t0)/1000),250);drawMeter();$('record').disabled=mode==='soundcheck';$('soundcheck').disabled=mode==='episode';$('record').textContent=mode==='soundcheck'?'● Recording...':'■ Stop Recording';$('soundcheck').textContent=mode==='soundcheck'?'■ Soundchecking...':'Soundcheck';$('record').classList.toggle('recording',mode==='episode');if(mode==='episode')$('process').disabled=true;$('status').textContent=mode==='soundcheck'?'Recording soundcheck...':'Recording raw signal...';if(mode==='soundcheck')soundcheckStop=setTimeout(()=>recorder?.state==='recording'&&recorder.stop(),15000)}catch(e){$('record').disabled=false;$('soundcheck').disabled=false;$('status').textContent=`Mic error: ${e.message}`}}
+    
+    $('previewChoice').onchange=()=>{let url=previewUrls[$('previewChoice').value];if(url)$('preview').src=url};$('compareA').onchange=updateCompare;$('compareB').onchange=updateCompare;
+    
+    function updateLevel(peak,heldPeak){let currentDb=ampDb(peak),heldDb=ampDb(heldPeak),hint='Input Good',tone='ok',wrapTone='good';if(currentDb<-45&&heldDb<-36){hint='Silence';tone='';wrapTone=''}else if(heldDb<-26){hint='Low Input';tone='warn';wrapTone=''}else if(heldDb>-3){hint='Clipping';tone='hot';wrapTone='hot'}$('levelDb').textContent=`Peak ${Math.round(heldDb)} dB`;$('levelHint').textContent=hint;$('levelHint').className=`pill ${tone}`}
+    
+    function drawMeter(){if(!analyser)return;let a=new Uint8Array(analyser.frequencyBinCount);analyser.getByteTimeDomainData(a);let peak=0,sum=0;for(let x of a){let v=(x-128)/128;peak=Math.max(peak,Math.abs(v));sum+=v*v}recordPeak=Math.max(recordPeak,peak);recentPeak=Math.max(peak,recentPeak*.965);let rms=Math.sqrt(sum/a.length);$('meter').style.width=Math.min(100,Math.max(recentPeak*100,rms*260))+'%';updateLevel(peak,recentPeak);anim=requestAnimationFrame(drawMeter)}
+    
+    async function finishRecord(){clearInterval(tick);clearTimeout(soundcheckStop);cancelAnimationFrame(anim);stream.getTracks().forEach(t=>t.stop());$('record').disabled=false;$('soundcheck').disabled=false;$('record').textContent='● Record Again';$('soundcheck').textContent='Soundcheck';$('record').classList.remove('recording');$('meter').style.width='0';try{let captured=await ctx.decodeAudioData(await new Blob(chunks,{type:recorder.mimeType}).arrayBuffer()),d=Math.round(ampDb(recordPeak));if(recordMode==='soundcheck'){await finishSoundcheck(captured,d);return}voiceBuffer=captured;$('process').disabled=false;$('status').textContent=`Voice captured (${fmt(voiceBuffer.duration)}). Peak ${d} dB.`}catch(e){$('status').textContent=`Decode error: ${e.message}`}}
+
+    function segments(buf,threshold,minGap,keep){let x=buf.getChannelData(0), sr=buf.sampleRate, win=Math.max(1,Math.round(sr*.02)), quiet=[], on=false, start=0;for(let i=0;i<x.length;i+=win){let sum=0;for(let j=i;j<Math.min(i+win,x.length);j++)sum+=x[j]*x[j];let loud=Math.sqrt(sum/win)>=threshold;if(loud&&!on){start=i;on=true}if(!loud&&on){quiet.push([start,i]);on=false}}if(on)quiet.push([start,x.length]);if(!quiet.length)return [[0,x.length]];let merged=[];for(let seg of quiet){if(!merged.length||seg[0]-merged.at(-1)[1]>minGap*sr)merged.push(seg);else merged.at(-1)[1]=seg[1]}return merged.map(([a,b])=>[Math.max(0,a-keep*sr),Math.min(x.length,b+keep*sr)])}
+    function cutVoice(b,ss,duration){let sr=b.sampleRate,out=new OfflineAudioContext(2,Math.ceil((duration+.05)*sr),sr).createBuffer(2,Math.ceil((duration+.05)*sr),sr),ol=[out.getChannelData(0),out.getChannelData(1)],vl=[b.getChannelData(0),b.numberOfChannels>1?b.getChannelData(1):b.getChannelData(0)],pos=0;for(let [a,z] of ss){let len=z-a;for(let ch=0;ch<2;ch++)ol[ch].set(vl[ch].subarray(a,z),pos);pos+=len}return out}
+    function copyBuffer(input){let out=new OfflineAudioContext(input.numberOfChannels,input.length,input.sampleRate).createBuffer(input.numberOfChannels,input.length,input.sampleRate);for(let ch=0;ch<input.numberOfChannels;ch++)out.getChannelData(ch).set(input.getChannelData(ch));return out}
+    function bufferStats(input){let mono=input.getChannelData(0),levels=[],peak=0,win=Math.max(1,Math.round(input.sampleRate*.02));for(let i=0;i<input.length;i+=win){let sum=0,n=Math.min(win,input.length-i);for(let j=0;j<n;j++){let v=mono[i+j];peak=Math.max(peak,Math.abs(v));sum+=v*v}levels.push(Math.sqrt(sum/n))}levels.sort((a,b)=>a-b);return {peak,noise:levels[Math.floor(levels.length*.18)]||0}}
+    function boostInput(input,boostDb){boostDb=Math.max(0,Math.min(12,boostDb));if(!boostDb)return input;let {peak}=bufferStats(input),headroom=peak?Math.max(0,ampDb(db(-6)/peak)):boostDb,actual=Math.min(boostDb,headroom);if(actual<.25)return input;let out=copyBuffer(input),gain=db(actual);for(let ch=0;ch<out.numberOfChannels;ch++){let x=out.getChannelData(ch);for(let i=0;i<x.length;i++)x[i]=Math.max(-1,Math.min(1,x[i]*gain))}return out}
+    async function closeMicCleanup(input,amount){let amt=Math.max(0,Math.min(100,amount))/100;if(!amt)return input;let sr=input.sampleRate,off=new OfflineAudioContext(2,input.length,sr),src=off.createBufferSource(),hp=off.createBiquadFilter(),proximity=off.createBiquadFilter(),mud=off.createBiquadFilter(),gain=off.createGain();src.buffer=input;hp.type='highpass';hp.frequency.value=75+amt*45;hp.Q.value=.72;proximity.type='lowshelf';proximity.frequency.value=120;proximity.gain.value=-(1+amt*6);mud.type='peaking';mud.frequency.value=245;mud.Q.value=.95;mud.gain.value=-(.8+amt*3.8);gain.gain.value=1+amt*.08;src.connect(hp).connect(proximity).connect(mud).connect(gain).connect(off.destination);src.start();return await off.startRendering()}
+    async function loadRnnoise(){if(location.protocol==='file:')throw Error('Denoise requires HTTPS.');rnnoisePromise??=import('./vendor/rnnoise.js').then(m=>m.Rnnoise.load());return rnnoisePromise}
+    async function speechDenoiseBuffer(input,amount){let amt=Math.max(0,Math.min(100,amount))/100;if(!amt)return input;let rn=await loadRnnoise(),frameSize=rn.frameSize,out=new OfflineAudioContext(2,input.length,input.sampleRate).createBuffer(2,input.length,input.sampleRate),state=rn.createDenoiseState(),srcL=input.getChannelData(0),srcR=input.numberOfChannels>1?input.getChannelData(1):srcL,dstL=out.getChannelData(0),dstR=out.getChannelData(1),frame=new Float32Array(frameSize);for(let i=0;i<input.length;i+=frameSize){frame.fill(0);let n=Math.min(frameSize,input.length-i),sum=0;for(let j=0;j<n;j++){let dry=(srcL[i+j]+srcR[i+j])*.5;frame[j]=dry*32768;sum+=dry*dry}let rms=Math.sqrt(sum/Math.max(1,n)),vad=Math.max(0,Math.min(1,state.processFrame(frame))),speech=rms>db(-45),wet=amt*(speech?.15:1-vad*.85);for(let j=0;j<n;j++){let dry=(srcL[i+j]+srcR[i+j])*.5,den=Math.max(-1,Math.min(1,frame[j]/32768)),mixed=dry*(1-wet)+den*wet;dstL[i+j]=mixed;dstR[i+j]=mixed}}state.destroy();return out}
+    function tameNoiseFloor(input,amount){amount=Math.max(0,Math.min(70,amount))/100;if(!amount)return input;let sr=input.sampleRate,out=new OfflineAudioContext(2,input.length,sr).createBuffer(2,input.length,sr),src=[input.getChannelData(0),input.numberOfChannels>1?input.getChannelData(1):input.getChannelData(0)],dst=[out.getChannelData(0),out.getChannelData(1)],win=Math.max(1,Math.round(sr*.012)),levels=[];for(let i=0;i<input.length;i+=win){let sum=0,n=Math.min(win,input.length-i);for(let j=0;j<n;j++){let m=(src[0][i+j]+src[1][i+j])*.5;sum+=m*m}levels.push(Math.sqrt(sum/n))}levels.sort((a,b)=>a-b);let base=levels[Math.floor(levels.length*.18)]||db(-70),threshold=Math.max(db(-64),Math.min(db(-50),base*2.4)),floor=db(-2-amount*9),env=0,gain=1,attack=Math.exp(-1/(sr*.004)),release=Math.exp(-1/(sr*.24)),smooth=Math.exp(-1/(sr*.035));for(let i=0;i<input.length;i++){let amp=Math.abs((src[0][i]+src[1][i])*.5),coef=amp>env?attack:release;env=coef*env+(1-coef)*amp;let target=1;if(env<threshold){let ratio=Math.max(0,env/threshold);target=floor+(1-floor)*Math.pow(ratio,.3)}gain=smooth*gain+(1-smooth)*target;dst[0][i]=src[0][i]*gain;dst[1][i]=src[1][i]*gain}return out}
+    function postNoiseGate(input,amount){amount=Math.max(0,Math.min(80,amount))/100;if(!amount)return input;let sr=input.sampleRate,out=new OfflineAudioContext(2,input.length,sr).createBuffer(2,input.length,sr),src=[input.getChannelData(0),input.numberOfChannels>1?input.getChannelData(1):input.getChannelData(0)],dst=[out.getChannelData(0),out.getChannelData(1)],win=Math.max(1,Math.round(sr*.012)),levels=[];for(let i=0;i<input.length;i+=win){let sum=0,n=Math.min(win,input.length-i);for(let j=0;j<n;j++){let m=(src[0][i+j]+src[1][i+j])*.5;sum+=m*m}levels.push(Math.sqrt(sum/n))}levels.sort((a,b)=>a-b);let base=levels[Math.floor(levels.length*.2)]||db(-70),threshold=Math.max(db(-58),Math.min(db(-34),base*(2.1+amount*2.4))),floor=db(-14-amount*28),env=0,gain=1,attack=Math.exp(-1/(sr*.003)),release=Math.exp(-1/(sr*.16)),smooth=Math.exp(-1/(sr*.028));for(let i=0;i<input.length;i++){let amp=Math.abs((src[0][i]+src[1][i])*.5),coef=amp>env?attack:release;env=coef*env+(1-coef)*amp;let target=1;if(env<threshold){let ratio=Math.max(0,env/threshold);target=floor+(1-floor)*Math.pow(ratio,1.9+amount*.8)}gain=smooth*gain+(1-smooth)*target;dst[0][i]=src[0][i]*gain;dst[1][i]=src[1][i]*gain}return out}
+    async function radioVoice(input,intensity=65){let sr=input.sampleRate,amt=Math.max(0,Math.min(100,intensity))/100,off=new OfflineAudioContext(2,input.length,sr),src=off.createBufferSource(),hp=off.createBiquadFilter(),warm=off.createBiquadFilter(),mud=off.createBiquadFilter(),presence=off.createBiquadFilter(),air=off.createBiquadFilter(),comp=off.createDynamicsCompressor(),drive=off.createWaveShaper(),makeup=off.createGain(),lim=off.createDynamicsCompressor();src.buffer=input;hp.type='highpass';hp.frequency.value=78+amt*10;hp.Q.value=.72;warm.type='lowshelf';warm.frequency.value=155;warm.gain.value=-3.2-amt*2;mud.type='peaking';mud.frequency.value=285;mud.Q.value=1.05;mud.gain.value=-2.2-amt*2;presence.type='peaking';presence.frequency.value=3200;presence.Q.value=.95;presence.gain.value=2+amt*2.2;air.type='highshelf';air.frequency.value=8500;air.gain.value=.7+amt*1.1;comp.threshold.value=-17-amt*8;comp.knee.value=8;comp.ratio.value=2.2+amt*2.2;comp.attack.value=.004;comp.release.value=.18-amt*.07;drive.curve=saturationCurve(1.15+amt*.6);drive.oversample='2x';makeup.gain.value=1.25+amt*.55;lim.threshold.value=-2.2;lim.knee.value=0;lim.ratio.value=18;lim.attack.value=.0015;lim.release.value=.08;src.connect(hp).connect(warm).connect(mud).connect(presence).connect(air).connect(comp).connect(drive).connect(makeup).connect(lim).connect(off.destination);src.start();return await off.startRendering()}
+    function saturationCurve(amount){let n=2048,curve=new Float32Array(n);for(let i=0;i<n;i++){let x=i*2/n-1;curve[i]=Math.tanh(amount*x)/Math.tanh(amount)}return curve}
+    async function masterBuffer(input){let sr=input.sampleRate,off=new OfflineAudioContext(2,input.length,sr),src=off.createBufferSource(),lim=off.createDynamicsCompressor(),gain=off.createGain();src.buffer=input;let peak=0;for(let ch=0;ch<input.numberOfChannels;ch++)for(let x of input.getChannelData(ch))peak=Math.max(peak,Math.abs(x));gain.gain.value=peak?Math.min(db(-1.2)/peak,2.5):1;lim.threshold.value=-1.6;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.001;lim.release.value=.08;src.connect(gain).connect(lim).connect(off.destination);src.start();return await off.startRendering()}
+    function wav(buffer){let n=buffer.length,c=buffer.numberOfChannels,ab=new ArrayBuffer(44+n*c*2),v=new DataView(ab),p=0,w=s=>{for(let i=0;i<s.length;i++)v.setUint8(p++,s.charCodeAt(i))},u=x=>{v.setUint32(p,x,true);p+=4},h=x=>{v.setUint16(p,x,true);p+=2};w('RIFF');u(36+n*c*2);w('WAVEfmt ');u(16);h(1);h(c);u(buffer.sampleRate);u(buffer.sampleRate*c*2);h(c*2);h(16);w('data');u(n*c*2);for(let i=0;i<n;i++)for(let j=0;j<c;j++){let z=Math.max(-1,Math.min(1,buffer.getChannelData(j)[i]));v.setInt16(p,z<0?z*32768:z*32767,true);p+=2}return new Blob([ab],{type:'audio/wav'})}
+    function mixMusicUnderVoice(out,music,gainDb,duckAmount){let sr=out.sampleRate,mg=db(gainDb),depth=Math.max(0,Math.min(100,duckAmount))/100,ol=[out.getChannelData(0),out.getChannelData(1)],ml=music.getChannelData(0),mr=music.numberOfChannels>1?music.getChannelData(1):ml,env=0,duck=1,attack=Math.exp(-1/(sr*.012)),release=Math.exp(-1/(sr*.42)),smooth=Math.exp(-1/(sr*.05));for(let i=0;i<out.length;i++){let voiceLevel=(Math.abs(ol[0][i])+Math.abs(ol[1][i]))*.5,coef=voiceLevel>env?attack:release;env=coef*env+(1-coef)*voiceLevel;let active=env>db(-42),norm=Math.min(1,env/db(-18)),reduction=Math.min(.7,.18+.52*Math.pow(norm,.55)),target=active?Math.max(.48,1-depth*reduction):1;duck=smooth*duck+(1-smooth)*target;let fade=Math.min(1,i/(sr*.25),(out.length-i)/(sr*.6));ol[0][i]+=ml[i%ml.length]*mg*duck*fade;ol[1][i]+=mr[i%mr.length]*mg*duck*fade}return out}
+    function masterSettings(){return {music:+$('musicGain').value,duck:+$('musicDuck').value,boost:+$('inputBoost').value,boom:+$('boomClean').value,denoise:+$('speechDenoise').value,noise:+$('noiseClean').value,gate:+$('postGate').value,intensity:+$('voiceIntensity').value,threshold:+$('threshold').value,keep:+$('keep').value,minSilence:+$('minSilence').value}}
+    function versionLabel(v){let s=v.settings;return `V${v.number} · ${intensityName(s.intensity)} · Denoise ${denoiseName(s.denoise??0)}`}
+    function addMasterVersion(url,settings,duration){let version={id:`v${++versionCount}`,number:versionCount,url,settings,duration,label:null};version.label=versionLabel(version);masterVersions.push(version);for(let id of ['compareA','compareB']){$(id).innerHTML=masterVersions.map(v=>`<option value="${v.id}">${v.label}</option>`).join('')}if(masterVersions.length===1){$('compareA').value=version.id;$('compareB').value=version.id}else{$('compareA').value=masterVersions.at(-2).id;$('compareB').value=version.id}updateCompare();return version}
+    function updateCompare(){let a=masterVersions.find(v=>v.id===$('compareA').value),b=masterVersions.find(v=>v.id===$('compareB').value);if(a)$('previewA').src=a.url;if(b)$('previewB').src=b.url;$('compareNote').textContent=masterVersions.length<2?'Make another version to compare.':`Comparing ${a?.label||'A'} vs ${b?.label||'B'}.`}
+    async function renderTake(b,setStatus=()=>{}){let sr=b.sampleRate,ss=segments(b,db(+$('threshold').value),+$('minSilence').value/1000,+$('keep').value/1000),duration=ss.reduce((n,[a,z])=>n+z-a,0)/sr,intensity=+$('voiceIntensity').value;setStatus('Processing: Cutting...');await new Promise(r=>setTimeout(r,30));let raw=cutVoice(b,ss,duration),boosted=boostInput(raw,+$('inputBoost').value);setStatus('Processing: EQ...');let shaped=await closeMicCleanup(boosted,+$('boomClean').value),noiseBefore=bufferStats(shaped).noise;setStatus('Processing: Denoise...');let denoised=await speechDenoiseBuffer(shaped,+$('speechDenoise').value),clean=tameNoiseFloor(denoised,+$('noiseClean').value);setStatus('Processing: Radio Engine...');let voiced=await radioVoice(clean,intensity);setStatus('Processing: Gating...');let voice=postNoiseGate(voiced,+$('postGate').value),noiseAfter=bufferStats(voice).noise,out=copyBuffer(voice);if(musicBuffer){setStatus('Processing: Mixing...');mixMusicUnderVoice(out,musicBuffer,+$('musicGain').value,+$('musicDuck').value)}setStatus('Processing: Final Master...');out=await masterBuffer(out);return {raw,clean,voice,out,duration,intensity,noiseBefore,noiseAfter}}
+    async function measureSoundcheckNoise(b,setStatus=()=>{}){setStatus('Measuring noise...');let boosted=boostInput(b,+$('inputBoost').value),shaped=await closeMicCleanup(boosted,+$('boomClean').value),before=bufferStats(shaped).noise,denoised=await speechDenoiseBuffer(shaped,+$('speechDenoise').value),clean=tameNoiseFloor(denoised,+$('noiseClean').value),voiced=await radioVoice(clean,+$('voiceIntensity').value),gated=postNoiseGate(voiced,+$('postGate').value),after=bufferStats(gated).noise;return {before,after}}
+    async function finishSoundcheck(b,peakDb){$('status').textContent='Processing soundcheck...';try{let noise=await measureSoundcheckNoise(b,msg=>$('status').textContent=msg),r=await renderTake(b,msg=>$('status').textContent=msg);if(soundcheckUrl)URL.revokeObjectURL(soundcheckUrl);soundcheckUrl=URL.createObjectURL(wav(r.out));$('soundcheckPreview').src=soundcheckUrl;$('soundcheckPreview').style.display='block';let before=Math.round(ampDb(noise.before)),after=Math.round(ampDb(noise.after)),reduction=Math.max(0,before-after),tone=reduction>=3?'ok':'warn';$('soundcheckHint').className=`pill ${tone}`;$('soundcheckHint').textContent=`Noise ${before}→${after} dB`;$('status').textContent=`Soundcheck ready. Peak ${peakDb} dB.`}catch(e){$('soundcheckHint').className='pill warn';$('soundcheckHint').textContent='Failed';$('status').textContent=`Error: ${e.message}`}}
+    
+    $('process').onclick=async()=>{if(!voiceBuffer)return;let b=voiceBuffer,settings=masterSettings();$('process').disabled=true;try{['original','raw','clean','voice'].forEach(k=>previewUrls[k]&&URL.revokeObjectURL(previewUrls[k]));let r=await renderTake(b,msg=>$('status').textContent=msg),finalUrl=URL.createObjectURL(wav(r.out)),version=addMasterVersion(finalUrl,settings,r.out.duration);previewUrls={...previewUrls,original:URL.createObjectURL(wav(b)),raw:URL.createObjectURL(wav(r.raw)),clean:URL.createObjectURL(wav(r.clean)),voice:URL.createObjectURL(wav(r.voice)),final:finalUrl};$('previewChoice').value='final';$('preview').src=previewUrls.final;$('download').href=previewUrls.final;$('download').download=`podcast-episode-${version.id}.wav`;$('stats').textContent=`${fmt(b.duration)} → ${fmt(r.out.duration)} · ${version.label}`;$('result').classList.add('show');$('status').textContent=`Ready: ${version.label}.`}catch(e){$('status').textContent=`Error: ${e.message}`}finally{$('process').disabled=false}};
+    window.PodCutTest={db,ampDb,boostInput,closeMicCleanup,speechDenoiseBuffer,tameNoiseFloor,postNoiseGate,mixMusicUnderVoice,radioVoice,masterBuffer,wav,versionLabel};
+</script>
+</body>
+</html>
