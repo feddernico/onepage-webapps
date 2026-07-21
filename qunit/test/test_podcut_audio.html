@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<title>PodCut audio tests</title>
+<link rel="stylesheet" href="../qunit-2.24.1.css">
+
+<body>
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+    <iframe id="podcut-frame" src="../../audio/podcut/index.html" hidden></iframe>
+    <script src="../qunit-2.24.1.js"></script>
+    <script>
+        QUnit.config.testTimeout = 30000;
+
+        function loadPodCut() {
+            const frame = document.getElementById('podcut-frame');
+            if (frame.contentWindow && frame.contentWindow.PodCutTest) {
+                return Promise.resolve(frame.contentWindow.PodCutTest);
+            }
+            return new Promise((resolve, reject) => {
+                frame.addEventListener('load', () => {
+                    const api = frame.contentWindow.PodCutTest;
+                    api ? resolve(api) : reject(new Error('PodCut test API unavailable'));
+                }, { once: true });
+            });
+        }
+
+        function createVoiceBuffer(api, seconds = 1.5, sampleRate = 48000) {
+            const ctx = new OfflineAudioContext(2, Math.round(seconds * sampleRate), sampleRate);
+            const buffer = ctx.createBuffer(2, ctx.length, sampleRate);
+            const left = buffer.getChannelData(0);
+            const right = buffer.getChannelData(1);
+            const voiceAmp = api.db(-14);
+            const noiseAmp = api.db(-58);
+            for (let i = 0; i < buffer.length; i += 1) {
+                const t = i / sampleRate;
+                const envelope = t < 0.25 || t > seconds - 0.2 ? 0 : 0.5 + 0.5 * Math.sin(Math.PI * Math.min(1, (t - 0.25) / 0.15));
+                const voice = Math.sin(2 * Math.PI * 165 * t) * voiceAmp * envelope;
+                const noise = Math.sin(2 * Math.PI * 7600 * t) * noiseAmp;
+                left[i] = voice + noise;
+                right[i] = voice + noise;
+            }
+            return buffer;
+        }
+
+        function scaleBuffer(buffer, amount) {
+            const ctx = new OfflineAudioContext(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
+            const out = ctx.createBuffer(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
+            for (let ch = 0; ch < buffer.numberOfChannels; ch += 1) {
+                const src = buffer.getChannelData(ch);
+                const dst = out.getChannelData(ch);
+                for (let i = 0; i < src.length; i += 1) dst[i] = src[i] * amount;
+            }
+            return out;
+        }
+
+        function createBoomyVoiceBuffer(api, seconds = 1.5, sampleRate = 48000) {
+            const ctx = new OfflineAudioContext(2, Math.round(seconds * sampleRate), sampleRate);
+            const buffer = ctx.createBuffer(2, ctx.length, sampleRate);
+            const left = buffer.getChannelData(0);
+            const right = buffer.getChannelData(1);
+            const boomAmp = api.db(-10);
+            const voiceAmp = api.db(-16);
+            for (let i = 0; i < buffer.length; i += 1) {
+                const t = i / sampleRate;
+                const envelope = t < 0.2 || t > seconds - 0.2 ? 0 : 1;
+                const boom = Math.sin(2 * Math.PI * 95 * t) * boomAmp * envelope;
+                const voice = Math.sin(2 * Math.PI * 165 * t) * voiceAmp * envelope;
+                left[i] = boom + voice;
+                right[i] = boom + voice;
+            }
+            return buffer;
+        }
+
+        function createSoundcheckProfileBuffer(api, seconds = 15, sampleRate = 48000) {
+            const ctx = new OfflineAudioContext(2, Math.round(seconds * sampleRate), sampleRate);
+            const buffer = ctx.createBuffer(2, ctx.length, sampleRate);
+            const left = buffer.getChannelData(0);
+            const right = buffer.getChannelData(1);
+            const noiseAmp = api.db(-54);
+            const speechAmp = api.db(-32);
+            for (let i = 0; i < buffer.length; i += 1) {
+                const t = i / sampleRate;
+                const speaking = t > 3 && t < 12;
+                const voiceEnvelope = speaking ? 0.55 + 0.45 * Math.sin(2 * Math.PI * 1.7 * t) ** 2 : 0;
+                const voice = (
+                    Math.sin(2 * Math.PI * 165 * t) * 0.85 +
+                    Math.sin(2 * Math.PI * 250 * t) * 0.35 +
+                    Math.sin(2 * Math.PI * 3200 * t) * 0.12
+                ) * speechAmp * voiceEnvelope;
+                const noise = (
+                    Math.sin(2 * Math.PI * 7600 * t) * 0.7 +
+                    Math.sin(2 * Math.PI * 9100 * t) * 0.3
+                ) * noiseAmp;
+                left[i] = voice + noise;
+                right[i] = voice + noise;
+            }
+            return buffer;
+        }
+
+        function createMusicBuffer(api, seconds = 4, sampleRate = 48000) {
+            const ctx = new OfflineAudioContext(2, Math.round(seconds * sampleRate), sampleRate);
+            const buffer = ctx.createBuffer(2, ctx.length, sampleRate);
+            const left = buffer.getChannelData(0);
+            const right = buffer.getChannelData(1);
+            const amp = api.db(-12);
+            for (let i = 0; i < buffer.length; i += 1) {
+                const t = i / sampleRate;
+                const music = Math.sin(2 * Math.PI * 440 * t) * amp;
+                left[i] = music;
+                right[i] = music;
+            }
+            return buffer;
+        }
+
+        function createVoiceWithPause(api, seconds = 4, sampleRate = 48000) {
+            const ctx = new OfflineAudioContext(2, Math.round(seconds * sampleRate), sampleRate);
+            const buffer = ctx.createBuffer(2, ctx.length, sampleRate);
+            const left = buffer.getChannelData(0);
+            const right = buffer.getChannelData(1);
+            const amp = api.db(-18);
+            for (let i = 0; i < buffer.length; i += 1) {
+                const t = i / sampleRate;
+                const speaking = t > 1.6 && t < 3.3;
+                const voice = speaking ? Math.sin(2 * Math.PI * 165 * t) * amp : 0;
+                left[i] = voice;
+                right[i] = voice;
+            }
+            return buffer;
+        }
+
+        function stereoDifferenceRms(buffer) {
+            const left = buffer.getChannelData(0);
+            const right = buffer.getChannelData(1);
+            let sum = 0;
+            for (let i = 0; i < left.length; i += 1) {
+                const d = left[i] - right[i];
+                sum += d * d;
+            }
+            return Math.sqrt(sum / left.length);
+        }
+
+        function stats(buffer) {
+            const sampleRate = buffer.sampleRate;
+            const x = buffer.getChannelData(0);
+            let sum = 0;
+            let peak = 0;
+            for (let i = 0; i < x.length; i += 1) {
+                const v = x[i];
+                sum += v * v;
+                peak = Math.max(peak, Math.abs(v));
+            }
+            return {
+                rms: Math.sqrt(sum / x.length),
+                peak
+            };
+        }
+
+        function rangeStats(buffer, startSeconds, endSeconds) {
+            const sampleRate = buffer.sampleRate;
+            const x = buffer.getChannelData(0);
+            const start = Math.max(0, Math.round(startSeconds * sampleRate));
+            const end = Math.min(x.length, Math.round(endSeconds * sampleRate));
+            let sum = 0;
+            let peak = 0;
+            for (let i = start; i < end; i += 1) {
+                const v = x[i];
+                sum += v * v;
+                peak = Math.max(peak, Math.abs(v));
+            }
+            return {
+                rms: Math.sqrt(sum / Math.max(1, end - start)),
+                peak
+            };
+        }
+
+        function toneAmplitude(buffer, frequency) {
+            const sampleRate = buffer.sampleRate;
+            const x = buffer.getChannelData(0);
+            let sin = 0;
+            let cos = 0;
+            for (let i = 0; i < x.length; i += 1) {
+                const angle = 2 * Math.PI * frequency * i / sampleRate;
+                sin += x[i] * Math.sin(angle);
+                cos += x[i] * Math.cos(angle);
+            }
+            return 2 * Math.sqrt(sin * sin + cos * cos) / x.length;
+        }
+
+        function highToVoiceRatio(buffer) {
+            return toneAmplitude(buffer, 7600) / toneAmplitude(buffer, 165);
+        }
+
+        function boomToVoiceRatio(buffer) {
+            return toneAmplitude(buffer, 95) / toneAmplitude(buffer, 165);
+        }
+
+        QUnit.module('PodCut audio regression', hooks => {
+            let api;
+
+            hooks.before(async () => {
+                api = await loadPodCut();
+            });
+
+            QUnit.test('noise cleanup does not depend on a room-tone reading', assert => {
+                const input = createVoiceBuffer(api);
+                const output = api.tameNoiseFloor(input, 30, api.db(-44));
+                const before = stats(input);
+                const after = stats(output);
+
+                assert.ok(Number.isFinite(after.rms), 'cleanup output RMS is finite');
+                assert.ok(after.rms > before.rms * 0.55, 'voice level remains usable');
+                assert.ok(after.peak <= 1, 'cleanup output does not clip');
+                assert.ok(highToVoiceRatio(output) < highToVoiceRatio(input) * 1.5, 'cleanup does not make high-frequency noise dominate voice');
+            });
+
+            QUnit.test('phone input boost helps quiet recordings without room calibration', assert => {
+                const quiet = scaleBuffer(createVoiceBuffer(api), api.db(-12));
+                const boosted = api.boostInput(quiet, 6, api.db(-44));
+                const before = stats(quiet);
+                const after = stats(boosted);
+
+                assert.ok(after.rms > before.rms * 1.8, 'quiet phone recording receives useful boost');
+                assert.ok(after.peak <= api.db(-6) * 1.01, 'boost keeps peak headroom');
+                assert.ok(after.peak <= 1, 'boosted output does not clip');
+            });
+
+            QUnit.test('close mic cleanup reduces proximity boom before compression', async assert => {
+                const input = createBoomyVoiceBuffer(api);
+                const output = await api.closeMicCleanup(input, 70);
+                const result = stats(output);
+
+                assert.ok(Number.isFinite(result.rms), 'cleanup output RMS is finite');
+                assert.ok(result.peak <= 1, 'cleanup output does not clip');
+                assert.ok(boomToVoiceRatio(output) < boomToVoiceRatio(input) * 0.7, 'low-frequency boom is reduced against the voice band');
+            });
+
+            QUnit.test('close mic cleanup can be turned off without changing audio', async assert => {
+                const input = createBoomyVoiceBuffer(api);
+                const output = await api.closeMicCleanup(input, 0);
+
+                assert.strictEqual(output, input, 'zero cleanup returns the original buffer');
+            });
+
+            QUnit.test('mastered version labels include meaningful mastering settings', assert => {
+                const label = api.versionLabel({
+                    number: 2,
+                    settings: {
+                        intensity: 85,
+                        denoise: 50,
+                        duck: 75,
+                        boom: 80,
+                        noise: 50,
+                        gate: 35
+                    }
+                });
+
+                assert.ok(label.includes('Version 2'), 'label includes version number');
+                assert.ok(label.includes('Punchy'), 'label includes voice intensity');
+                assert.ok(label.includes('denoise medium'), 'label includes speech denoise setting');
+                assert.ok(label.includes('duck strong'), 'label includes music ducking setting');
+                assert.ok(label.includes('boom strong'), 'label includes close mic cleanup setting');
+                assert.ok(label.includes('noise 50%'), 'label includes noise cleanup setting');
+                assert.ok(label.includes('gate 35%'), 'label includes post noise gate setting');
+            });
+
+            QUnit.test('speech denoise can be bypassed without changing audio', async assert => {
+                const input = createSoundcheckProfileBuffer(api, 1);
+                const output = await api.speechDenoiseBuffer(input, 0);
+
+                assert.strictEqual(output, input, 'zero denoise returns the original buffer');
+            });
+
+            QUnit.test('speech denoise reduces browser-shaped quiet noise while preserving speech', async assert => {
+                const input = createSoundcheckProfileBuffer(api);
+                const denoised = await api.speechDenoiseBuffer(input, 50);
+                const beforeSilence = rangeStats(input, 0.4, 2.6);
+                const afterSilence = rangeStats(denoised, 0.4, 2.6);
+                const beforeSpeech = rangeStats(input, 4, 8);
+                const afterSpeech = rangeStats(denoised, 4, 8);
+
+                assert.ok(afterSilence.rms < beforeSilence.rms * 0.85, 'RNNoise lowers quiet-section noise');
+                assert.ok(afterSpeech.rms > beforeSpeech.rms * 0.45, 'speech remains present after RNNoise');
+                assert.ok(Math.abs(afterSpeech.rms - beforeSpeech.rms) < beforeSpeech.rms * 0.35, 'VAD-aware blend avoids heavy speech coloration');
+                assert.ok(afterSpeech.peak <= 1, 'denoised speech does not clip');
+            });
+
+            QUnit.test('speech denoise keeps voice mono coherent to avoid chorus artifacts', async assert => {
+                const input = createSoundcheckProfileBuffer(api);
+                const denoised = await api.speechDenoiseBuffer(input, 50);
+
+                assert.ok(stereoDifferenceRms(denoised) < 1e-6, 'left and right denoised channels stay phase-aligned');
+            });
+
+            QUnit.test('music ducking keeps bed louder in quiet sections than under speech', assert => {
+                const voice = createVoiceWithPause(api);
+                const originalVoice = scaleBuffer(voice, 1);
+                const music = createMusicBuffer(api);
+                const mixed = api.mixMusicUnderVoice(voice, music, -18, 75);
+                const musicOnly = scaleBuffer(mixed, 1);
+                for (let ch = 0; ch < musicOnly.numberOfChannels; ch += 1) {
+                    const m = musicOnly.getChannelData(ch);
+                    const v = originalVoice.getChannelData(ch);
+                    for (let i = 0; i < m.length; i += 1) m[i] -= v[i];
+                }
+                const quietMusic = rangeStats(musicOnly, 0.6, 1.2);
+                const speechMusic = rangeStats(musicOnly, 2.1, 3.1);
+
+                assert.ok(quietMusic.rms > speechMusic.rms * 1.5, 'music bed is clearly louder during quiet sections');
+                assert.ok(speechMusic.rms > quietMusic.rms * 0.35, 'music bed remains meaningfully audible under speech');
+                assert.ok(speechMusic.rms > api.db(-42), 'ducked music stays above the noise floor');
+            });
+
+            QUnit.test('post noise gate lowers residual quiet noise without clipping', assert => {
+                const input = createSoundcheckProfileBuffer(api);
+                const gated = api.postNoiseGate(input, 60);
+                const beforeSilence = rangeStats(input, 0.4, 2.6);
+                const afterSilence = rangeStats(gated, 0.4, 2.6);
+                const beforeSpeech = rangeStats(input, 4, 8);
+                const afterSpeech = rangeStats(gated, 4, 8);
+                const after = stats(gated);
+
+                assert.ok(Number.isFinite(after.rms), 'gated output RMS is finite');
+                assert.ok(after.peak <= 1, 'gated output does not clip');
+                assert.ok(afterSilence.rms < beforeSilence.rms * 0.35, 'quiet-section noise is reduced');
+                assert.ok(afterSpeech.rms > beforeSpeech.rms * 0.65, 'speech remains usable');
+            });
+
+            QUnit.test('radio mastering stays finite and voice-band dominated', async assert => {
+                const input = createVoiceBuffer(api);
+                const clean = api.tameNoiseFloor(input, 30, api.db(-44));
+                const voiced = await api.radioVoice(clean, 65);
+                const mastered = await api.masterBuffer(voiced);
+                const result = stats(mastered);
+
+                assert.ok(Number.isFinite(result.rms), 'mastered RMS is finite');
+                assert.ok(result.rms > api.db(-30), 'mastered voice is not accidentally muted');
+                assert.ok(result.peak <= 1, 'mastered output does not clip');
+                assert.ok(highToVoiceRatio(mastered) < 0.08, 'mastered output remains voice-band dominated');
+            });
+        });
+    </script>
+</body>
+
+</html>
