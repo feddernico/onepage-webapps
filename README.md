@@ -44,6 +44,7 @@ The repo structure recently moved from one flat `.html` file per app to one fold
 | LocalAI Lead Responder | Productivity | stable | `productivity/localai-lead-responder/` |
 | Prompt Stash | Productivity | stable | `productivity/prompt-stash/` |
 | Todo List | Productivity | stable | `productivity/todo-list/` |
+| PodCut Studio | Audio | stable | `audio/podcut/` |
 | Qraft | Writing | experimental | `writing/qraft/` |
 | Voice Refiner | Writing | stable | `writing/voice-refiner/` |
 | Writing Coach | Writing | stable | `writing/writing-coach/` |
@@ -154,6 +155,22 @@ If an app grows beyond one file, that is fine. The important convention is that 
 - Update relative paths when moving an app between folders.
 - Keep local agent/editor tooling out of commits; durable public guidance belongs in `AGENTS.md`.
 - QUnit assets currently live in `qunit/` for existing tests.
+
+## Running tests
+
+QUnit tests are browser-based. Start a local server from the repo root:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then open the PodCut audio regression test:
+
+```text
+http://127.0.0.1:8000/qunit/test/test_podcut_audio.html
+```
+
+The PodCut test loads `audio/podcut/index.html` in an iframe and exercises the real audio helpers, including RNNoise speech denoise, noise cleanup, soundcheck-style gating, music ducking, and mastering regressions. A healthy run shows 11 tests, 35 assertions, and 0 failures.
 
 ## Public workflow files
 

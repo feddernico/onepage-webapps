@@ -1,5 +1,4 @@
-.DS_Store
-common_resources/.DS_Store
+**/.DS_Store
 
 # Local agent/editor tooling state. Keep durable public guidance in AGENTS.md
 # and repo automation in .github/ instead.
