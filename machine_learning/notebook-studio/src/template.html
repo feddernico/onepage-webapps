@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notebook Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+/*__NOTEBOOK_PILOT_CSS__*/
+    </style>
+</head>
+<body>
+    <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="icon-upload" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+        </symbol>
+        <symbol id="icon-download" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </symbol>
+        <symbol id="icon-database" viewBox="0 0 24 24">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+            <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+            <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+        </symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+        </symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+        </symbol>
+        <symbol id="icon-play" viewBox="0 0 24 24">
+            <polygon points="6 3 20 12 6 21 6 3"/>
+        </symbol>
+        <symbol id="icon-run-all" viewBox="0 0 24 24">
+            <polygon points="4 4 13 12 4 20 4 4"/>
+            <polygon points="13 4 22 12 13 20 13 4"/>
+        </symbol>
+        <symbol id="icon-list-numbers" viewBox="0 0 24 24">
+            <line x1="10" y1="6" x2="21" y2="6"/>
+            <line x1="10" y1="12" x2="21" y2="12"/>
+            <line x1="10" y1="18" x2="21" y2="18"/>
+            <path d="M4 6h1v4"/>
+            <path d="M4 10h2"/>
+            <path d="M6 14H4.5a1.5 1.5 0 0 0 0 3H6v1H4"/>
+        </symbol>
+        <symbol id="icon-package" viewBox="0 0 24 24">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.29 7 12 12 20.71 7"/>
+            <line x1="12" y1="22" x2="12" y2="12"/>
+        </symbol>
+        <symbol id="icon-bot" viewBox="0 0 24 24">
+            <path d="M12 8V4H8"/>
+            <rect x="4" y="8" width="16" height="12" rx="2"/>
+            <path d="M2 14h2"/>
+            <path d="M20 14h2"/>
+            <path d="M9 13h.01"/>
+            <path d="M15 13h.01"/>
+            <path d="M10 17h4"/>
+        </symbol>
+        <symbol id="icon-rows" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="6" rx="1"/>
+            <rect x="3" y="14" width="18" height="6" rx="1"/>
+        </symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24">
+            <path d="M3 6h18"/>
+            <path d="M8 6V4h8v2"/>
+            <path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6"/>
+            <path d="M14 11v6"/>
+        </symbol>
+    </svg>
+    <div class="app">
+        <header>
+            <div class="brand-lockup">
+                <div class="brand-mark" aria-hidden="true">NS</div>
+                <div>
+                    <div class="eyebrow">Machine Learning</div>
+                    <h1>Notebook Studio</h1>
+                    <p class="subtitle">Chat-guided Python notebooks with local models and WebMCP handoff points.</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <input id="fileInput" class="hidden" type="file" accept=".ipynb,application/json">
+                <button id="loadBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-upload"></use></svg><span>Load .ipynb</span></button>
+                <button id="exportBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg><span>Export .ipynb</span></button>
+                <button id="sampleBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>Load Demo</span></button>
+            </div>
+        </header>
+
+        <main class="workspace">
+            <section class="notebook-pane" aria-label="Notebook">
+                <div class="toolbar">
+                    <div class="toolbar-group">
+                        <button id="addMarkdownBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg><span>Markdown</span></button>
+                        <button id="addCodeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg><span>Code</span></button>
+                        <button id="runSelectedBtn" class="primary icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Run Selected</span></button>
+                        <button id="runAllBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-run-all"></use></svg><span>Run All</span></button>
+                        <button id="toggleLineNumbersBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-list-numbers"></use></svg><span>Show Lines</span></button>
+                    </div>
+                    <div class="toolbar-group">
+                        <span id="cellCount" class="pill">0 cells</span>
+                        <span id="runtimeStatus" class="pill">Pyodide adapter pending</span>
+                    </div>
+                </div>
+                <div class="runtime-panel">
+                    <div class="field">
+                        <label for="packageInput">Pyodide packages</label>
+                        <input id="packageInput" value="pandas,numpy,matplotlib" spellcheck="false">
+                    </div>
+                    <div class="field">
+                        <label for="dataFileInput">Mount data file</label>
+                        <input id="dataFileInput" type="file">
+                    </div>
+                    <button id="initRuntimeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Init Pyodide</span></button>
+                    <button id="loadPackagesBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-package"></use></svg><span>Load Packages</span></button>
+                </div>
+                <div id="cellList" class="cell-list"></div>
+            </section>
+
+            <aside class="pilot-pane" aria-label="Pilot">
+                <div class="pilot-head">
+                    <div class="pilot-title">
+                        <h2>Notebook Agent</h2>
+                        <span id="agentStatus" class="status">draft mode</span>
+                    </div>
+                    <div class="settings" aria-label="Pilot settings">
+                        <div class="settings-row">
+                            <div class="field">
+                                <label for="agentMode">Agent source</label>
+                                <select id="agentMode">
+                                    <option value="draft">Draft cells locally</option>
+                                    <option value="gemma">Browser Gemma (wllama)</option>
+                                    <option value="webmcp">WebMCP endpoint</option>
+                                </select>
+                            </div>
+                            <button id="loadGemmaBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg><span>Load Model</span></button>
+                        </div>
+                        <div class="settings-row compact-row">
+                            <div class="field">
+                                <label for="agentProfile">Agent speed</label>
+                                <select id="agentProfile">
+                                    <option value="fast" selected>Fast</option>
+                                    <option value="balanced">Balanced</option>
+                                    <option value="deep">Deep</option>
+                                </select>
+                            </div>
+                            <span id="agentProfileHint" class="hint">Fast keeps prompts short and uses fewer response tokens.</span>
+                        </div>
+                        <div id="gemmaStatus" class="hint">
+                            Default is Qwen2.5 Coder 0.5B Q8_0 with the Fast profile for quicker browser notebook-cell generation.
+                        </div>
+                        <details id="modelSettings" class="model-settings">
+                            <summary>Model settings</summary>
+                            <div class="settings-grid">
+                                <div class="field">
+                                    <label for="gemmaRepo">Hugging Face GGUF repo</label>
+                                    <input id="gemmaRepo" value="Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF" spellcheck="false">
+                                </div>
+                                <div class="field">
+                                    <label for="gemmaFile">GGUF file</label>
+                                    <input id="gemmaFile" value="qwen2.5-coder-0.5b-instruct-q8_0.gguf" spellcheck="false">
+                                </div>
+                                <div class="field">
+                                    <label for="gemmaGpuLayers">GPU layers</label>
+                                    <input id="gemmaGpuLayers" type="number" min="0" step="1" value="0">
+                                </div>
+                                <div class="field">
+                                    <label for="gemmaMaxTokens">Response tokens</label>
+                                    <input id="gemmaMaxTokens" type="number" min="64" max="900" step="32" value="128">
+                                </div>
+                                <div class="field">
+                                    <label for="webmcpUrl">WebMCP endpoint</label>
+                                    <input id="webmcpUrl" placeholder="http://localhost:8765/notebook-agent" spellcheck="false">
+                                </div>
+                                <div class="preset-actions">
+                                    <button id="useQwenFastBtn">Use Qwen 0.5B Fast</button>
+                                    <button id="useQwenCoderBtn">Use Qwen 1.5B Balanced</button>
+                                    <button id="useFastGemmaBtn">Use Fast Gemma</button>
+                                    <button id="useGemma4Btn">Use Gemma 4 E2B</button>
+                                    <button id="loadSmokeModelBtn">Load Tiny Smoke Model</button>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+
+                <div id="chatLog" class="chat-log"></div>
+
+                <div class="composer">
+                    <textarea id="promptInput" placeholder="Ask for the next analysis step, a chart, a cleanup pass, or an explanation."></textarea>
+                    <div class="composer-actions">
+                        <span class="hint">Generated code is inserted below the selected cell.</span>
+                        <button id="askBtn" class="primary icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg><span>Ask Pilot</span></button>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script>
+/*__NOTEBOOK_PILOT_APP__*/
+    </script>
+</body>
+</html>

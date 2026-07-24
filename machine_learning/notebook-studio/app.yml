@@ -1,0 +1,7 @@
+title: Notebook Studio
+slug: notebook-studio
+category: Machine Learning
+status: experimental
+description: Chat-guided notebook workspace for loading .ipynb files, shaping Python analysis, and connecting local model or WebMCP runtimes.
+featured: false
+date: 2026-07-21
