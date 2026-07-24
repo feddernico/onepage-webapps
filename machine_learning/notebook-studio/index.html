@@ -1,0 +1,3458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notebook Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: light;
+            --blue: #2780e3;
+            --blue-hover: #1f4eb6;
+            --blue-active: #1a3e96;
+            --ink: #212529;
+            --charcoal: #343a40;
+            --muted: rgba(52, 58, 64, 0.72);
+            --line: #dee2e6;
+            --line-strong: #ced4da;
+            --panel: #ffffff;
+            --soft: #f8f9fa;
+            --soft-blue: #d4e6f9;
+            --accent: var(--blue);
+            --accent-dark: var(--blue-hover);
+            --code: #1e1e1e;
+            --code-bg: #f8fafc;
+            --warn: #ff7518;
+            --success: #3fb618;
+            --danger: #ff0039;
+            --radius: 9px;
+            --shadow: 0 0.75rem 2rem rgba(52, 58, 64, 0.12);
+            --shadow-hover: 0 1rem 2.4rem rgba(39, 128, 227, 0.14);
+            --font-sans: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 17px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            margin: 0;
+            background:
+                linear-gradient(180deg, rgba(212, 230, 249, 0.42), rgba(248, 249, 250, 0) 280px),
+                #f4f6f8;
+            color: var(--charcoal);
+            font-family: var(--font-sans);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        button,
+        input,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+        button {
+            border: 1.5px solid var(--line);
+            background: var(--panel);
+            color: var(--ink);
+            border-radius: var(--radius);
+            min-height: 36px;
+            padding: 0 13px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+
+        button:hover {
+            border-color: rgba(39, 128, 227, 0.42);
+            box-shadow: 0 2px 8px rgba(39, 128, 227, 0.12);
+        }
+
+        button.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        button.primary:hover {
+            background: var(--accent-dark);
+            border-color: var(--accent-dark);
+            box-shadow: 0 2px 8px rgba(39, 128, 227, 0.28);
+        }
+
+        .icon-sprite {
+            position: absolute;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+            flex: 0 0 auto;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            color: inherit;
+            pointer-events: none;
+        }
+
+        .icon-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+        }
+
+        .icon-label.compact {
+            gap: 6px;
+            padding-inline: 10px;
+        }
+
+        button.icon-button,
+        button.icon {
+            min-width: 36px;
+            width: 36px;
+            padding: 0;
+            display: inline-grid;
+            place-items: center;
+        }
+
+        button.icon-button .icon,
+        button.icon .icon {
+            opacity: 0.86;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .cell-actions button {
+            white-space: nowrap;
+        }
+
+        .app {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 100dvh;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 18px;
+            padding: 16px 22px;
+            background: rgba(248, 249, 250, 0.94);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .brand-lockup {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            color: #fff;
+            background: linear-gradient(135deg, var(--blue), #7b5cd6);
+            box-shadow: 0 0.5rem 1.4rem rgba(39, 128, 227, 0.18);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .eyebrow {
+            color: var(--blue);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.45rem;
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: 0;
+        }
+
+        .subtitle {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .header-actions button {
+            background: #fff;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 380px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .notebook-pane,
+        .pilot-pane {
+            min-height: 0;
+        }
+
+        .notebook-pane {
+            overflow: auto;
+            padding: 20px 22px 28px;
+        }
+
+        .pilot-pane {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            overflow: hidden;
+            border-left: 1px solid var(--line);
+            background: #fff;
+        }
+
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px;
+            margin-bottom: 14px;
+            background: rgba(244, 246, 248, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(222, 226, 230, 0.72);
+            border-radius: var(--radius);
+            box-shadow: 0 0.35rem 1rem rgba(52, 58, 64, 0.05);
+        }
+
+        .runtime-panel {
+            display: grid;
+            grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr) auto auto;
+            gap: 8px;
+            padding: 10px;
+            margin-bottom: 14px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: 0 0.35rem 1rem rgba(52, 58, 64, 0.05);
+            max-width: 1060px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .runtime-panel .field {
+            gap: 4px;
+        }
+
+        .runtime-panel button {
+            align-self: end;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .cell-list {
+            display: grid;
+            gap: 10px;
+            max-width: 1060px;
+            margin: 0 auto;
+        }
+
+        .cell {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 0.5rem 1.4rem rgba(52, 58, 64, 0.07);
+        }
+
+        .cell.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(39, 128, 227, 0.12), 0 0.75rem 2rem rgba(52, 58, 64, 0.1);
+        }
+
+        .cell-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: var(--soft);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .cell-kind {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cell-kind select {
+            border: 1.5px solid var(--line);
+            border-radius: var(--radius);
+            background: #fff;
+            min-height: 30px;
+            padding: 0 8px;
+        }
+
+        .cell-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .code-wrap {
+            position: relative;
+            min-height: 122px;
+            background: var(--code-bg);
+            overflow: hidden;
+        }
+
+        .code-wrap.collapsed {
+            height: 190px;
+            overflow: auto;
+        }
+
+        .code-wrap.collapsed .code-highlight,
+        .code-wrap.collapsed textarea {
+            min-height: max-content;
+        }
+
+        .code-highlight,
+        .cell textarea {
+            width: 100%;
+            border: 0;
+            padding: 12px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.55;
+            tab-size: 4;
+            white-space: pre-wrap;
+            overflow-wrap: normal;
+        }
+
+        .code-wrap.with-lines .code-highlight,
+        .code-wrap.with-lines textarea {
+            padding-left: 58px;
+        }
+
+        .code-highlight {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            pointer-events: none;
+            color: var(--code);
+            background: transparent;
+        }
+
+        .line-numbers {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 46px;
+            padding: 12px 8px 12px 0;
+            color: #adb5bd;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.55;
+            text-align: right;
+            white-space: pre;
+            pointer-events: none;
+            border-right: 1px solid var(--line);
+        }
+
+        .cell textarea {
+            position: relative;
+            min-height: 122px;
+            resize: none;
+            outline: none;
+            background: transparent;
+            color: transparent;
+            caret-color: var(--code);
+            overflow: hidden;
+        }
+
+        .cell textarea::selection {
+            background: rgba(39, 128, 227, 0.18);
+        }
+
+        .cell[data-type="markdown"] textarea {
+            color: var(--ink);
+            caret-color: var(--ink);
+            background: #fff;
+            resize: vertical;
+            overflow: auto;
+        }
+
+        .py-keyword {
+            color: #9954bb;
+            font-weight: 600;
+        }
+
+        .py-string {
+            color: #198754;
+        }
+
+        .py-number {
+            color: #ff7518;
+        }
+
+        .py-comment {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .py-builtin {
+            color: #2761e3;
+        }
+
+        .py-decorator {
+            color: #e83e8c;
+        }
+
+        .output-wrap {
+            border-top: 1px solid var(--line);
+            background: #fcfcfd;
+        }
+
+        .output-wrap.error {
+            background: #fff7f5;
+        }
+
+        .error-action {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-top: 1px solid #f2c7c2;
+            background: #fff7f5;
+            color: var(--danger);
+            font-size: 13px;
+        }
+
+        .error-action button {
+            border-color: #f2a7a0;
+            color: var(--danger);
+            min-height: 30px;
+            white-space: nowrap;
+        }
+
+        .error-action button:hover {
+            border-color: var(--danger);
+        }
+
+        .output-wrap .output + .output,
+        .output-wrap .table-output + .output,
+        .output-wrap .output + .table-output,
+        .output-wrap .table-output + .table-output {
+            border-top: 1px solid var(--line);
+        }
+
+        .table-output {
+            overflow: auto;
+            padding: 10px 12px;
+            color: var(--ink);
+            font-family: var(--font-sans);
+        }
+
+        .table-output table {
+            border-collapse: collapse;
+            width: max-content;
+            min-width: min(100%, 520px);
+            font-size: 0.82rem;
+        }
+
+        .table-output th,
+        .table-output td {
+            border: 1px solid #d7dee8;
+            padding: 7px 9px;
+            text-align: right;
+            vertical-align: top;
+        }
+
+        .table-output th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: var(--soft);
+            color: var(--charcoal);
+            font-weight: 650;
+        }
+
+        .table-output tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .table-output td:first-child,
+        .table-output th:first-child {
+            text-align: left;
+        }
+
+        .table-output caption {
+            caption-side: top;
+            padding: 0 0 8px;
+            color: var(--ink);
+            font-weight: 650;
+            text-align: left;
+        }
+
+        .output {
+            padding: 10px 12px;
+            color: var(--charcoal);
+            font-family: var(--font-mono);
+            font-size: 0.74rem;
+            white-space: pre-wrap;
+        }
+
+        .output.error {
+            color: var(--danger);
+            background: #fff7f5;
+        }
+
+        .output img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #fff;
+            transform-origin: center center;
+            transition: transform 0.12s ease;
+        }
+
+        .plot-output {
+            padding: 10px 12px;
+            overflow: hidden;
+        }
+
+        .plot-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .plot-toolbar button {
+            min-height: 30px;
+            padding: 0 9px;
+            font-size: 0.76rem;
+        }
+
+        .plot-stage {
+            overflow: hidden;
+            border-radius: 6px;
+            background: #fff;
+        }
+
+        .plot-stage img {
+            margin: 0;
+        }
+
+        .markdown-preview {
+            padding: 13px 14px;
+            border-top: 1px solid var(--line);
+            background: #fff;
+            line-height: 1.55;
+        }
+
+        .markdown-preview h1,
+        .markdown-preview h2,
+        .markdown-preview h3 {
+            margin: 0 0 8px;
+            letter-spacing: 0;
+        }
+
+        .markdown-preview h1 {
+            font-size: 22px;
+        }
+
+        .markdown-preview h2 {
+            font-size: 18px;
+        }
+
+        .markdown-preview h3 {
+            font-size: 15px;
+        }
+
+        .markdown-preview p,
+        .markdown-preview ul,
+        .markdown-preview ol,
+        .markdown-preview pre {
+            margin: 0 0 10px;
+        }
+
+        .markdown-preview code {
+            padding: 1px 5px;
+            border-radius: 4px;
+            background: var(--soft);
+            font-family: var(--font-mono);
+            font-size: 0.92em;
+        }
+
+        .markdown-preview pre {
+            overflow: auto;
+            padding: 10px;
+            border-radius: var(--radius);
+            background: #1e1e1e;
+            color: #e5e7eb;
+        }
+
+        .markdown-preview pre code {
+            padding: 0;
+            background: transparent;
+            color: inherit;
+        }
+
+        .pilot-head {
+            padding: 16px;
+            border-bottom: 1px solid var(--line);
+            display: grid;
+            gap: 10px;
+            background: linear-gradient(180deg, #fff, var(--soft));
+        }
+
+        .pilot-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .pilot-title h2 {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
+        .status::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--warn);
+        }
+
+        .status.ready::before {
+            background: var(--success);
+        }
+
+        .settings {
+            display: grid;
+            gap: 8px;
+        }
+
+        .settings-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: end;
+            gap: 8px;
+        }
+
+        .compact-row {
+            align-items: center;
+            grid-template-columns: 150px minmax(0, 1fr);
+        }
+
+        .model-settings {
+            border-top: 1px solid var(--line);
+            padding-top: 8px;
+        }
+
+        .model-settings summary {
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 700;
+            list-style-position: inside;
+            user-select: none;
+        }
+
+        .settings-grid {
+            display: grid;
+            gap: 8px;
+            padding-top: 8px;
+        }
+
+        .preset-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .preset-actions button {
+            min-height: 34px;
+            padding: 0 10px;
+            font-size: 0.86rem;
+        }
+
+        .field {
+            display: grid;
+            gap: 5px;
+        }
+
+        .field label {
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
+        .field input,
+        .field select,
+        .field textarea {
+            width: 100%;
+            min-height: 34px;
+            border: 1.5px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--soft);
+            color: var(--ink);
+            padding: 7px 9px;
+            outline: none;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .field textarea:focus,
+        .composer textarea:focus,
+        .cell-kind select:focus {
+            border-color: var(--blue);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(39, 128, 227, 0.15);
+        }
+
+        .field textarea {
+            min-height: 76px;
+            resize: vertical;
+        }
+
+        .chat-log {
+            overflow: auto;
+            padding: 16px;
+            display: grid;
+            gap: 12px;
+            align-content: start;
+            background:
+                linear-gradient(180deg, rgba(212, 230, 249, 0.18), rgba(255, 255, 255, 0) 180px),
+                #fff;
+        }
+
+        .message {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 12px;
+            background: #fff;
+            box-shadow: 0 0.35rem 1rem rgba(52, 58, 64, 0.05);
+        }
+
+        .message.user {
+            border-color: rgba(39, 128, 227, 0.28);
+            background: #f5f9fe;
+        }
+
+        .message.assistant {
+            border-color: rgba(52, 58, 64, 0.14);
+        }
+
+        .message strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.76rem;
+            color: var(--muted);
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .message pre {
+            overflow: auto;
+            padding: 10px;
+            border-radius: var(--radius);
+            background: #1e1e1e;
+            color: #e5e7eb;
+            font-family: var(--font-mono);
+            font-size: 0.74rem;
+        }
+
+        .composer {
+            display: grid;
+            gap: 9px;
+            padding: 14px;
+            border-top: 1px solid var(--line);
+            background: var(--soft);
+        }
+
+        .composer textarea {
+            width: 100%;
+            min-height: 86px;
+            resize: vertical;
+            border: 1.5px solid var(--line);
+            border-radius: var(--radius);
+            padding: 10px 12px;
+            background: #fff;
+            color: var(--charcoal);
+            outline: none;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .composer-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 0.76rem;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 0 8px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 650;
+            white-space: nowrap;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 920px) {
+            html,
+            body {
+                overflow: auto;
+            }
+
+            .app {
+                height: auto;
+                min-height: 100vh;
+                overflow: visible;
+            }
+
+            header {
+                grid-template-columns: 1fr;
+            }
+
+            .header-actions {
+                justify-content: flex-start;
+            }
+
+            .workspace {
+                grid-template-columns: 1fr;
+                overflow: visible;
+            }
+
+            .runtime-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .composer-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .pilot-pane {
+                min-height: 640px;
+                border-left: 0;
+                border-top: 1px solid var(--line);
+            }
+        }
+    </style>
+</head>
+<body>
+    <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="icon-upload" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+        </symbol>
+        <symbol id="icon-download" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </symbol>
+        <symbol id="icon-database" viewBox="0 0 24 24">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+            <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+            <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+        </symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+        </symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+        </symbol>
+        <symbol id="icon-play" viewBox="0 0 24 24">
+            <polygon points="6 3 20 12 6 21 6 3"/>
+        </symbol>
+        <symbol id="icon-run-all" viewBox="0 0 24 24">
+            <polygon points="4 4 13 12 4 20 4 4"/>
+            <polygon points="13 4 22 12 13 20 13 4"/>
+        </symbol>
+        <symbol id="icon-list-numbers" viewBox="0 0 24 24">
+            <line x1="10" y1="6" x2="21" y2="6"/>
+            <line x1="10" y1="12" x2="21" y2="12"/>
+            <line x1="10" y1="18" x2="21" y2="18"/>
+            <path d="M4 6h1v4"/>
+            <path d="M4 10h2"/>
+            <path d="M6 14H4.5a1.5 1.5 0 0 0 0 3H6v1H4"/>
+        </symbol>
+        <symbol id="icon-package" viewBox="0 0 24 24">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.29 7 12 12 20.71 7"/>
+            <line x1="12" y1="22" x2="12" y2="12"/>
+        </symbol>
+        <symbol id="icon-bot" viewBox="0 0 24 24">
+            <path d="M12 8V4H8"/>
+            <rect x="4" y="8" width="16" height="12" rx="2"/>
+            <path d="M2 14h2"/>
+            <path d="M20 14h2"/>
+            <path d="M9 13h.01"/>
+            <path d="M15 13h.01"/>
+            <path d="M10 17h4"/>
+        </symbol>
+        <symbol id="icon-rows" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="6" rx="1"/>
+            <rect x="3" y="14" width="18" height="6" rx="1"/>
+        </symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24">
+            <path d="M3 6h18"/>
+            <path d="M8 6V4h8v2"/>
+            <path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6"/>
+            <path d="M14 11v6"/>
+        </symbol>
+    </svg>
+    <div class="app">
+        <header>
+            <div class="brand-lockup">
+                <div class="brand-mark" aria-hidden="true">NS</div>
+                <div>
+                    <div class="eyebrow">Machine Learning</div>
+                    <h1>Notebook Studio</h1>
+                    <p class="subtitle">Chat-guided Python notebooks with local models and WebMCP handoff points.</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <input id="fileInput" class="hidden" type="file" accept=".ipynb,application/json">
+                <button id="loadBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-upload"></use></svg><span>Load .ipynb</span></button>
+                <button id="exportBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg><span>Export .ipynb</span></button>
+                <button id="sampleBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>Load Demo</span></button>
+            </div>
+        </header>
+
+        <main class="workspace">
+            <section class="notebook-pane" aria-label="Notebook">
+                <div class="toolbar">
+                    <div class="toolbar-group">
+                        <button id="addMarkdownBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg><span>Markdown</span></button>
+                        <button id="addCodeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg><span>Code</span></button>
+                        <button id="runSelectedBtn" class="primary icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Run Selected</span></button>
+                        <button id="runAllBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-run-all"></use></svg><span>Run All</span></button>
+                        <button id="toggleLineNumbersBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-list-numbers"></use></svg><span>Show Lines</span></button>
+                    </div>
+                    <div class="toolbar-group">
+                        <span id="cellCount" class="pill">0 cells</span>
+                        <span id="runtimeStatus" class="pill">Pyodide adapter pending</span>
+                    </div>
+                </div>
+                <div class="runtime-panel">
+                    <div class="field">
+                        <label for="packageInput">Pyodide packages</label>
+                        <input id="packageInput" value="pandas,numpy,matplotlib" spellcheck="false">
+                    </div>
+                    <div class="field">
+                        <label for="dataFileInput">Mount data file</label>
+                        <input id="dataFileInput" type="file">
+                    </div>
+                    <button id="initRuntimeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Init Pyodide</span></button>
+                    <button id="loadPackagesBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-package"></use></svg><span>Load Packages</span></button>
+                </div>
+                <div id="cellList" class="cell-list"></div>
+            </section>
+
+            <aside class="pilot-pane" aria-label="Pilot">
+                <div class="pilot-head">
+                    <div class="pilot-title">
+                        <h2>Notebook Agent</h2>
+                        <span id="agentStatus" class="status">draft mode</span>
+                    </div>
+                    <div class="settings" aria-label="Pilot settings">
+                        <div class="settings-row">
+                            <div class="field">
+                                <label for="agentMode">Agent source</label>
+                                <select id="agentMode">
+                                    <option value="draft">Draft cells locally</option>
+                                    <option value="gemma">Browser Gemma (wllama)</option>
+                                    <option value="webmcp">WebMCP endpoint</option>
+                                </select>
+                            </div>
+                            <button id="loadGemmaBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg><span>Load Model</span></button>
+                        </div>
+                        <div class="settings-row compact-row">
+                            <div class="field">
+                                <label for="agentProfile">Agent speed</label>
+                                <select id="agentProfile">
+                                    <option value="fast" selected>Fast</option>
+                                    <option value="balanced">Balanced</option>
+                                    <option value="deep">Deep</option>
+                                </select>
+                            </div>
+                            <span id="agentProfileHint" class="hint">Fast keeps prompts short and uses fewer response tokens.</span>
+                        </div>
+                        <div id="gemmaStatus" class="hint">
+                            Default is Qwen2.5 Coder 0.5B Q8_0 with the Fast profile for quicker browser notebook-cell generation.
+                        </div>
+                        <details id="modelSettings" class="model-settings">
+                            <summary>Model settings</summary>
+                            <div class="settings-grid">
+                                <div class="field">
+                                    <label for="gemmaRepo">Hugging Face GGUF repo</label>
+                                    <input id="gemmaRepo" value="Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF" spellcheck="false">
+                                </div>
+                                <div class="field">
+                                    <label for="gemmaFile">GGUF file</label>
+                                    <input id="gemmaFile" value="qwen2.5-coder-0.5b-instruct-q8_0.gguf" spellcheck="false">
+                                </div>
+                                <div class="field">
+                                    <label for="gemmaGpuLayers">GPU layers</label>
+                                    <input id="gemmaGpuLayers" type="number" min="0" step="1" value="0">
+                                </div>
+                                <div class="field">
+                                    <label for="gemmaMaxTokens">Response tokens</label>
+                                    <input id="gemmaMaxTokens" type="number" min="64" max="900" step="32" value="128">
+                                </div>
+                                <div class="field">
+                                    <label for="webmcpUrl">WebMCP endpoint</label>
+                                    <input id="webmcpUrl" placeholder="http://localhost:8765/notebook-agent" spellcheck="false">
+                                </div>
+                                <div class="preset-actions">
+                                    <button id="useQwenFastBtn">Use Qwen 0.5B Fast</button>
+                                    <button id="useQwenCoderBtn">Use Qwen 1.5B Balanced</button>
+                                    <button id="useFastGemmaBtn">Use Fast Gemma</button>
+                                    <button id="useGemma4Btn">Use Gemma 4 E2B</button>
+                                    <button id="loadSmokeModelBtn">Load Tiny Smoke Model</button>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+
+                <div id="chatLog" class="chat-log"></div>
+
+                <div class="composer">
+                    <textarea id="promptInput" placeholder="Ask for the next analysis step, a chart, a cleanup pass, or an explanation."></textarea>
+                    <div class="composer-actions">
+                        <span class="hint">Generated code is inserted below the selected cell.</span>
+                        <button id="askBtn" class="primary icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg><span>Ask Pilot</span></button>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script>
+        (function () {
+
+            const QWEN_CODER_REPO = 'Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF';
+            const QWEN_CODER_FILE = 'qwen2.5-coder-1.5b-instruct-q5_k_m.gguf';
+            const QWEN_CODER_FAST_REPO = 'Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF';
+            const QWEN_CODER_FAST_FILE = 'qwen2.5-coder-0.5b-instruct-q8_0.gguf';
+            const DEFAULT_GEMMA_REPO = QWEN_CODER_FAST_REPO;
+            const DEFAULT_GEMMA_FILE = QWEN_CODER_FAST_FILE;
+            const DEFAULT_MODEL_URL = `${DEFAULT_GEMMA_REPO}:${DEFAULT_GEMMA_FILE}`;
+            const FAST_GEMMA_REPO = 'second-state/gemma-3-1b-it-GGUF';
+            const FAST_GEMMA_FILE = 'gemma-3-1b-it-Q3_K_S.gguf';
+            const ADVANCED_GEMMA4_REPO = 'bartowski/google_gemma-4-E2B-it-GGUF';
+            const ADVANCED_GEMMA4_FILE = 'google_gemma-4-E2B-it-IQ2_M.gguf';
+            const SMOKE_MODEL_REPO = 'ggml-org/models';
+            const SMOKE_MODEL_FILE = 'tinyllamas/stories260K.gguf';
+            const BROWSER_SINGLE_GGUF_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
+            const WLLAMA_VERSION = '3.5.1';
+            const WLLAMA_MODULE_URL = `https://cdn.jsdelivr.net/npm/@wllama/wllama@${WLLAMA_VERSION}/esm/index.js`;
+            const WLLAMA_WASM_URL = `https://cdn.jsdelivr.net/npm/@wllama/wllama@${WLLAMA_VERSION}/esm/wasm/wllama.wasm`;
+            const PYODIDE_VERSION = '314.0.2';
+            const PYODIDE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
+            const PYODIDE_SCRIPT_URL = `${PYODIDE_BASE_URL}pyodide.js`;
+            const NOTEBOOK_VERSION = 4;
+            const AGENT_PERFORMANCE_PROFILES = {
+                fast: {
+                    label: 'Fast',
+                    maxTokens: 128,
+                    maxContextCells: 6,
+                    selectedSourceLimit: 2200,
+                    nearbySourceLimit: 900,
+                    distantSourceLimit: 120,
+                    selectedOutputLimit: 1200,
+                    nearbyOutputLimit: 420,
+                    distantOutputLimit: 120,
+                    nCtx: 1536,
+                    nBatch: 96,
+                    concise: true
+                },
+                balanced: {
+                    label: 'Balanced',
+                    maxTokens: 192,
+                    maxContextCells: 12,
+                    selectedSourceLimit: 4000,
+                    nearbySourceLimit: 1800,
+                    distantSourceLimit: 240,
+                    selectedOutputLimit: 2400,
+                    nearbyOutputLimit: 1000,
+                    distantOutputLimit: 320,
+                    nCtx: 2048,
+                    nBatch: 128,
+                    concise: true
+                },
+                deep: {
+                    label: 'Deep',
+                    maxTokens: 384,
+                    maxContextCells: 18,
+                    selectedSourceLimit: 7000,
+                    nearbySourceLimit: 2800,
+                    distantSourceLimit: 480,
+                    selectedOutputLimit: 3600,
+                    nearbyOutputLimit: 1400,
+                    distantOutputLimit: 420,
+                    nCtx: 3072,
+                    nBatch: 160,
+                    concise: false
+                }
+            };
+            let notebook = createBlankNotebook();
+            let selectedCellId = notebook.cells[0].id;
+            let pyodidePromise = null;
+            let pyodideReady = false;
+            const virtualFiles = new Map();
+            const runtimeState = {
+                status: 'idle',
+                loadedPackages: new Set(),
+                mountedFiles: []
+            };
+            const gemmaState = {
+                status: 'idle',
+                loaded: false,
+                modelKey: '',
+                progress: null,
+                error: '',
+                warning: ''
+            };
+            const viewState = {
+                showLineNumbers: false
+            };
+            let wllamaModulePromise = null;
+            let wllamaInstance = null;
+
+            function uid(prefix = 'cell') {
+                return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+            }
+
+            function createCell(cellType, source = '', outputs = []) {
+                return {
+                    id: uid(),
+                    cell_type: cellType,
+                    source,
+                    outputs,
+                    execution_count: null,
+                    metadata: {}
+                };
+            }
+
+            function createBlankNotebook() {
+                return {
+                    nbformat: NOTEBOOK_VERSION,
+                    nbformat_minor: 5,
+                    metadata: {
+                        kernelspec: {
+                            display_name: 'Python 3',
+                            language: 'python',
+                            name: 'python3'
+                        },
+                        notebookPilot: {
+                            modelUrl: DEFAULT_MODEL_URL,
+                            gemmaRepo: DEFAULT_GEMMA_REPO,
+                            gemmaFile: DEFAULT_GEMMA_FILE,
+                            runtime: 'pyodide',
+                            pyodideVersion: PYODIDE_VERSION
+                        }
+                    },
+                    cells: [
+                        createCell('markdown', '# Analysis notebook\n\nAsk the pilot to add the first Python step.'),
+                        createCell('code', 'import pandas as pd\nimport numpy as np\n\n# Upload data or ask the pilot for a starter analysis.')
+                    ]
+                };
+            }
+
+            function createSalesDemoCsv() {
+                return [
+                    'date,region,channel,product,units,unit_price',
+                    '2026-01-05,North,Online,Starter Kit,24,49',
+                    '2026-01-08,South,Retail,Notebook Pack,18,35',
+                    '2026-01-15,West,Partner,Starter Kit,31,47',
+                    '2026-02-04,North,Retail,Dashboard Pro,11,129',
+                    '2026-02-18,East,Online,Notebook Pack,42,34',
+                    '2026-03-02,South,Partner,Dashboard Pro,9,135',
+                    '2026-03-21,West,Online,Starter Kit,36,48',
+                    '2026-04-03,East,Retail,Starter Kit,21,50',
+                    '2026-04-16,North,Partner,Notebook Pack,29,36',
+                    '2026-05-09,South,Online,Dashboard Pro,14,132',
+                    '2026-05-29,West,Retail,Notebook Pack,25,35',
+                    '2026-06-07,East,Partner,Starter Kit,33,46',
+                    '2026-06-19,North,Online,Dashboard Pro,17,128',
+                    '2026-07-02,South,Retail,Starter Kit,22,49',
+                    '2026-07-14,West,Partner,Dashboard Pro,12,134',
+                    '2026-08-04,East,Online,Notebook Pack,39,33',
+                    '2026-08-18,North,Retail,Starter Kit,26,48',
+                    '2026-09-01,South,Partner,Notebook Pack,28,37',
+                    '2026-09-20,West,Online,Dashboard Pro,18,130',
+                    '2026-10-05,East,Retail,Notebook Pack,23,36',
+                    '2026-10-22,North,Partner,Starter Kit,34,47',
+                    '2026-11-06,South,Online,Starter Kit,41,49',
+                    '2026-11-26,West,Retail,Dashboard Pro,13,131',
+                    '2026-12-09,East,Partner,Notebook Pack,30,35'
+                ].join('\n');
+            }
+
+            function createSalesDemoNotebook() {
+                return {
+                    ...createBlankNotebook(),
+                    metadata: {
+                        ...createBlankNotebook().metadata,
+                        notebookPilot: {
+                            modelUrl: DEFAULT_MODEL_URL,
+                            gemmaRepo: DEFAULT_GEMMA_REPO,
+                            gemmaFile: DEFAULT_GEMMA_FILE,
+                            runtime: 'pyodide',
+                            pyodideVersion: PYODIDE_VERSION,
+                            demoFiles: ['sales_demo.csv']
+                        }
+                    },
+                    cells: [
+                        createCell('markdown', '# Sales demo\n\nThis demo mounts `sales_demo.csv`, loads it with pandas, summarizes revenue, and draws a matplotlib chart.'),
+                        createCell('code', [
+                            'import pandas as pd',
+                            '',
+                            'df = pd.read_csv("sales_demo.csv", parse_dates=["date"])',
+                            'df["revenue"] = df["units"] * df["unit_price"]',
+                            'print(f"Loaded {len(df)} rows from sales_demo.csv")',
+                            'df.head()'
+                        ].join('\n')),
+                        createCell('code', [
+                            'channel_summary = (',
+                            '    df.groupby("channel")',
+                            '      .agg(orders=("date", "count"), units=("units", "sum"), revenue=("revenue", "sum"))',
+                            '      .sort_values("revenue", ascending=False)',
+                            ')',
+                            'channel_summary'
+                        ].join('\n')),
+                        createCell('code', [
+                            'import matplotlib.pyplot as plt',
+                            '',
+                            'monthly = df.set_index("date").resample("ME")["revenue"].sum()',
+                            'fig, ax = plt.subplots(figsize=(9, 4))',
+                            'monthly.plot(ax=ax, marker="o", color="#0d9488")',
+                            'ax.set_title("Monthly revenue")',
+                            'ax.set_xlabel("Month")',
+                            'ax.set_ylabel("Revenue")',
+                            'ax.grid(True, alpha=0.25)',
+                            'plt.tight_layout()',
+                            'plt.show()'
+                        ].join('\n')),
+                        createCell('markdown', 'Ask the pilot: `What follow-up analysis should I run next?`')
+                    ]
+                };
+            }
+
+            function sourceToString(source) {
+                return Array.isArray(source) ? source.join('') : String(source || '');
+            }
+
+            function sourceToLines(source) {
+                const text = sourceToString(source);
+                if (!text) return [];
+                return text.match(/.*(?:\n|$)/g).filter(line => line.length > 0);
+            }
+
+            function normalizeOutputs(outputs) {
+                if (!Array.isArray(outputs)) return [];
+                return outputs.map(output => {
+                    if (typeof output === 'string') {
+                        return { output_type: 'stream', name: 'stdout', text: output };
+                    }
+                    return output || {};
+                });
+            }
+
+            function normalizeNotebook(input) {
+                const parsed = typeof input === 'string' ? JSON.parse(input) : input;
+                const cells = Array.isArray(parsed.cells) ? parsed.cells : [];
+                const metadata = {
+                    ...(parsed.metadata || {}),
+                    notebookPilot: {
+                        modelUrl: DEFAULT_MODEL_URL,
+                        gemmaRepo: DEFAULT_GEMMA_REPO,
+                        gemmaFile: DEFAULT_GEMMA_FILE,
+                        runtime: 'pyodide',
+                        pyodideVersion: PYODIDE_VERSION,
+                        ...((parsed.metadata || {}).notebookPilot || {})
+                    }
+                };
+                return {
+                    nbformat: parsed.nbformat || NOTEBOOK_VERSION,
+                    nbformat_minor: parsed.nbformat_minor || 5,
+                    metadata,
+                    cells: cells.map(cell => ({
+                        id: cell.id || uid(),
+                        cell_type: cell.cell_type === 'markdown' ? 'markdown' : 'code',
+                        source: sourceToString(cell.source),
+                        outputs: normalizeOutputs(cell.outputs),
+                        execution_count: cell.execution_count || null,
+                        metadata: cell.metadata || {}
+                    }))
+                };
+            }
+
+            function notebookToIpynb(doc) {
+                return {
+                    nbformat: doc.nbformat || NOTEBOOK_VERSION,
+                    nbformat_minor: doc.nbformat_minor || 5,
+                    metadata: doc.metadata || {},
+                    cells: doc.cells.map(cell => {
+                        const base = {
+                            cell_type: cell.cell_type,
+                            id: cell.id,
+                            metadata: cell.metadata || {},
+                            source: sourceToLines(cell.source)
+                        };
+                        if (cell.cell_type === 'code') {
+                            return {
+                                ...base,
+                                execution_count: cell.execution_count || null,
+                                outputs: normalizeOutputs(cell.outputs)
+                            };
+                        }
+                        return base;
+                    })
+                };
+            }
+
+            function outputToText(output) {
+                if (!output) return '';
+                if (output.text) return sourceToString(output.text);
+                if (output.evalue) {
+                    const traceback = Array.isArray(output.traceback)
+                        ? output.traceback.join('\n')
+                        : sourceToString(output.traceback);
+                    return [`${output.ename || 'Error'}: ${output.evalue}`, traceback].filter(Boolean).join('\n');
+                }
+                if (output.data) {
+                    return sourceToString(output.data['text/plain'] || '');
+                }
+                return '';
+            }
+
+            function outputHasError(outputs) {
+                return normalizeOutputs(outputs).some(output => output.output_type === 'error');
+            }
+
+            function errorOutputsToText(outputs) {
+                return normalizeOutputs(outputs)
+                    .filter(output => output.output_type === 'error')
+                    .map(outputToText)
+                    .filter(Boolean)
+                    .join('\n\n');
+            }
+
+            function truncateText(value, maxLength = 1200) {
+                const text = sourceToString(value).trim();
+                if (text.length <= maxLength) return text;
+                return `${text.slice(0, Math.max(0, maxLength - 28)).trimEnd()}\n... [truncated]`;
+            }
+
+            function firstMeaningfulLine(source) {
+                return sourceToString(source)
+                    .split('\n')
+                    .map(line => line.trim())
+                    .find(Boolean) || '';
+            }
+
+            function shouldRenderMarkdown(cell) {
+                return Boolean(cell && cell.cell_type === 'markdown' && cell.metadata && cell.metadata.notebookPilotRendered);
+            }
+
+            function isCellCollapsed(cell) {
+                return Boolean(cell && cell.metadata && cell.metadata.notebookPilotCollapsed);
+            }
+
+            function hasLineNumbers() {
+                return viewState.showLineNumbers;
+            }
+
+            function parsePackageList(value) {
+                return String(value || '')
+                    .split(',')
+                    .map(item => item.trim().toLowerCase())
+                    .filter(Boolean)
+                    .filter((item, index, items) => items.indexOf(item) === index);
+            }
+
+            function createStreamOutput(text, name = 'stdout') {
+                return {
+                    output_type: 'stream',
+                    name,
+                    text: String(text || '')
+                };
+            }
+
+            function createResultOutput(result) {
+                return {
+                    output_type: 'execute_result',
+                    execution_count: null,
+                    data: { 'text/plain': result === undefined || result === null ? '' : String(result) },
+                    metadata: {}
+                };
+            }
+
+            function createRichResultOutput(text, html) {
+                const data = { 'text/plain': text || '' };
+                if (html) data['text/html'] = html;
+                return {
+                    output_type: 'execute_result',
+                    execution_count: null,
+                    data,
+                    metadata: {}
+                };
+            }
+
+            function createErrorOutput(error) {
+                return {
+                    output_type: 'error',
+                    ename: error.name || 'PythonError',
+                    evalue: error.message || String(error),
+                    traceback: []
+                };
+            }
+
+            function filterStreamText(text) {
+                return String(text || '')
+                    .split('\n')
+                    .filter(line => !line.includes('FigureCanvasAgg is non-interactive'))
+                    .join('\n')
+                    .trim();
+            }
+
+            function combineRunOutputs(stdout, stderr, resultOutput, images) {
+                const outputs = [];
+                const cleanStdout = filterStreamText(stdout);
+                const cleanStderr = filterStreamText(stderr);
+                if (cleanStdout) outputs.push(createStreamOutput(cleanStdout, 'stdout'));
+                if (cleanStderr) outputs.push(createStreamOutput(cleanStderr, 'stderr'));
+                if (resultOutput && outputToText(resultOutput) && !/^Figure\(/.test(outputToText(resultOutput))) {
+                    outputs.push(resultOutput);
+                }
+                images.forEach((image, index) => {
+                    outputs.push({
+                        output_type: 'display_data',
+                        data: {
+                            'text/plain': `<Figure ${index + 1}>`,
+                            'image/png': image
+                        },
+                        metadata: {}
+                    });
+                });
+                return outputs.length ? outputs : [createStreamOutput('Done.')];
+            }
+
+            function outputsFromPythonPayload(payload) {
+                const outputs = [];
+                const cleanStdout = filterStreamText(payload && payload.stdout);
+                const cleanStderr = filterStreamText(payload && payload.stderr);
+                if (cleanStdout) outputs.push(createStreamOutput(cleanStdout, 'stdout'));
+                if (cleanStderr) outputs.push(createStreamOutput(cleanStderr, 'stderr'));
+                if (payload && payload.result && payload.result.text && !/^Figure\(/.test(payload.result.text)) {
+                    outputs.push(createRichResultOutput(payload.result.text, payload.result.html || ''));
+                }
+                (payload && payload.images || []).forEach((image, index) => {
+                    outputs.push({
+                        output_type: 'display_data',
+                        data: {
+                            'text/plain': `<Figure ${index + 1}>`,
+                            'image/png': image
+                        },
+                        metadata: {}
+                    });
+                });
+                return outputs.length ? outputs : [createStreamOutput('Done.')];
+            }
+
+            function sanitizeOutputHtml(html) {
+                return String(html || '')
+                    .replace(/<\s*(script|style|iframe|object|embed|link|meta)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+                    .replace(/<\s*(script|style|iframe|object|embed|link|meta)[^>]*\/?\s*>/gi, '')
+                    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+                    .replace(/\s+style\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+                    .replace(/\s+srcdoc\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+            }
+
+            function pyProxyToArray(value) {
+                if (!value) return [];
+                if (Array.isArray(value)) return value;
+                if (typeof value.toJs === 'function') {
+                    const converted = value.toJs();
+                    if (typeof value.destroy === 'function') value.destroy();
+                    return Array.isArray(converted) ? converted : [];
+                }
+                return [];
+            }
+
+            function pyProxyToResultOutput(pyodide, value) {
+                if (value === undefined || value === null) return null;
+                if (typeof value.toJs !== 'function') {
+                    const text = String(value);
+                    return text ? createRichResultOutput(text, '') : null;
+                }
+                try {
+                    pyodide.globals.set('_notebook_pilot_last_result', value);
+                    const rich = pyodide.runPython([
+                        'try:',
+                        '    _obj = _notebook_pilot_last_result',
+                        '    _html = _obj._repr_html_() if hasattr(_obj, "_repr_html_") else ""',
+                        '    _text = repr(_obj)',
+                        '    (_text, _html or "")',
+                        'except Exception as _error:',
+                        '    (str(_notebook_pilot_last_result), "")'
+                    ].join('\n'));
+                    const parts = pyProxyToArray(rich);
+                    const text = parts[0] || String(value);
+                    const html = parts[1] || '';
+                    return createRichResultOutput(text, html);
+                } finally {
+                    try {
+                        pyodide.runPython('globals().pop("_notebook_pilot_last_result", None)');
+                    } catch (error) {
+                        // Nothing to clean up if the runtime is already unwinding.
+                    }
+                    if (typeof value.destroy === 'function') value.destroy();
+                }
+            }
+
+            function buildNotebookRunnerCode() {
+                return [
+                    'import ast, base64, contextlib, io, json, traceback, warnings',
+                    '',
+                    'def _notebook_pilot_run_cell(_source):',
+                    '    _stdout = io.StringIO()',
+                    '    _stderr = io.StringIO()',
+                    '    _result = None',
+                    '    _images = []',
+                    '    try:',
+                    '        try:',
+                    '            import matplotlib',
+                    '            matplotlib.use("Agg", force=True)',
+                    '            import matplotlib.pyplot as plt',
+                    '            plt.show = lambda *args, **kwargs: None',
+                    '        except Exception:',
+                    '            plt = None',
+                    '        _tree = ast.parse(_source, mode="exec")',
+                    '        _body = list(_tree.body)',
+                    '        _last_expr = _body[-1] if _body and isinstance(_body[-1], ast.Expr) else None',
+                    '        _exec_body = _body[:-1] if _last_expr else _body',
+                    '        with contextlib.redirect_stdout(_stdout), contextlib.redirect_stderr(_stderr):',
+                    '            with warnings.catch_warnings():',
+                    '                warnings.filterwarnings("ignore", message="FigureCanvasAgg is non-interactive.*")',
+                    '                if _exec_body:',
+                    '                    _exec_tree = ast.Module(body=_exec_body, type_ignores=[])',
+                    '                    ast.fix_missing_locations(_exec_tree)',
+                    '                    exec(compile(_exec_tree, "<cell>", "exec"), globals())',
+                    '                if _last_expr:',
+                    '                    _expr = ast.Expression(_last_expr.value)',
+                    '                    ast.fix_missing_locations(_expr)',
+                    '                    _value = eval(compile(_expr, "<cell>", "eval"), globals())',
+                    '                    if _value is not None:',
+                    '                        _html = _value._repr_html_() if hasattr(_value, "_repr_html_") else ""',
+                    '                        _result = {"text": repr(_value), "html": _html or ""}',
+                    '        try:',
+                    '            import matplotlib.pyplot as plt',
+                    '            for _figure_number in plt.get_fignums():',
+                    '                _buffer = io.BytesIO()',
+                    '                plt.figure(_figure_number).savefig(_buffer, format="png", bbox_inches="tight")',
+                    '                _images.append(base64.b64encode(_buffer.getvalue()).decode("ascii"))',
+                    '            plt.close("all")',
+                    '        except Exception:',
+                    '            pass',
+                    '        return json.dumps({"stdout": _stdout.getvalue(), "stderr": _stderr.getvalue(), "result": _result, "images": _images})',
+                    '    except Exception as _error:',
+                    '        return json.dumps({"stdout": _stdout.getvalue(), "stderr": _stderr.getvalue(), "error": {"name": type(_error).__name__, "message": str(_error), "traceback": traceback.format_exc().splitlines()}})',
+                    '',
+                    '_notebook_pilot_run_cell(_notebook_pilot_source)'
+                ].join('\n');
+            }
+
+            function rememberMountedFile(name) {
+                if (!runtimeState.mountedFiles.includes(name)) {
+                    runtimeState.mountedFiles.push(name);
+                }
+            }
+
+            function getAgentProfile(settingsOrName = {}) {
+                const key = typeof settingsOrName === 'string'
+                    ? settingsOrName
+                    : settingsOrName.agentProfile;
+                return AGENT_PERFORMANCE_PROFILES[key] || AGENT_PERFORMANCE_PROFILES.fast;
+            }
+
+            function summarizeCellForContext(cell, index, selectedIndex, profile = AGENT_PERFORMANCE_PROFILES.fast) {
+                const distance = Math.abs(index - selectedIndex);
+                const isSelected = index === selectedIndex;
+                const isNearby = distance <= 2;
+                const outputs = normalizeOutputs(cell.outputs);
+                const outputText = outputs.map(outputToText).filter(Boolean).join('\n');
+                const errorText = errorOutputsToText(outputs);
+                const sourceLimit = isSelected
+                    ? profile.selectedSourceLimit
+                    : isNearby ? profile.nearbySourceLimit : profile.distantSourceLimit;
+                const outputLimit = isSelected
+                    ? profile.selectedOutputLimit
+                    : isNearby ? profile.nearbyOutputLimit : profile.distantOutputLimit;
+                return {
+                    index,
+                    role: isSelected ? 'selected' : isNearby ? 'nearby' : 'summary',
+                    type: cell.cell_type,
+                    hasError: outputHasError(outputs),
+                    source: isNearby || isSelected ? truncateText(cell.source, sourceLimit) : truncateText(firstMeaningfulLine(cell.source), sourceLimit),
+                    outputs: truncateText(outputText, outputLimit),
+                    error: truncateText(errorText, outputLimit)
+                };
+            }
+
+            function compactNotebookContext(doc, selectedId, options = {}) {
+                const profile = getAgentProfile(options.agentProfile || options.profile || {});
+                const foundIndex = doc.cells.findIndex(cell => cell.id === selectedId);
+                const selectedIndex = foundIndex >= 0 ? foundIndex : 0;
+                const maxCells = options.maxCells || profile.maxContextCells;
+                const selectedCell = doc.cells[selectedIndex] || null;
+                const includedIndexes = doc.cells
+                    .map((cell, index) => ({
+                        index,
+                        score: Math.abs(index - selectedIndex) <= 2 ? 0 : Math.abs(index - selectedIndex)
+                    }))
+                    .sort((a, b) => a.score - b.score || a.index - b.index)
+                    .slice(0, maxCells)
+                    .map(item => item.index)
+                    .sort((a, b) => a - b);
+                const cells = includedIndexes.map(index => summarizeCellForContext(doc.cells[index], index, selectedIndex, profile));
+                return {
+                    cellCount: doc.cells.length,
+                    selectedIndex,
+                    selectedCell,
+                    cells,
+                    omittedCellCount: Math.max(0, doc.cells.length - cells.length),
+                    compacted: doc.cells.length > cells.length
+                };
+            }
+
+            function extractNotebookContext(doc, selectedId) {
+                return compactNotebookContext(doc, selectedId, getSettings ? { agentProfile: getSettings().agentProfile } : {});
+            }
+
+            function buildAgentPrompt(userRequest, context, settings) {
+                const profile = getAgentProfile(settings);
+                const isRepair = /Fix the Python code cell|previous generated cell still failed|runtime returned this error/i.test(userRequest);
+                return [
+                    'You are Notebook Studio, a careful data analyst working inside a Jupyter-compatible notebook.',
+                    `Agent speed profile: ${profile.label}.`,
+                    `Preferred local model target: ${modelLabelFromSettings(settings)}`,
+                    `Notebook has ${context.cellCount} cells. Selected cell index: ${context.selectedIndex}.`,
+                    context.compacted ? `Context was compacted. Omitted ${context.omittedCellCount} distant cells.` : 'Context includes all currently relevant cells.',
+                    isRepair
+                        ? 'Return only one concise fenced python code block. No extra narrative unless needed as code comments.'
+                        : 'Return exactly two parts: one concise explanation sentence, then one fenced python code block.',
+                    'The fenced block must be valid Python for a notebook code cell. Do not return plain text instead of code.',
+                    profile.concise ? 'Keep the code short and direct. Prefer the smallest cell that answers the request.' : 'Use enough code to handle the request thoroughly.',
+                    'If the request is vague, create a safe inspection cell using pandas objects already present in context.',
+                    'Pay special attention to the selected cell source, selected cell outputs, and any selected cell error.',
+                    '',
+                    'Compacted notebook context:',
+                    JSON.stringify(context.cells, null, 2),
+                    '',
+                    `User request: ${userRequest}`
+                ].join('\n');
+            }
+
+            function estimatePromptTokens(text) {
+                return Math.ceil(String(text || '').length / 4);
+            }
+
+            function compactPromptToFit(prompt, settings) {
+                const profile = getAgentProfile(settings);
+                const maxTokens = normalizeMaxTokens(settings.gemmaMaxTokens);
+                const usableContext = Math.max(256, profile.nCtx - maxTokens - 96);
+                if (estimatePromptTokens(prompt) <= usableContext) return prompt;
+                const text = String(prompt);
+                const head = text.slice(0, Math.max(0, usableContext * 2));
+                const tail = text.slice(Math.max(0, text.length - usableContext));
+                return [
+                    head.trimEnd(),
+                    '',
+                    '[Notebook context compacted further to fit the browser model window.]',
+                    '',
+                    tail.trimStart()
+                ].join('\n');
+            }
+
+            function buildFixErrorRequest(cell) {
+                const source = sourceToString(cell && cell.source).trim();
+                const errorText = errorOutputsToText(cell && cell.outputs).trim()
+                    || normalizeOutputs(cell && cell.outputs).map(outputToText).filter(Boolean).join('\n').trim()
+                    || 'No error text was captured.';
+                return [
+                    'Fix the Python code cell below.',
+                    'The user tried to run this script:',
+                    '```python',
+                    source || '# Empty code cell',
+                    '```',
+                    'The runtime returned this error:',
+                    '```text',
+                    errorText,
+                    '```',
+                    'Return a corrected Python notebook cell. Prefer a direct fix over a broad rewrite.'
+                ].join('\n');
+            }
+
+            function buildRetryAfterErrorRequest(originalRequest, attemptedCode, outputs) {
+                const errorText = errorOutputsToText(outputs).trim()
+                    || normalizeOutputs(outputs).map(outputToText).filter(Boolean).join('\n').trim()
+                    || 'No error text was captured.';
+                return [
+                    'The previous generated cell still failed. Repair it using the observed runtime output.',
+                    '',
+                    'Original user request:',
+                    originalRequest,
+                    '',
+                    'Generated code that failed:',
+                    '```python',
+                    sourceToString(attemptedCode).trim(),
+                    '```',
+                    '',
+                    'Runtime error/output:',
+                    '```text',
+                    errorText,
+                    '```',
+                    '',
+                    'Return one corrected Python notebook cell. Keep the fix focused.'
+                ].join('\n');
+            }
+
+            function modelLabelFromSettings(settings = {}) {
+                const repo = settings.gemmaRepo || DEFAULT_GEMMA_REPO;
+                const file = settings.gemmaFile || DEFAULT_GEMMA_FILE;
+                return `${repo}:${file}`;
+            }
+
+            function buildGemmaMessages(agentPrompt) {
+                return [
+                    {
+                        role: 'system',
+                        content: [
+                            'You are Notebook Studio, a careful data-analysis assistant.',
+                            'Return exactly one short explanation sentence followed by exactly one fenced python code block.',
+                            'The code block must be insertable as the next notebook cell.',
+                            'Prefer pandas and matplotlib. Do not invent files; use filenames already present in context.',
+                            'When the user is vague, produce a safe inspection cell rather than asking a follow-up question.'
+                        ].join(' ')
+                    },
+                    {
+                        role: 'user',
+                        content: agentPrompt
+                    }
+                ];
+            }
+
+            function getGemmaHfOptions(settings = {}) {
+                const repo = String(settings.gemmaRepo || DEFAULT_GEMMA_REPO).trim();
+                const file = String(settings.gemmaFile || DEFAULT_GEMMA_FILE).trim();
+                if (!repo || !repo.includes('/')) {
+                    throw new Error('Gemma repo must look like owner/model-name.');
+                }
+                if (!file || !file.endsWith('.gguf')) {
+                    throw new Error('Gemma file must be a .gguf file.');
+                }
+                return { repo, file };
+            }
+
+            function createHfModelApiUrl(repo) {
+                return `https://huggingface.co/api/models/${encodeURIComponent(repo).replace(/%2F/g, '/')}`;
+            }
+
+            function createHfResolveUrl(hfOptions) {
+                const repo = encodeURIComponent(hfOptions.repo).replace(/%2F/g, '/');
+                const file = hfOptions.file.split('/').map(part => encodeURIComponent(part)).join('/');
+                return `https://huggingface.co/${repo}/resolve/main/${file}`;
+            }
+
+            function createHfDownloadUrl(hfOptions) {
+                return `${createHfResolveUrl(hfOptions)}?download=true`;
+            }
+
+            function isSplitGgufFile(file) {
+                return /-\d{5}-of-\d{5}\.gguf$/i.test(String(file || ''));
+            }
+
+            function findHfFileMetadata(modelInfo, file) {
+                const siblings = modelInfo && Array.isArray(modelInfo.siblings) ? modelInfo.siblings : [];
+                return siblings.find(item => item && item.rfilename === file) || null;
+            }
+
+            function browserGgufSizeMessage(fileInfo, file) {
+                if (!fileInfo || !fileInfo.size) return '';
+                if (fileInfo.size <= BROWSER_SINGLE_GGUF_LIMIT_BYTES) return '';
+                if (isSplitGgufFile(file)) return '';
+                return `${file} is ${formatBytes(fileInfo.size)}. Browser GGUF loading needs split shards for files over ${formatBytes(BROWSER_SINGLE_GGUF_LIMIT_BYTES)}.`;
+            }
+
+            function knownLargeGgufMessage(hfOptions) {
+                if (isSplitGgufFile(hfOptions.file)) return '';
+                if (hfOptions.repo === ADVANCED_GEMMA4_REPO && /^google_gemma-4-E2B-it-.*\.gguf$/i.test(hfOptions.file)) {
+                    return `${hfOptions.file} is the smallest practical English Gemma 4 E2B GGUF I found, but it is still over 2 GB and may fail in some browsers.`;
+                }
+                return '';
+            }
+
+            function normalizeGpuLayers(value) {
+                const number = Number.parseInt(value, 10);
+                return Number.isFinite(number) && number > 0 ? number : 0;
+            }
+
+            function normalizeMaxTokens(value) {
+                const number = Number.parseInt(value, 10);
+                if (!Number.isFinite(number)) return AGENT_PERFORMANCE_PROFILES.fast.maxTokens;
+                return Math.min(900, Math.max(64, number));
+            }
+
+            function buildWllamaLoadParams(settings = {}, progressCallback) {
+                const profile = getAgentProfile(settings);
+                const params = {
+                    progressCallback,
+                    n_gpu_layers: normalizeGpuLayers(settings.gemmaGpuLayers),
+                    n_ctx: profile.nCtx,
+                    n_batch: profile.nBatch,
+                    n_threads: Math.max(2, Math.min(6, Math.floor((navigator.hardwareConcurrency || 4) / 2)))
+                };
+                return {
+                    hfOptions: getGemmaHfOptions(settings),
+                    loadParams: params
+                };
+            }
+
+            function formatBytes(bytes) {
+                const value = Number(bytes);
+                if (!Number.isFinite(value) || value <= 0) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let size = value;
+                let index = 0;
+                while (size >= 1024 && index < units.length - 1) {
+                    size /= 1024;
+                    index += 1;
+                }
+                return `${size >= 10 || index === 0 ? size.toFixed(0) : size.toFixed(1)} ${units[index]}`;
+            }
+
+            function formatModelProgress(progress) {
+                if (!progress || !progress.total) return 'Preparing download';
+                const loaded = Number(progress.loaded || 0);
+                const total = Number(progress.total || 0);
+                const percent = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+                return `${percent}% (${formatBytes(loaded)} / ${formatBytes(total)})`;
+            }
+
+            async function fetchHfModelInfo(repo) {
+                const response = await fetch(createHfModelApiUrl(repo));
+                if (!response.ok) {
+                    throw new Error(`Could not read Hugging Face metadata for ${repo}: ${response.status}`);
+                }
+                return response.json();
+            }
+
+            async function preflightBrowserGguf(hfOptions) {
+                const modelInfo = await fetchHfModelInfo(hfOptions.repo);
+                const fileInfo = findHfFileMetadata(modelInfo, hfOptions.file);
+                if (!fileInfo) {
+                    throw new Error(`${hfOptions.file} was not found in ${hfOptions.repo}.`);
+                }
+                return {
+                    fileInfo,
+                    warning: knownLargeGgufMessage(hfOptions) || browserGgufSizeMessage(fileInfo, hfOptions.file)
+                };
+            }
+
+            function isLikelyPythonLine(line) {
+                const text = String(line || '').trim();
+                if (!text) return true;
+                return /^(import|from|for|while|if|elif|else:|try:|except|with|def|class|return|print\(|#)/.test(text)
+                    || /^[A-Za-z_][\w.]*\s*=/.test(text)
+                    || /^(df|pd|np|plt|sns|ax|fig|display)\b/.test(text)
+                    || /^[A-Za-z_][\w.]*\(.*\)$/.test(text)
+                    || /^\s{2,}\S/.test(line);
+            }
+
+            function extractUnfencedPythonCode(response) {
+                const lines = String(response || '').split('\n');
+                let best = [];
+                let current = [];
+                let signal = 0;
+                let bestSignal = 0;
+                const flush = () => {
+                    const trimmed = current.join('\n').trim();
+                    if (trimmed && signal > bestSignal && signal >= 2) {
+                        best = current.slice();
+                        bestSignal = signal;
+                    }
+                    current = [];
+                    signal = 0;
+                };
+                lines.forEach(line => {
+                    if (isLikelyPythonLine(line)) {
+                        current.push(line);
+                        if (String(line).trim()) signal += 1;
+                    } else {
+                        flush();
+                    }
+                });
+                flush();
+                return best.join('\n').trim();
+            }
+
+            function normalizeMarkdownFences(text) {
+                return String(text || '')
+                    .replace(/^``\s*$/gm, '```');
+            }
+
+            function dedupeConsecutiveLines(source) {
+                const lines = sourceToString(source).split('\n');
+                const midpoint = lines.length / 2;
+                if (lines.length > 1 && Number.isInteger(midpoint)) {
+                    const first = lines.slice(0, midpoint).join('\n').trim();
+                    const second = lines.slice(midpoint).join('\n').trim();
+                    if (first && first === second) return first;
+                }
+                const deduped = [];
+                lines.forEach(line => {
+                    if (line.trim() || deduped[deduped.length - 1] !== '') {
+                        deduped.push(line);
+                    }
+                });
+                return deduped.join('\n').trim();
+            }
+
+            function removeAlreadyRunInspectionCode(code, context) {
+                const selected = context && context.selectedCell;
+                const selectedSource = sourceToString(selected && selected.source);
+                const selectedOutput = normalizeOutputs(selected && selected.outputs).map(outputToText).join('\n');
+                const selectedAlreadyInspected = selectedSource.includes('df.info()')
+                    || selectedSource.includes('df.describe(include="all").transpose()')
+                    || selectedOutput.includes('<class')
+                    || selectedOutput.includes('Data columns');
+                if (!selectedAlreadyInspected) return code;
+                const lines = sourceToString(code).split('\n');
+                const filtered = [];
+                let skippedAny = false;
+                lines.forEach(line => {
+                    const trimmed = line.trim();
+                    const isRepeatedInspection = trimmed === 'import pandas as pd'
+                        || trimmed === '# First pass: inspect the working dataframe.'
+                        || trimmed === 'df.info()'
+                        || trimmed === 'df.describe(include="all").transpose()';
+                    if (isRepeatedInspection) {
+                        skippedAny = true;
+                        return;
+                    }
+                    filtered.push(line);
+                });
+                const cleaned = filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+                return cleaned || (skippedAny ? '# The selected cell already ran the dataframe inspection.' : code);
+            }
+
+            function sanitizeGeneratedCode(code, context) {
+                return removeAlreadyRunInspectionCode(dedupeConsecutiveLines(code), context).trim();
+            }
+
+            function parseAgentResponse(text) {
+                const response = normalizeMarkdownFences(text).trim();
+                const match = response.match(/```(?:python|py)?\s*([\s\S]*?)```/i);
+                const rawCode = match ? match[1].trim() : extractUnfencedPythonCode(response);
+                const code = sanitizeGeneratedCode(rawCode);
+                const explanation = match ? response.replace(match[0], '').trim() : response;
+                return {
+                    explanation: explanation || 'I prepared the next notebook step.',
+                    code
+                };
+            }
+
+            function extractFirstFencedBlock(text, language = '') {
+                const pattern = language
+                    ? `\`\`\`${language}\\s*([\\s\\S]*?)\`\`\``
+                    : '\`\`\`(?:\\w+)?\\s*([\\s\\S]*?)\`\`\`';
+                const match = String(text || '').match(new RegExp(pattern, 'i'));
+                return match ? match[1].trim() : '';
+            }
+
+            function createLocalFixCode(userRequest) {
+                const source = extractFirstFencedBlock(userRequest, 'python');
+                const errorText = extractFirstFencedBlock(userRequest, 'text') || userRequest;
+                if (!source) return '';
+                const missingName = errorText.match(/NameError:\s+name ['"]([^'"]+)['"] is not defined/i);
+                if (missingName) {
+                    const name = missingName[1];
+                    const imports = {
+                        pd: 'import pandas as pd',
+                        np: 'import numpy as np',
+                        plt: 'import matplotlib.pyplot as plt'
+                    };
+                    if (imports[name] && !source.includes(imports[name])) {
+                        return `${imports[name]}\n\n${source}`;
+                    }
+                    if (name === 'df') {
+                        return [
+                            'from pathlib import Path',
+                            'import pandas as pd',
+                            '',
+                            'csv_files = sorted(Path(".").glob("*.csv"))',
+                            'print("Available CSV files:", [str(path) for path in csv_files])',
+                            'if csv_files:',
+                            '    df = pd.read_csv(csv_files[0])',
+                            '    display(df.head())',
+                            'else:',
+                            '    print("Upload or mount a CSV file, then rerun the analysis cell.")'
+                        ].join('\n');
+                    }
+                }
+                const attrMatch = errorText.match(/AttributeError:.*object has no attribute ['"]([^'"]+)['"]/i);
+                if (attrMatch) {
+                    const attr = attrMatch[1];
+                    const attributePattern = new RegExp(`\\.${attr}\\b`, 'g');
+                    if (attributePattern.test(source)) {
+                        return source.replace(attributePattern, `["${attr}"]`);
+                    }
+                }
+                return [
+                    '# Draft diagnostic for the failing cell.',
+                    '# Switch to Browser Gemma or WebMCP for a model-generated repair.',
+                    'try:',
+                    ...source.split('\n').map(line => `    ${line || ' '}`),
+                    'except Exception as error:',
+                    '    print(type(error).__name__, error)',
+                    '    print("Available names:", sorted(name for name in globals() if not name.startswith("_"))[:40])'
+                ].join('\n');
+            }
+
+            function createDraftResponse(userRequest, context) {
+                const selected = context.selectedCell;
+                const wantsFix = /fix.*error|runtime returned this error|traceback|exception/i.test(userRequest);
+                const wantsChart = /chart|plot|visual|graph/i.test(userRequest);
+                const wantsData = /csv|data|load|file/i.test(userRequest);
+                const wantsClean = /clean|missing|null|dedupe|duplicate/i.test(userRequest);
+                let code;
+                if (wantsFix) {
+                    code = createLocalFixCode(userRequest) || [
+                        '# Draft diagnostic for the failing cell.',
+                        '# Switch to Browser Gemma or WebMCP for a model-generated repair.',
+                        'print("No executable source was captured for local repair.")'
+                    ].join('\n');
+                } else if (wantsData) {
+                    code = [
+                        'from pathlib import Path',
+                        'import pandas as pd',
+                        '',
+                        '# Replace the filename after uploading or mounting your data.',
+                        'data_path = Path("data.csv")',
+                        'df = pd.read_csv(data_path)',
+                        'df.head()'
+                    ].join('\n');
+                } else if (wantsChart) {
+                    code = [
+                        'import matplotlib.pyplot as plt',
+                        '',
+                        'numeric = df.select_dtypes(include="number")',
+                        'numeric.hist(figsize=(10, 6), bins=24)',
+                        'plt.tight_layout()',
+                        'plt.show()'
+                    ].join('\n');
+                } else if (wantsClean) {
+                    code = [
+                        'summary = pd.DataFrame({',
+                        '    "dtype": df.dtypes.astype(str),',
+                        '    "missing": df.isna().sum(),',
+                        '    "missing_pct": df.isna().mean().round(3),',
+                        '    "unique": df.nunique(dropna=True)',
+                        '})',
+                        'summary.sort_values("missing", ascending=False)'
+                    ].join('\n');
+                } else if (selected && selected.cell_type === 'code' && selected.outputs.length) {
+                    code = [
+                        '# Follow-up check based on the selected output',
+                        'df.describe(include="all").transpose()'
+                    ].join('\n');
+                } else {
+                    code = [
+                        'import pandas as pd',
+                        '',
+                        '# First pass: inspect the working dataframe.',
+                        'df.info()',
+                        'df.describe(include="all").transpose()'
+                    ].join('\n');
+                }
+                return [
+                    'Here is a focused next cell for the notebook.',
+                    '',
+                    '```python',
+                    code,
+                    '```'
+                ].join('\n');
+            }
+
+            async function requestAgentRaw(prompt, settings, fallbackRequest, context) {
+                if (settings.mode === 'webmcp') {
+                    return requestWebMcpAgent(prompt, settings);
+                }
+                if (settings.mode === 'gemma') {
+                    return requestGemmaAgent(prompt, settings);
+                }
+                return createDraftResponse(fallbackRequest || prompt, context);
+            }
+
+            async function generateAgentCell(userRequest, settings, selectedId) {
+                const context = compactNotebookContext(notebook, selectedId, settings);
+                const agentPrompt = buildAgentPrompt(userRequest, context, settings);
+                const raw = await requestAgentRaw(agentPrompt, settings, userRequest, context);
+                const parsed = parseAgentResponse(raw);
+                parsed.code = sanitizeGeneratedCode(parsed.code, context);
+                if (!parsed.code && settings.mode === 'gemma') {
+                    const fallback = parseAgentResponse(createDraftResponse(userRequest, context));
+                    parsed.explanation = 'I prepared a safe starter cell for this request.';
+                    parsed.code = sanitizeGeneratedCode(fallback.code, context);
+                }
+                return { context, parsed };
+            }
+
+            async function runAgentLoop(userRequest, options = {}) {
+                const settings = options.settings || getSettings();
+                const maxIterations = Math.max(1, Math.min(3, options.maxIterations || 1));
+                let currentRequest = userRequest;
+                let lastParsed = null;
+                for (let attempt = 1; attempt <= maxIterations; attempt += 1) {
+                    const selectedBeforeInsert = selectedCellId;
+                    const { context, parsed } = await generateAgentCell(currentRequest, settings, selectedBeforeInsert);
+                    lastParsed = parsed;
+                    if (!parsed.code) return { parsed, attempts: attempt, ran: false, fixed: false };
+
+                    notebook = insertGeneratedCell(notebook, selectedBeforeInsert, parsed.code, parsed.explanation);
+                    const insertedIndex = Math.min(notebook.cells.length - 1, context.selectedIndex + (parsed.explanation ? 2 : 1));
+                    const generatedCell = notebook.cells[insertedIndex];
+                    selectedCellId = generatedCell.id;
+                    render();
+
+                    if (!options.runGenerated || generatedCell.cell_type !== 'code') {
+                        return { parsed, attempts: attempt, ran: false, fixed: false, cell: generatedCell };
+                    }
+
+                    addMessage('assistant', `<p>Running generated fix attempt ${attempt}...</p>`);
+                    const nextCell = await runCell(generatedCell);
+                    updateCell(generatedCell.id, nextCell);
+                    selectedCellId = generatedCell.id;
+                    render();
+
+                    if (!outputHasError(nextCell.outputs)) {
+                        return { parsed, attempts: attempt, ran: true, fixed: true, cell: nextCell };
+                    }
+
+                    if (attempt < maxIterations) {
+                        currentRequest = buildRetryAfterErrorRequest(userRequest, generatedCell.source, nextCell.outputs);
+                    } else {
+                        return { parsed, attempts: attempt, ran: true, fixed: false, cell: nextCell };
+                    }
+                }
+                return { parsed: lastParsed, attempts: maxIterations, ran: Boolean(options.runGenerated), fixed: false };
+            }
+
+            function insertGeneratedCell(doc, selectedId, code, explanation) {
+                const index = doc.cells.findIndex(cell => cell.id === selectedId);
+                const insertAt = index >= 0 ? index + 1 : doc.cells.length;
+                const cells = doc.cells.slice();
+                if (explanation) {
+                    cells.splice(insertAt, 0, createCell('markdown', explanation));
+                    cells.splice(insertAt + 1, 0, createCell('code', code));
+                } else {
+                    cells.splice(insertAt, 0, createCell('code', code));
+                }
+                return { ...doc, cells };
+            }
+
+            function loadScriptOnce(src) {
+                const existing = document.querySelector && document.querySelector(`script[src="${src}"]`);
+                if (existing) {
+                    return existing.dataset.loaded === 'true'
+                        ? Promise.resolve()
+                        : new Promise((resolve, reject) => {
+                            existing.addEventListener('load', resolve, { once: true });
+                            existing.addEventListener('error', reject, { once: true });
+                        });
+                }
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.async = true;
+                    script.addEventListener('load', () => {
+                        script.dataset.loaded = 'true';
+                        resolve();
+                    }, { once: true });
+                    script.addEventListener('error', () => reject(new Error(`Could not load ${src}`)), { once: true });
+                    document.head.appendChild(script);
+                });
+            }
+
+            async function requestWebMcpAgent(prompt, settings) {
+                if (!settings.webmcpUrl) {
+                    throw new Error('Add a WebMCP endpoint before using WebMCP mode.');
+                }
+                const response = await fetch(settings.webmcpUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'notebook-studio.generate-cell',
+                        modelUrl: modelLabelFromSettings(settings),
+                        prompt
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error(`WebMCP request failed: ${response.status}`);
+                }
+                const payload = await response.json();
+                return payload.text || payload.message || payload.content || '';
+            }
+
+            function renderGemmaStatus() {
+                const status = document.getElementById('gemmaStatus');
+                if (!status) return;
+                if (gemmaState.status === 'loading') {
+                    const warning = gemmaState.warning ? `${gemmaState.warning} ` : '';
+                    status.textContent = `${warning}Loading ${gemmaState.modelKey}: ${formatModelProgress(gemmaState.progress)}`;
+                } else if (gemmaState.status === 'ready') {
+                    status.textContent = `Ready: ${gemmaState.modelKey}`;
+                } else if (gemmaState.status === 'failed') {
+                    status.textContent = gemmaState.error || 'Gemma failed to load.';
+                } else {
+                    status.textContent = 'Default is Qwen2.5 Coder 0.5B Q8_0 with the Fast profile for quicker browser notebook-cell generation.';
+                }
+                const agentMode = document.getElementById('agentMode');
+                const agentStatus = document.getElementById('agentStatus');
+                if (agentMode && agentStatus && agentMode.value === 'gemma') {
+                    agentStatus.textContent = gemmaState.loaded ? 'gemma ready' : 'browser gemma';
+                    agentStatus.classList.toggle('ready', gemmaState.loaded);
+                }
+            }
+
+            function shouldSuppressWllamaLog(args) {
+                const text = Array.from(args || []).map(item => String(item)).join(' ');
+                return [
+                    /control-looking token/i,
+                    /llama_context: n_ctx_seq .* < n_ctx_train/i,
+                    /common_speculative_init: no implementations specified/i,
+                    /bad special token/i
+                ].some(pattern => pattern.test(text));
+            }
+
+            function createWllamaLogger(baseLogger = console) {
+                const fallback = () => {};
+                return {
+                    debug: fallback,
+                    log: (...args) => {
+                        if (!shouldSuppressWllamaLog(args)) (baseLogger.log || fallback).apply(baseLogger, args);
+                    },
+                    warn: (...args) => {
+                        if (!shouldSuppressWllamaLog(args)) (baseLogger.warn || fallback).apply(baseLogger, args);
+                    },
+                    error: (...args) => (baseLogger.error || fallback).apply(baseLogger, args)
+                };
+            }
+
+            async function loadWllamaModule() {
+                if (!wllamaModulePromise) {
+                    wllamaModulePromise = import(WLLAMA_MODULE_URL).then(module => ({
+                        Wllama: module.Wllama,
+                        configPaths: {
+                            default: WLLAMA_WASM_URL
+                        }
+                    }));
+                }
+                return wllamaModulePromise;
+            }
+
+            async function loadModelFromHf(wllama, hfOptions, loadParams) {
+                if (wllama.loadModelFromUrl) {
+                    return wllama.loadModelFromUrl(createHfDownloadUrl(hfOptions), {
+                        ...loadParams,
+                        useCache: false
+                    });
+                }
+                try {
+                    if (wllama.loadModelFromHF.length >= 3) {
+                        return await wllama.loadModelFromHF(hfOptions.repo, hfOptions.file, loadParams);
+                    }
+                    return await wllama.loadModelFromHF(hfOptions, loadParams);
+                } catch (error) {
+                    const message = error && error.message ? error.message : String(error);
+                    if (!/Model file not found/i.test(message) || !wllama.loadModelFromUrl) {
+                        throw error;
+                    }
+                    gemmaState.warning = `${gemmaState.warning ? `${gemmaState.warning} ` : ''}Retrying without browser cache.`;
+                    renderGemmaStatus();
+                    throw error;
+                }
+            }
+
+            async function ensureBrowserGemma(settings = getSettings()) {
+                const { hfOptions, loadParams } = buildWllamaLoadParams(settings, progress => {
+                    gemmaState.progress = progress;
+                    renderGemmaStatus();
+                });
+                const modelKey = `${hfOptions.repo}:${hfOptions.file}`;
+                if (wllamaInstance && gemmaState.loaded && gemmaState.modelKey === modelKey) {
+                    return wllamaInstance;
+                }
+                gemmaState.status = 'loading';
+                gemmaState.loaded = false;
+                gemmaState.modelKey = modelKey;
+                gemmaState.progress = null;
+                gemmaState.error = '';
+                gemmaState.warning = '';
+                renderGemmaStatus();
+                try {
+                    const preflight = await preflightBrowserGguf(hfOptions);
+                    gemmaState.warning = preflight.warning;
+                    renderGemmaStatus();
+                    const { Wllama, configPaths } = await loadWllamaModule();
+                    wllamaInstance = new Wllama(configPaths, {
+                        logger: createWllamaLogger(console)
+                    });
+                    await loadModelFromHf(wllamaInstance, hfOptions, loadParams);
+                    gemmaState.status = 'ready';
+                    gemmaState.loaded = true;
+                    renderGemmaStatus();
+                    return wllamaInstance;
+                } catch (error) {
+                    gemmaState.status = 'failed';
+                    gemmaState.loaded = false;
+                    gemmaState.error = error.message || String(error);
+                    renderGemmaStatus();
+                    throw new Error(gemmaState.error);
+                }
+            }
+
+            async function requestGemmaAgent(prompt, settings) {
+                const wllama = await ensureBrowserGemma(settings);
+                const messages = buildGemmaMessages(compactPromptToFit(prompt, settings));
+                const options = {
+                    temperature: getAgentProfile(settings).concise ? 0.25 : 0.4,
+                    max_tokens: normalizeMaxTokens(settings.gemmaMaxTokens),
+                    top_k: 32,
+                    top_p: 0.9
+                };
+                const response = wllama.createChatCompletion.length >= 2
+                    ? await wllama.createChatCompletion(messages, options)
+                    : await wllama.createChatCompletion({ messages, ...options });
+                if (typeof response === 'string') return response;
+                return response && response.choices && response.choices[0] && response.choices[0].message
+                    ? response.choices[0].message.content || ''
+                    : '';
+            }
+
+            async function ensurePyodideRuntime() {
+                if (pyodidePromise) return pyodidePromise;
+                runtimeState.status = 'loading Pyodide';
+                renderRuntimeStatus();
+                pyodidePromise = (async () => {
+                    if (!window.loadPyodide) {
+                        await loadScriptOnce(PYODIDE_SCRIPT_URL);
+                    }
+                    if (!window.loadPyodide) {
+                        throw new Error('Pyodide loader is unavailable after loading the script.');
+                    }
+                    const pyodide = await window.loadPyodide({
+                        indexURL: PYODIDE_BASE_URL,
+                        stdout: text => appendRuntimeLine(text, 'stdout'),
+                        stderr: text => appendRuntimeLine(text, 'stderr')
+                    });
+                    window.pyodide = pyodide;
+                    pyodideReady = true;
+                    await mountVirtualFiles(pyodide);
+                    runtimeState.status = 'ready';
+                    renderRuntimeStatus();
+                    return pyodide;
+                })();
+                try {
+                    return await pyodidePromise;
+                } catch (error) {
+                    pyodidePromise = null;
+                    pyodideReady = false;
+                    runtimeState.status = 'failed';
+                    renderRuntimeStatus();
+                    throw error;
+                }
+            }
+
+            function appendRuntimeLine(text, stream) {
+                const status = document.getElementById('runtimeStatus');
+                if (!status) return;
+                const label = stream === 'stderr' ? 'stderr' : 'stdout';
+                status.textContent = `${label}: ${String(text).slice(0, 48)}`;
+            }
+
+            async function loadRequestedPackages(packages) {
+                const requested = parsePackageList(packages);
+                const missing = requested.filter(name => !runtimeState.loadedPackages.has(name));
+                if (!missing.length) return [];
+                const pyodide = await ensurePyodideRuntime();
+                runtimeState.status = `loading ${missing.join(', ')}`;
+                renderRuntimeStatus();
+                await pyodide.loadPackage(missing);
+                missing.forEach(name => runtimeState.loadedPackages.add(name));
+                runtimeState.status = 'ready';
+                renderRuntimeStatus();
+                return missing;
+            }
+
+            async function loadPackagesFromImports(code) {
+                const pyodide = await ensurePyodideRuntime();
+                if (typeof pyodide.loadPackagesFromImports === 'function') {
+                    runtimeState.status = 'checking imports';
+                    renderRuntimeStatus();
+                    await pyodide.loadPackagesFromImports(code);
+                }
+            }
+
+            async function mountFile(file) {
+                if (!file) return null;
+                const pyodide = await ensurePyodideRuntime();
+                const bytes = new Uint8Array(await file.arrayBuffer());
+                pyodide.FS.writeFile(file.name, bytes);
+                rememberMountedFile(file.name);
+                runtimeState.status = `mounted ${file.name}`;
+                renderRuntimeStatus();
+                return file.name;
+            }
+
+            async function mountVirtualFiles(pyodide = window.pyodide) {
+                if (!pyodide) return [];
+                const mounted = [];
+                virtualFiles.forEach((content, name) => {
+                    pyodide.FS.writeFile(name, content);
+                    rememberMountedFile(name);
+                    mounted.push(name);
+                });
+                renderRuntimeStatus();
+                return mounted;
+            }
+
+            function loadSalesDemo() {
+                virtualFiles.set('sales_demo.csv', createSalesDemoCsv());
+                setNotebook(createSalesDemoNotebook());
+                runtimeState.status = 'demo ready';
+                if (pyodideReady && window.pyodide) {
+                    mountVirtualFiles(window.pyodide);
+                } else {
+                    rememberMountedFile('sales_demo.csv');
+                    renderRuntimeStatus();
+                }
+                addMessage('assistant', '<p>Loaded the sales demo notebook and queued <code>sales_demo.csv</code>. Use Run All to execute the example once Pyodide finishes loading.</p>');
+            }
+
+            async function captureMatplotlibImages(pyodide) {
+                const code = [
+                    'import base64, io, json',
+                    'try:',
+                    '    import matplotlib.pyplot as plt',
+                    '    _notebook_pilot_images = []',
+                    '    for _figure_number in plt.get_fignums():',
+                    '        _buffer = io.BytesIO()',
+                    '        plt.figure(_figure_number).savefig(_buffer, format="png", bbox_inches="tight")',
+                    '        _notebook_pilot_images.append(base64.b64encode(_buffer.getvalue()).decode("ascii"))',
+                    '    plt.close("all")',
+                    '    json.dumps(_notebook_pilot_images)',
+                    'except Exception as _error:',
+                    '    json.dumps([])'
+                ].join('\n');
+                const images = await pyodide.runPythonAsync(code);
+                try {
+                    return JSON.parse(String(images || '[]'));
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            async function runPythonCode(code, packages) {
+                const pyodide = await ensurePyodideRuntime();
+                await loadRequestedPackages(packages);
+                await loadPackagesFromImports(code);
+                try {
+                    runtimeState.status = 'running';
+                    renderRuntimeStatus();
+                    pyodide.globals.set('_notebook_pilot_source', code);
+                    const rawPayload = await pyodide.runPythonAsync(buildNotebookRunnerCode());
+                    const payload = JSON.parse(String(rawPayload || '{}'));
+                    runtimeState.status = 'ready';
+                    renderRuntimeStatus();
+                    if (payload.error) {
+                        const outputs = outputsFromPythonPayload(payload);
+                        outputs.push({
+                            output_type: 'error',
+                            ename: payload.error.name || 'PythonError',
+                            evalue: payload.error.message || '',
+                            traceback: payload.error.traceback || []
+                        });
+                        return outputs;
+                    }
+                    return outputsFromPythonPayload(payload);
+                } catch (error) {
+                    runtimeState.status = 'ready';
+                    renderRuntimeStatus();
+                    return [createErrorOutput(error)];
+                } finally {
+                    try {
+                        pyodide.runPython('globals().pop("_notebook_pilot_source", None)');
+                    } catch (error) {
+                        // Runtime cleanup is best-effort after execution failures.
+                    }
+                }
+            }
+
+            async function runCell(cell) {
+                if (!cell) return null;
+                if (cell.cell_type === 'markdown') {
+                    return {
+                        ...cell,
+                        metadata: {
+                            ...(cell.metadata || {}),
+                            notebookPilotRendered: true
+                        }
+                    };
+                }
+                if (cell.cell_type !== 'code') return cell;
+                const outputs = await runPythonCode(cell.source, document.getElementById('packageInput').value);
+                return {
+                    ...cell,
+                    execution_count: (cell.execution_count || 0) + 1,
+                    outputs
+                };
+            }
+
+            async function runAllCells() {
+                const runAllButton = document.getElementById('runAllBtn');
+                runAllButton.disabled = true;
+                try {
+                    for (let index = 0; index < notebook.cells.length; index += 1) {
+                        const cell = notebook.cells[index];
+                        selectedCellId = cell.id;
+                        render();
+                        const nextCell = await runCell(cell);
+                        updateCell(cell.id, nextCell);
+                        render();
+                    }
+                    addMessage('assistant', '<p>Finished running all code cells.</p>');
+                } catch (error) {
+                    addMessage('assistant', `<p>${escapeHtml(error.message || String(error))}</p>`);
+                } finally {
+                    runAllButton.disabled = false;
+                    renderRuntimeStatus();
+                }
+            }
+
+            function getSettings() {
+                return {
+                    mode: document.getElementById('agentMode').value,
+                    agentProfile: document.getElementById('agentProfile').value,
+                    gemmaRepo: document.getElementById('gemmaRepo').value.trim(),
+                    gemmaFile: document.getElementById('gemmaFile').value.trim(),
+                    gemmaGpuLayers: document.getElementById('gemmaGpuLayers').value,
+                    gemmaMaxTokens: document.getElementById('gemmaMaxTokens').value,
+                    webmcpUrl: document.getElementById('webmcpUrl').value.trim()
+                };
+            }
+
+            function setNotebook(nextNotebook) {
+                notebook = normalizeNotebook(nextNotebook);
+                if (!notebook.cells.length) {
+                    notebook.cells.push(createCell('markdown', '# Empty notebook'));
+                }
+                selectedCellId = notebook.cells.some(cell => cell.id === selectedCellId) ? selectedCellId : notebook.cells[0].id;
+                render();
+            }
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;');
+            }
+
+            function renderIcon(name) {
+                return `<svg class="icon" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
+            }
+
+            function renderIconLabel(iconName, label) {
+                return `${renderIcon(iconName)}<span>${escapeHtml(label)}</span>`;
+            }
+
+            function renderIconOnlyButton(iconName, action, label) {
+                return `<button class="icon-button" data-action="${action}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">${renderIcon(iconName)}<span class="sr-only">${escapeHtml(label)}</span></button>`;
+            }
+
+            function renderInlineMarkdown(value) {
+                return escapeHtml(value)
+                    .replace(/`([^`]+)`/g, '<code>$1</code>')
+                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            }
+
+            function renderMarkdown(source) {
+                const lines = sourceToString(source).split('\n');
+                const html = [];
+                let listType = null;
+                let paragraph = [];
+                let inFence = false;
+                let fenceLines = [];
+
+                function flushParagraph() {
+                    if (paragraph.length) {
+                        html.push(`<p>${renderInlineMarkdown(paragraph.join(' '))}</p>`);
+                        paragraph = [];
+                    }
+                }
+
+                function closeList() {
+                    if (listType) {
+                        html.push(`</${listType}>`);
+                        listType = null;
+                    }
+                }
+
+                lines.forEach(line => {
+                    if (line.trim().startsWith('```')) {
+                        if (inFence) {
+                            html.push(`<pre><code>${escapeHtml(fenceLines.join('\n'))}</code></pre>`);
+                            fenceLines = [];
+                            inFence = false;
+                        } else {
+                            flushParagraph();
+                            closeList();
+                            inFence = true;
+                        }
+                        return;
+                    }
+                    if (inFence) {
+                        fenceLines.push(line);
+                        return;
+                    }
+                    if (!line.trim()) {
+                        flushParagraph();
+                        closeList();
+                        return;
+                    }
+                    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+                    if (heading) {
+                        flushParagraph();
+                        closeList();
+                        html.push(`<h${heading[1].length}>${renderInlineMarkdown(heading[2])}</h${heading[1].length}>`);
+                        return;
+                    }
+                    const bullet = line.match(/^[-*]\s+(.+)$/);
+                    if (bullet) {
+                        flushParagraph();
+                        if (listType !== 'ul') {
+                            closeList();
+                            listType = 'ul';
+                            html.push('<ul>');
+                        }
+                        html.push(`<li>${renderInlineMarkdown(bullet[1])}</li>`);
+                        return;
+                    }
+                    paragraph.push(line.trim());
+                });
+                if (inFence) html.push(`<pre><code>${escapeHtml(fenceLines.join('\n'))}</code></pre>`);
+                flushParagraph();
+                closeList();
+                return html.join('');
+            }
+
+            function highlightPython(source) {
+                const tokenPattern = /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|#.*|\b(?:False|None|True|and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield)\b|\b(?:print|len|range|str|int|float|list|dict|set|tuple|sum|min|max|sorted|enumerate|zip)\b|@\w+|\b\d+(?:\.\d+)?\b)/g;
+                let html = '';
+                let lastIndex = 0;
+                const text = sourceToString(source);
+                text.replace(tokenPattern, (token, ...args) => {
+                    const offset = args[args.length - 2];
+                    html += escapeHtml(text.slice(lastIndex, offset));
+                    const safeToken = escapeHtml(token);
+                    if (token.startsWith('#')) html += `<span class="py-comment">${safeToken}</span>`;
+                    else if (token.startsWith('"') || token.startsWith("'")) html += `<span class="py-string">${safeToken}</span>`;
+                    else if (token.startsWith('@')) html += `<span class="py-decorator">${safeToken}</span>`;
+                    else if (/^\d/.test(token)) html += `<span class="py-number">${safeToken}</span>`;
+                    else if (/^(print|len|range|str|int|float|list|dict|set|tuple|sum|min|max|sorted|enumerate|zip)$/.test(token)) {
+                        html += `<span class="py-builtin">${safeToken}</span>`;
+                    } else {
+                        html += `<span class="py-keyword">${safeToken}</span>`;
+                    }
+                    lastIndex = offset + token.length;
+                    return token;
+                });
+                html += escapeHtml(text.slice(lastIndex));
+                return html;
+            }
+
+            function codeEditorHeight(source, collapsed) {
+                if (collapsed) return 190;
+                const lineCount = Math.max(5, sourceToString(source).split('\n').length);
+                return Math.min(720, Math.round((lineCount * 20.15) + 26));
+            }
+
+            function renderLineNumbers(source) {
+                const lineCount = Math.max(1, sourceToString(source).split('\n').length);
+                return Array.from({ length: lineCount }, (_, index) => index + 1).join('\n');
+            }
+
+            function renderSourceEditor(cell) {
+                const height = codeEditorHeight(cell.source, isCellCollapsed(cell));
+                if (cell.cell_type === 'markdown') {
+                    return `<textarea data-action="source" spellcheck="false" style="height: ${height}px">${escapeHtml(cell.source)}</textarea>`;
+                }
+                const collapsed = isCellCollapsed(cell);
+                const lineNumbers = hasLineNumbers();
+                return `
+                    <div class="code-wrap ${collapsed ? 'collapsed' : ''} ${lineNumbers ? 'with-lines' : ''}" style="height: ${height}px">
+                        ${lineNumbers ? `<pre class="line-numbers" aria-hidden="true">${renderLineNumbers(cell.source)}</pre>` : ''}
+                        <pre class="code-highlight" aria-hidden="true">${highlightPython(cell.source)}\n</pre>
+                        <textarea data-action="source" spellcheck="false" style="height: ${height}px">${escapeHtml(cell.source)}</textarea>
+                    </div>
+                `;
+            }
+
+            function syncCodeCellView(cellEl, source, collapsed) {
+                const wrap = cellEl.querySelector('.code-wrap');
+                if (!wrap) return;
+                const height = codeEditorHeight(source, collapsed);
+                const highlight = wrap.querySelector('.code-highlight');
+                const lineNumbers = wrap.querySelector('.line-numbers');
+                const textarea = wrap.querySelector('textarea');
+                wrap.style.height = `${height}px`;
+                if (textarea) textarea.style.height = `${height}px`;
+                if (highlight) highlight.innerHTML = `${highlightPython(source)}\n`;
+                if (lineNumbers) lineNumbers.textContent = renderLineNumbers(source);
+                wrap.scrollTop = 0;
+                wrap.scrollLeft = 0;
+                if (highlight) highlight.style.transform = '';
+                if (lineNumbers) lineNumbers.style.transform = '';
+                if (textarea) textarea.style.transform = '';
+            }
+
+            function renderPlotOutput(image, index) {
+                const safeImage = escapeHtml(image);
+                return `
+                    <div class="plot-output" data-plot-index="${index}">
+                        <div class="plot-toolbar" aria-label="Plot controls">
+                            <button data-action="plot-home" title="Reset plot view">Home</button>
+                            <button data-action="plot-left" title="Pan plot left">&lt;</button>
+                            <button data-action="plot-right" title="Pan plot right">&gt;</button>
+                            <button data-action="plot-zoom-out" title="Zoom plot out">Zoom -</button>
+                            <button data-action="plot-zoom-in" title="Zoom plot in">Zoom +</button>
+                        </div>
+                        <div class="plot-stage">
+                            <img alt="Python plot output" data-scale="1" data-offset-x="0" src="data:image/png;base64,${safeImage}">
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderOutput(outputs) {
+                const text = normalizeOutputs(outputs)
+                    .filter(output => !(output.data && output.data['text/html']))
+                    .map(outputToText)
+                    .filter(Boolean)
+                    .join('\n');
+                const tables = normalizeOutputs(outputs)
+                    .map(output => output.data && output.data['text/html'])
+                    .filter(Boolean)
+                    .map(html => `<div class="table-output">${sanitizeOutputHtml(html)}</div>`)
+                    .join('');
+                const images = normalizeOutputs(outputs)
+                    .map(output => output.data && output.data['image/png'])
+                    .filter(Boolean)
+                    .map(renderPlotOutput)
+                    .join('');
+                if (!text && !tables && !images) return '';
+                const textOutput = text ? `<div class="output">${escapeHtml(text)}</div>` : '';
+                const imageOutput = images ? `<div class="output">${images}</div>` : '';
+                return `<div class="output-wrap ${outputHasError(outputs) ? 'error' : ''}">${tables}${textOutput}${imageOutput}</div>`;
+            }
+
+            function renderErrorFixAction(cell) {
+                if (!cell || cell.cell_type !== 'code' || !outputHasError(cell.outputs)) return '';
+                return `
+                    <div class="error-action">
+                        <span>The last run failed.</span>
+                        <button data-action="fix-error" title="Send this cell source and error to the agent">Fix error</button>
+                    </div>
+                `;
+            }
+
+            function renderMarkdownCell(cell) {
+                return shouldRenderMarkdown(cell)
+                    ? `<div class="markdown-preview">${renderMarkdown(cell.source)}</div>`
+                    : '';
+            }
+
+            function renderRuntimeStatus() {
+                const packageText = runtimeState.loadedPackages.size
+                    ? `packages: ${Array.from(runtimeState.loadedPackages).join(', ')}`
+                    : 'no packages loaded';
+                const fileText = runtimeState.mountedFiles.length
+                    ? `files: ${runtimeState.mountedFiles.join(', ')}`
+                    : 'no files mounted';
+                const status = pyodideReady ? `Pyodide ${runtimeState.status}` : `Pyodide ${runtimeState.status}`;
+                const runtimeEl = document.getElementById('runtimeStatus');
+                if (runtimeEl) runtimeEl.textContent = `${status} | ${packageText} | ${fileText}`;
+                const lineNumberButton = document.getElementById('toggleLineNumbersBtn');
+                if (lineNumberButton) {
+                    lineNumberButton.innerHTML = renderIconLabel('list-numbers', viewState.showLineNumbers ? 'Hide Lines' : 'Show Lines');
+                    lineNumberButton.title = viewState.showLineNumbers ? 'Hide line numbers for all code cells' : 'Show line numbers for all code cells';
+                }
+            }
+
+            function updatePlotView(image, scale, offsetX) {
+                const nextScale = Math.min(4, Math.max(0.5, scale));
+                const nextOffset = Math.min(240, Math.max(-240, offsetX));
+                image.dataset.scale = String(nextScale);
+                image.dataset.offsetX = String(nextOffset);
+                image.style.transform = `translateX(${nextOffset}px) scale(${nextScale})`;
+            }
+
+            function render() {
+                const list = document.getElementById('cellList');
+                list.innerHTML = notebook.cells.map((cell, index) => `
+                    <article class="cell ${cell.id === selectedCellId ? 'selected' : ''}" data-id="${cell.id}" data-type="${cell.cell_type}">
+                        <div class="cell-head">
+                            <div class="cell-kind">
+                                <span class="pill">${index + 1}</span>
+                                <select data-action="type">
+                                    <option value="markdown" ${cell.cell_type === 'markdown' ? 'selected' : ''}>Markdown</option>
+                                    <option value="code" ${cell.cell_type === 'code' ? 'selected' : ''}>Code</option>
+                                </select>
+                            </div>
+                            <div class="cell-actions">
+                                ${cell.cell_type === 'code' ? `<button class="icon-label compact" data-action="toggle-height" title="${isCellCollapsed(cell) ? 'Expand code cell to fit content' : 'Use fixed code height with scrolling'}">${renderIconLabel('rows', isCellCollapsed(cell) ? 'Auto height' : 'Fixed height')}</button>` : ''}
+                                ${renderIconOnlyButton('play', 'run', 'Run cell')}
+                                ${renderIconOnlyButton('trash', 'delete', 'Delete cell')}
+                            </div>
+                        </div>
+                        ${renderSourceEditor(cell)}
+                        ${renderMarkdownCell(cell)}
+                        ${renderOutput(cell.outputs)}
+                        ${renderErrorFixAction(cell)}
+                    </article>
+                `).join('');
+                document.getElementById('cellCount').textContent = `${notebook.cells.length} cell${notebook.cells.length === 1 ? '' : 's'}`;
+                renderRuntimeStatus();
+            }
+
+            function addMessage(role, html) {
+                const log = document.getElementById('chatLog');
+                const message = document.createElement('div');
+                message.className = `message ${role}`;
+                message.innerHTML = `<strong>${role === 'user' ? 'You' : 'Pilot'}</strong>${html}`;
+                log.appendChild(message);
+                log.scrollTop = log.scrollHeight;
+            }
+
+            async function askPilot() {
+                const input = document.getElementById('promptInput');
+                const button = document.getElementById('askBtn');
+                const userRequest = input.value.trim();
+                if (!userRequest) return;
+                input.value = '';
+                await askAgentForCell(userRequest, {
+                    userHtml: `<p>${escapeHtml(userRequest)}</p>`,
+                    busyButton: button,
+                    busyText: 'Thinking...',
+                    doneText: 'Ask Pilot',
+                    buttonIcon: 'bot'
+                });
+            }
+
+            async function askAgentForCell(userRequest, options = {}) {
+                const button = options.busyButton || null;
+                if (button) {
+                    button.disabled = true;
+                    button.innerHTML = options.buttonIcon
+                        ? renderIconLabel(options.buttonIcon, options.busyText || 'Thinking...')
+                        : escapeHtml(options.busyText || 'Thinking...');
+                }
+                addMessage('user', options.userHtml || `<p>${escapeHtml(userRequest)}</p>`);
+                try {
+                    const result = await runAgentLoop(userRequest, {
+                        runGenerated: Boolean(options.runGenerated),
+                        maxIterations: options.maxIterations || 1
+                    });
+                    const parsed = result.parsed || { explanation: 'I could not prepare a notebook cell.', code: '' };
+                    addMessage('assistant', `<p>${escapeHtml(parsed.explanation)}</p>${parsed.code ? `<pre>${escapeHtml(parsed.code)}</pre>` : ''}`);
+                    if (result.ran) {
+                        addMessage('assistant', result.fixed
+                            ? `<p>The generated cell ran without errors after ${result.attempts} attempt${result.attempts === 1 ? '' : 's'}.</p>`
+                            : `<p>The generated cell still has an error after ${result.attempts} attempt${result.attempts === 1 ? '' : 's'}.</p>`);
+                    }
+                } catch (error) {
+                    addMessage('assistant', `<p>${escapeHtml(error.message || String(error))}</p>`);
+                } finally {
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = options.buttonIcon
+                            ? renderIconLabel(options.buttonIcon, options.doneText || 'Ask Pilot')
+                            : escapeHtml(options.doneText || 'Ask Pilot');
+                    }
+                }
+            }
+
+            function updateCell(id, patch) {
+                notebook = {
+                    ...notebook,
+                    cells: notebook.cells.map(cell => cell.id === id ? { ...cell, ...patch } : cell)
+                };
+            }
+
+            document.getElementById('cellList').addEventListener('click', async event => {
+                const actionTarget = event.target.closest('[data-action]');
+                const plotAction = actionTarget && actionTarget.dataset.action;
+                if (plotAction && plotAction.startsWith('plot-')) {
+                    const plot = actionTarget.closest('.plot-output');
+                    const image = plot && plot.querySelector('img');
+                    if (!image) return;
+                    const scale = Number(image.dataset.scale || 1);
+                    const offsetX = Number(image.dataset.offsetX || 0);
+                    if (plotAction === 'plot-home') updatePlotView(image, 1, 0);
+                    if (plotAction === 'plot-left') updatePlotView(image, scale, offsetX - 48);
+                    if (plotAction === 'plot-right') updatePlotView(image, scale, offsetX + 48);
+                    if (plotAction === 'plot-zoom-in') updatePlotView(image, scale + 0.2, offsetX);
+                    if (plotAction === 'plot-zoom-out') updatePlotView(image, scale - 0.2, offsetX);
+                    return;
+                }
+                const cellEl = event.target.closest('.cell');
+                if (!cellEl) return;
+                selectedCellId = cellEl.dataset.id;
+                const action = actionTarget && actionTarget.dataset.action;
+                if (action === 'delete') {
+                    notebook = { ...notebook, cells: notebook.cells.filter(cell => cell.id !== selectedCellId) };
+                    if (!notebook.cells.length) notebook.cells.push(createCell('markdown', '# Empty notebook'));
+                    selectedCellId = notebook.cells[0].id;
+                    render();
+                } else if (action === 'run') {
+                    const cell = notebook.cells.find(item => item.id === selectedCellId);
+                    const nextCell = await runCell(cell);
+                    updateCell(selectedCellId, nextCell);
+                    render();
+                } else if (action === 'toggle-height') {
+                    const cell = notebook.cells.find(item => item.id === selectedCellId);
+                    updateCell(selectedCellId, {
+                        metadata: {
+                            ...(cell.metadata || {}),
+                            notebookPilotCollapsed: !isCellCollapsed(cell)
+                        }
+                    });
+                    render();
+                } else if (action === 'fix-error') {
+                    const cell = notebook.cells.find(item => item.id === selectedCellId);
+                    if (!cell) return;
+                    await askAgentForCell(buildFixErrorRequest(cell), {
+                        busyButton: actionTarget,
+                        busyText: 'Fixing...',
+                        doneText: 'Fix error',
+                        runGenerated: true,
+                        maxIterations: 2,
+                        userHtml: [
+                            '<p>Fix the error in this code cell.</p>',
+                            `<pre>${escapeHtml(sourceToString(cell.source))}</pre>`,
+                            `<pre>${escapeHtml(errorOutputsToText(cell.outputs) || 'No error text was captured.')}</pre>`
+                        ].join('')
+                    });
+                }
+            });
+
+            document.getElementById('cellList').addEventListener('input', event => {
+                const cellEl = event.target.closest('.cell');
+                if (!cellEl) return;
+                selectedCellId = cellEl.dataset.id;
+                if (event.target.dataset.action === 'source') {
+                    const cell = notebook.cells.find(item => item.id === selectedCellId);
+                    updateCell(selectedCellId, {
+                        source: event.target.value,
+                        metadata: {
+                            ...(cell.metadata || {}),
+                            notebookPilotRendered: false
+                        }
+                    });
+                    syncCodeCellView(cellEl, event.target.value, isCellCollapsed(cell));
+                }
+            });
+
+            document.getElementById('cellList').addEventListener('scroll', event => {
+                const wrap = event.target.classList && event.target.classList.contains('code-wrap') ? event.target : null;
+                if (!wrap) return;
+                const highlight = wrap.querySelector('.code-highlight');
+                const lineNumbers = wrap.querySelector('.line-numbers');
+                const textarea = wrap.querySelector('textarea');
+                if (highlight) {
+                    highlight.style.transform = `translate(${-wrap.scrollLeft}px, ${-wrap.scrollTop}px)`;
+                }
+                if (lineNumbers) {
+                    lineNumbers.style.transform = `translateY(${-wrap.scrollTop}px)`;
+                }
+                if (textarea) {
+                    textarea.style.transform = `translate(${-wrap.scrollLeft}px, ${-wrap.scrollTop}px)`;
+                }
+            }, true);
+
+            document.getElementById('cellList').addEventListener('change', event => {
+                const cellEl = event.target.closest('.cell');
+                if (!cellEl) return;
+                selectedCellId = cellEl.dataset.id;
+                if (event.target.dataset.action === 'type') {
+                    updateCell(selectedCellId, {
+                        cell_type: event.target.value,
+                        outputs: event.target.value === 'markdown' ? [] : notebook.cells.find(cell => cell.id === selectedCellId).outputs,
+                        metadata: {}
+                    });
+                    render();
+                }
+            });
+
+            document.getElementById('addMarkdownBtn').addEventListener('click', () => {
+                notebook.cells.push(createCell('markdown', '## Notes\n'));
+                selectedCellId = notebook.cells[notebook.cells.length - 1].id;
+                render();
+            });
+
+            document.getElementById('addCodeBtn').addEventListener('click', () => {
+                notebook.cells.push(createCell('code', '# New analysis step\n'));
+                selectedCellId = notebook.cells[notebook.cells.length - 1].id;
+                render();
+            });
+
+            document.getElementById('runSelectedBtn').addEventListener('click', async () => {
+                const cell = notebook.cells.find(item => item.id === selectedCellId);
+                const nextCell = await runCell(cell);
+                updateCell(selectedCellId, nextCell);
+                render();
+            });
+
+            document.getElementById('runAllBtn').addEventListener('click', runAllCells);
+
+            document.getElementById('toggleLineNumbersBtn').addEventListener('click', () => {
+                viewState.showLineNumbers = !viewState.showLineNumbers;
+                render();
+            });
+
+            document.getElementById('askBtn').addEventListener('click', askPilot);
+            document.getElementById('promptInput').addEventListener('keydown', event => {
+                if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') askPilot();
+            });
+
+            document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+            document.getElementById('fileInput').addEventListener('change', async event => {
+                const file = event.target.files[0];
+                if (!file) return;
+                setNotebook(await file.text());
+            });
+
+            document.getElementById('initRuntimeBtn').addEventListener('click', async () => {
+                try {
+                    await ensurePyodideRuntime();
+                    addMessage('assistant', '<p>Pyodide is ready. Run a code cell or load packages for pandas, numpy, and plotting.</p>');
+                } catch (error) {
+                    addMessage('assistant', `<p>${escapeHtml(error.message || String(error))}</p>`);
+                }
+            });
+
+            document.getElementById('loadPackagesBtn').addEventListener('click', async () => {
+                try {
+                    const loaded = await loadRequestedPackages(document.getElementById('packageInput').value);
+                    addMessage('assistant', `<p>${loaded.length ? `Loaded ${escapeHtml(loaded.join(', '))}.` : 'Requested packages are already loaded.'}</p>`);
+                } catch (error) {
+                    addMessage('assistant', `<p>${escapeHtml(error.message || String(error))}</p>`);
+                }
+            });
+
+            document.getElementById('dataFileInput').addEventListener('change', async event => {
+                try {
+                    const name = await mountFile(event.target.files[0]);
+                    if (name) addMessage('assistant', `<p>Mounted <code>${escapeHtml(name)}</code> in the Pyodide working directory.</p>`);
+                } catch (error) {
+                    addMessage('assistant', `<p>${escapeHtml(error.message || String(error))}</p>`);
+                }
+            });
+
+            document.getElementById('exportBtn').addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify(notebookToIpynb(notebook), null, 2)], { type: 'application/json' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'notebook-studio.ipynb';
+                link.click();
+                URL.revokeObjectURL(link.href);
+            });
+
+            document.getElementById('sampleBtn').addEventListener('click', () => {
+                loadSalesDemo();
+            });
+
+            const NOTEBOOK_STUDIO_EXAMPLES = {
+                'missing-data': {
+                    url: '/downloads/missing_data_uci_adult.ipynb',
+                    files: [
+                        {
+                            name: 'uci_adult.csv',
+                            url: '/downloads/uci_adult.csv'
+                        }
+                    ],
+                    message: '<p>Loaded the missing-data machine learning notebook and queued <code>uci_adult.csv</code>. Use Run All after Pyodide finishes loading, or inspect and edit the cells first.</p>'
+                }
+            };
+
+            async function queueVirtualFiles(files = []) {
+                const mounted = [];
+                for (const file of files) {
+                    const resolvedUrl = new URL(file.url, window.location.href);
+                    const response = await fetch(resolvedUrl.href);
+                    if (!response.ok) {
+                        throw new Error(`Could not load file from ${resolvedUrl.pathname}: ${response.status} ${response.statusText}`);
+                    }
+                    virtualFiles.set(file.name, new Uint8Array(await response.arrayBuffer()));
+                    rememberMountedFile(file.name);
+                    mounted.push(file.name);
+                }
+                if (pyodideReady && window.pyodide) {
+                    await mountVirtualFiles(window.pyodide);
+                } else if (mounted.length) {
+                    renderRuntimeStatus();
+                }
+                return mounted;
+            }
+
+            async function loadNotebookFromUrl(url, message) {
+                const resolvedUrl = new URL(url, window.location.href);
+                const response = await fetch(resolvedUrl.href);
+                if (!response.ok) {
+                    throw new Error(`Could not load notebook from ${resolvedUrl.pathname}: ${response.status} ${response.statusText}`);
+                }
+                setNotebook(await response.text());
+                addMessage('assistant', message || `<p>Loaded notebook from <code>${escapeHtml(resolvedUrl.pathname)}</code>.</p>`);
+            }
+
+            async function loadNotebookFromQuery() {
+                const params = new URLSearchParams(window.location.search);
+                const notebookUrl = params.get('notebook');
+                const exampleKey = params.get('example');
+                const example = exampleKey ? NOTEBOOK_STUDIO_EXAMPLES[exampleKey] : null;
+
+                if (!notebookUrl && !example) return;
+
+                try {
+                    if (notebookUrl) {
+                        await loadNotebookFromUrl(notebookUrl);
+                    } else {
+                        await queueVirtualFiles(example.files);
+                        await loadNotebookFromUrl(example.url, example.message);
+                    }
+                } catch (error) {
+                    addMessage('assistant', `<p>${escapeHtml(error.message || String(error))}</p>`);
+                }
+            }
+
+            document.getElementById('agentMode').addEventListener('change', event => {
+                const status = document.getElementById('agentStatus');
+                status.textContent = event.target.value === 'webmcp'
+                    ? 'webmcp mode'
+                    : event.target.value === 'gemma'
+                        ? (gemmaState.loaded ? 'gemma ready' : 'browser gemma')
+                        : 'draft mode';
+                status.classList.toggle('ready', event.target.value !== 'draft' && (event.target.value !== 'gemma' || gemmaState.loaded));
+            });
+
+            function applyAgentProfile(profileKey, announce = true) {
+                const profile = getAgentProfile(profileKey);
+                document.getElementById('agentProfile').value = Object.keys(AGENT_PERFORMANCE_PROFILES)
+                    .find(key => AGENT_PERFORMANCE_PROFILES[key] === profile) || 'fast';
+                document.getElementById('gemmaMaxTokens').value = String(profile.maxTokens);
+                const hint = document.getElementById('agentProfileHint');
+                if (hint) {
+                    hint.textContent = `${profile.label}: ${profile.maxContextCells} context cells, ${profile.maxTokens} response tokens, ${profile.nCtx} model context.`;
+                }
+                if (announce) {
+                    addMessage('assistant', `<p>${escapeHtml(profile.label)} agent profile is active. Context and response budgets were adjusted for this speed setting.</p>`);
+                }
+            }
+
+            document.getElementById('agentProfile').addEventListener('change', event => {
+                applyAgentProfile(event.target.value);
+            });
+
+            document.getElementById('loadGemmaBtn').addEventListener('click', async () => {
+                try {
+                    document.getElementById('agentMode').value = 'gemma';
+                    const settings = getSettings();
+                    await ensureBrowserGemma(settings);
+                    document.getElementById('agentStatus').textContent = 'gemma ready';
+                    document.getElementById('agentStatus').classList.add('ready');
+                    addMessage('assistant', `<p>Model is loaded from <code>${escapeHtml(modelLabelFromSettings(settings))}</code>.</p>`);
+                } catch (error) {
+                    addMessage('assistant', `<p>${escapeHtml(error.message || String(error))}</p>`);
+                }
+            });
+
+            document.getElementById('useGemma4Btn').addEventListener('click', () => {
+                document.getElementById('agentMode').value = 'gemma';
+                document.getElementById('gemmaRepo').value = ADVANCED_GEMMA4_REPO;
+                document.getElementById('gemmaFile').value = ADVANCED_GEMMA4_FILE;
+                applyAgentProfile('deep', false);
+                renderGemmaStatus();
+                addMessage('assistant', '<p>Gemma 4 E2B is selected. It is a much larger browser download; use Load Gemma when you are ready to try it.</p>');
+            });
+
+            document.getElementById('useQwenFastBtn').addEventListener('click', () => {
+                document.getElementById('agentMode').value = 'gemma';
+                document.getElementById('gemmaRepo').value = QWEN_CODER_FAST_REPO;
+                document.getElementById('gemmaFile').value = QWEN_CODER_FAST_FILE;
+                applyAgentProfile('fast', false);
+                renderGemmaStatus();
+                addMessage('assistant', '<p>Qwen2.5 Coder 0.5B Q8_0 is selected for fast browser responses.</p>');
+            });
+
+            document.getElementById('useQwenCoderBtn').addEventListener('click', () => {
+                document.getElementById('agentMode').value = 'gemma';
+                document.getElementById('gemmaRepo').value = QWEN_CODER_REPO;
+                document.getElementById('gemmaFile').value = QWEN_CODER_FILE;
+                applyAgentProfile('balanced', false);
+                renderGemmaStatus();
+                addMessage('assistant', '<p>Qwen2.5 Coder 1.5B is selected. It is the default code-focused model for notebook edits.</p>');
+            });
+
+            document.getElementById('useFastGemmaBtn').addEventListener('click', () => {
+                document.getElementById('agentMode').value = 'gemma';
+                document.getElementById('gemmaRepo').value = FAST_GEMMA_REPO;
+                document.getElementById('gemmaFile').value = FAST_GEMMA_FILE;
+                applyAgentProfile('fast', false);
+                renderGemmaStatus();
+                addMessage('assistant', '<p>Fast Gemma is selected. It uses a smaller Gemma 3 1B quant and a shorter response budget for quicker notebook edits.</p>');
+            });
+
+            document.getElementById('loadSmokeModelBtn').addEventListener('click', async () => {
+                document.getElementById('agentMode').value = 'gemma';
+                document.getElementById('gemmaRepo').value = SMOKE_MODEL_REPO;
+                document.getElementById('gemmaFile').value = SMOKE_MODEL_FILE;
+                applyAgentProfile('fast', false);
+                try {
+                    const settings = getSettings();
+                    await ensureBrowserGemma(settings);
+                    document.getElementById('agentStatus').textContent = 'gguf ready';
+                    document.getElementById('agentStatus').classList.add('ready');
+                    addMessage('assistant', `<p>The tiny GGUF smoke model is loaded through the same browser wllama path. Switch back to Gemma once you have a split shard file.</p>`);
+                } catch (error) {
+                    addMessage('assistant', `<p>${escapeHtml(error.message || String(error))}</p>`);
+                }
+            });
+
+            addMessage('assistant', '<p>Load a notebook or ask for the first analysis step. Draft mode generates local starter cells; WebMCP mode can hand the same context to your own agent.</p>');
+            applyAgentProfile('fast', false);
+            loadNotebookFromQuery();
+            render();
+
+            window.NotebookStudioTest = {
+                DEFAULT_MODEL_URL,
+                DEFAULT_GEMMA_REPO,
+                DEFAULT_GEMMA_FILE,
+                QWEN_CODER_REPO,
+                QWEN_CODER_FILE,
+                QWEN_CODER_FAST_REPO,
+                QWEN_CODER_FAST_FILE,
+                FAST_GEMMA_REPO,
+                FAST_GEMMA_FILE,
+                ADVANCED_GEMMA4_REPO,
+                ADVANCED_GEMMA4_FILE,
+                SMOKE_MODEL_REPO,
+                SMOKE_MODEL_FILE,
+                AGENT_PERFORMANCE_PROFILES,
+                BROWSER_SINGLE_GGUF_LIMIT_BYTES,
+                WLLAMA_VERSION,
+                WLLAMA_MODULE_URL,
+                WLLAMA_WASM_URL,
+                createBlankNotebook,
+                createSalesDemoCsv,
+                createSalesDemoNotebook,
+                createCell,
+                normalizeNotebook,
+                notebookToIpynb,
+                truncateText,
+                firstMeaningfulLine,
+                summarizeCellForContext,
+                compactNotebookContext,
+                extractNotebookContext,
+                getAgentProfile,
+                buildAgentPrompt,
+                estimatePromptTokens,
+                compactPromptToFit,
+                buildFixErrorRequest,
+                buildRetryAfterErrorRequest,
+                modelLabelFromSettings,
+                buildGemmaMessages,
+                getGemmaHfOptions,
+                createHfModelApiUrl,
+                createHfResolveUrl,
+                createHfDownloadUrl,
+                isSplitGgufFile,
+                findHfFileMetadata,
+                browserGgufSizeMessage,
+                knownLargeGgufMessage,
+                normalizeGpuLayers,
+                normalizeMaxTokens,
+                buildWllamaLoadParams,
+                formatBytes,
+                formatModelProgress,
+                preflightBrowserGguf,
+                shouldSuppressWllamaLog,
+                createWllamaLogger,
+                loadModelFromHf,
+                isLikelyPythonLine,
+                extractUnfencedPythonCode,
+                normalizeMarkdownFences,
+                dedupeConsecutiveLines,
+                removeAlreadyRunInspectionCode,
+                sanitizeGeneratedCode,
+                parseAgentResponse,
+                extractFirstFencedBlock,
+                createLocalFixCode,
+                createDraftResponse,
+                generateAgentCell,
+                runAgentLoop,
+                requestGemmaAgent,
+                insertGeneratedCell,
+                sourceToLines,
+                outputToText,
+                errorOutputsToText,
+                renderMarkdown,
+                renderIcon,
+                renderIconLabel,
+                renderIconOnlyButton,
+                shouldRenderMarkdown,
+                isCellCollapsed,
+                hasLineNumbers,
+                highlightPython,
+                codeEditorHeight,
+                renderLineNumbers,
+                renderPlotOutput,
+                renderErrorFixAction,
+                updatePlotView,
+                sanitizeOutputHtml,
+                parsePackageList,
+                createStreamOutput,
+                createResultOutput,
+                createRichResultOutput,
+                createErrorOutput,
+                filterStreamText,
+                combineRunOutputs,
+                outputsFromPythonPayload,
+                pyProxyToArray,
+                pyProxyToResultOutput,
+                buildNotebookRunnerCode,
+                outputHasError,
+                rememberMountedFile,
+                PYODIDE_VERSION,
+                PYODIDE_BASE_URL,
+                PYODIDE_SCRIPT_URL
+            };
+
+        }());
+    </script>
+</body>
+</html>
