@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<title>Notebook Studio tests</title>
+<link rel="stylesheet" href="../qunit-2.24.1.css">
+
+<body>
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+    <iframe id="notebook-studio-frame" src="../../machine_learning/notebook-studio/index.html" hidden></iframe>
+    <script src="../qunit-2.24.1.js"></script>
+    <script>
+        QUnit.config.testTimeout = 30000;
+
+        function loadPilot() {
+            const frame = document.getElementById('notebook-studio-frame');
+            if (frame.contentWindow && frame.contentWindow.NotebookStudioTest) {
+                return Promise.resolve(frame.contentWindow.NotebookStudioTest);
+            }
+            return new Promise((resolve, reject) => {
+                frame.addEventListener('load', () => {
+                    const api = frame.contentWindow.NotebookStudioTest;
+                    api ? resolve(api) : reject(new Error('Notebook Studio test API unavailable'));
+                }, { once: true });
+            });
+        }
+
+        QUnit.module('Notebook Studio notebook model', hooks => {
+            let api;
+
+            hooks.before(async () => {
+                api = await loadPilot();
+            });
+
+            QUnit.test('normalizes ipynb source arrays and missing ids', assert => {
+                const doc = api.normalizeNotebook({
+                    nbformat: 4,
+                    nbformat_minor: 2,
+                    metadata: { name: 'demo' },
+                    cells: [
+                        { cell_type: 'markdown', source: ['# A\n', 'note'] },
+                        { cell_type: 'code', source: ['x = 1\n', 'x'], outputs: ['1'] }
+                    ]
+                });
+
+                assert.equal(doc.cells.length, 2, 'imports both cells');
+                assert.equal(doc.cells[0].source, '# A\nnote', 'joins markdown source lines');
+                assert.equal(doc.cells[1].outputs[0].output_type, 'stream', 'normalizes string output to stream');
+                assert.ok(doc.cells[0].id, 'adds a cell id');
+            });
+
+            QUnit.test('exports code and markdown cells as ipynb-compatible cells', assert => {
+                const doc = api.createBlankNotebook();
+                const ipynb = api.notebookToIpynb(doc);
+
+                assert.equal(ipynb.nbformat, 4, 'keeps nbformat');
+                assert.equal(ipynb.metadata.notebookPilot.runtime, 'pyodide', 'stores Pyodide as the default runtime');
+                assert.ok(Array.isArray(ipynb.cells[0].source), 'exports source as line arrays');
+                assert.notOk('outputs' in ipynb.cells[0], 'markdown cells do not get outputs');
+                assert.ok(Array.isArray(ipynb.cells[1].outputs), 'code cells keep outputs array');
+            });
+
+            QUnit.test('extracts bounded context around selected cell', assert => {
+                const cells = [
+                    api.createCell('markdown', 'first'),
+                    api.createCell('code', 'second'),
+                    api.createCell('code', 'third'),
+                    api.createCell('markdown', 'fourth')
+                ];
+                const doc = { ...api.createBlankNotebook(), cells };
+                const context = api.extractNotebookContext(doc, cells[2].id);
+
+                assert.equal(context.cellCount, 4, 'reports total cells');
+                assert.equal(context.selectedIndex, 2, 'finds selected index');
+                assert.equal(context.cells.length, 4, 'returns nearby cells');
+                assert.equal(context.selectedCell.source, 'third', 'includes selected cell');
+            });
+        });
+
+        QUnit.module('Notebook Studio agent helpers', hooks => {
+            let api;
+
+            hooks.before(async () => {
+                api = await loadPilot();
+            });
+
+            QUnit.test('builds prompts with model target and notebook context', assert => {
+                const doc = api.createBlankNotebook();
+                const context = api.extractNotebookContext(doc, doc.cells[1].id);
+                const prompt = api.buildAgentPrompt('plot the numbers', context, {
+                    gemmaRepo: api.DEFAULT_GEMMA_REPO,
+                    gemmaFile: api.DEFAULT_GEMMA_FILE
+                });
+
+                assert.ok(prompt.includes(api.DEFAULT_MODEL_URL), 'includes Gemma model target');
+                assert.ok(prompt.includes('plot the numbers'), 'includes user request');
+                assert.ok(prompt.includes('Nearby notebook context'), 'includes notebook context');
+                assert.ok(prompt.includes('exactly two parts'), 'asks for a strict explanation plus code shape');
+            });
+
+            QUnit.test('builds browser Gemma chat messages', assert => {
+                const messages = api.buildGemmaMessages('Notebook context here');
+
+                assert.equal(messages.length, 2, 'builds system and user messages');
+                assert.equal(messages[0].role, 'system', 'uses a system prompt');
+                assert.ok(messages[1].content.includes('Notebook context here'), 'passes notebook context to the model');
+                assert.ok(messages[0].content.includes('exactly one fenced python code block'), 'keeps the model on a parseable output contract');
+            });
+
+            QUnit.test('builds Hugging Face model options for wllama', assert => {
+                const options = api.getGemmaHfOptions({
+                    gemmaRepo: ` ${api.DEFAULT_GEMMA_REPO} `,
+                    gemmaFile: ` ${api.DEFAULT_GEMMA_FILE} `
+                });
+                const params = api.buildWllamaLoadParams({
+                    gemmaRepo: options.repo,
+                    gemmaFile: options.file,
+                    gemmaGpuLayers: '12'
+                }, () => {});
+
+                assert.equal(options.repo, api.DEFAULT_GEMMA_REPO, 'trims the repo');
+                assert.equal(options.file, api.DEFAULT_GEMMA_FILE, 'trims the GGUF file');
+                assert.equal(api.DEFAULT_GEMMA_REPO, api.QWEN_CODER_REPO, 'uses Qwen Coder as the default repo');
+                assert.equal(api.DEFAULT_GEMMA_FILE, api.QWEN_CODER_FILE, 'uses Qwen Coder Q5_K_M as the default file');
+                assert.equal(params.hfOptions.file, options.file, 'passes HF file to wllama');
+                assert.equal(params.loadParams.n_gpu_layers, 12, 'normalizes GPU layer count');
+                assert.equal(params.loadParams.n_ctx, 1024, 'uses an interactive notebook context');
+                assert.equal(params.loadParams.n_batch, 128, 'uses a smaller batch for browser responsiveness');
+                assert.ok(params.loadParams.n_threads >= 2 && params.loadParams.n_threads <= 6, 'bounds browser worker threads');
+                assert.equal(api.modelLabelFromSettings({
+                    gemmaRepo: options.repo,
+                    gemmaFile: options.file
+                }), api.DEFAULT_MODEL_URL, 'formats the model label');
+            });
+
+            QUnit.test('pins published wllama CDN assets', assert => {
+                assert.ok(api.WLLAMA_MODULE_URL.endsWith('/esm/index.js'), 'uses the published module entrypoint');
+                assert.ok(api.WLLAMA_WASM_URL.endsWith('/esm/wasm/wllama.wasm'), 'uses the published v3 WASM file');
+                assert.notOk(api.WLLAMA_WASM_URL.includes('wasm-from-cdn'), 'does not import the missing helper module');
+            });
+
+            QUnit.test('detects browser GGUF size risks and split shards', assert => {
+                const modelInfo = {
+                    siblings: [
+                        { rfilename: 'large.gguf', size: api.BROWSER_SINGLE_GGUF_LIMIT_BYTES + 1 },
+                        { rfilename: 'large-00001-of-00003.gguf', size: api.BROWSER_SINGLE_GGUF_LIMIT_BYTES + 1 },
+                        { rfilename: 'small.gguf', size: 1024 }
+                    ]
+                };
+
+                assert.ok(api.createHfModelApiUrl('owner/model').endsWith('/owner/model'), 'builds the HF model metadata URL');
+                assert.equal(
+                    api.createHfResolveUrl({ repo: 'owner/model', file: 'folder/model file.gguf' }),
+                    'https://huggingface.co/owner/model/resolve/main/folder/model%20file.gguf',
+                    'builds encoded HF resolve URLs'
+                );
+                assert.equal(api.findHfFileMetadata(modelInfo, 'small.gguf').size, 1024, 'finds a GGUF file record');
+                assert.ok(api.isSplitGgufFile('large-00001-of-00003.gguf'), 'recognizes split GGUF shard names');
+                assert.ok(api.browserGgufSizeMessage(modelInfo.siblings[0], 'large.gguf'), 'warns on large single files');
+                assert.equal(api.browserGgufSizeMessage(modelInfo.siblings[1], 'large-00001-of-00003.gguf'), '', 'allows split shard files');
+                assert.equal(api.browserGgufSizeMessage(modelInfo.siblings[2], 'small.gguf'), '', 'allows small files');
+                assert.equal(api.knownLargeGgufMessage({
+                    repo: api.DEFAULT_GEMMA_REPO,
+                    file: api.DEFAULT_GEMMA_FILE
+                }), '', 'does not warn on the browser-sized default');
+                assert.ok(api.knownLargeGgufMessage({
+                    repo: api.ADVANCED_GEMMA4_REPO,
+                    file: api.ADVANCED_GEMMA4_FILE
+                }), 'warns on known large Gemma 4 single files before wllama fetch');
+                assert.equal(api.knownLargeGgufMessage({
+                    repo: api.ADVANCED_GEMMA4_REPO,
+                    file: 'google_gemma-4-E2B-it-IQ2_M-00001-of-00003.gguf'
+                }), '', 'allows known Gemma split shard names');
+            });
+
+            QUnit.test('formats wllama download progress', assert => {
+                assert.equal(api.formatBytes(1536), '1.5 KB', 'formats byte counts');
+                assert.equal(api.formatModelProgress({ loaded: 50, total: 100 }), '50% (50 B / 100 B)', 'formats a percentage');
+                assert.equal(api.normalizeGpuLayers('-4'), 0, 'keeps negative GPU layers at zero');
+                assert.equal(api.normalizeMaxTokens('32'), 64, 'clamps tiny token budgets');
+                assert.equal(api.normalizeMaxTokens('256'), 256, 'keeps valid token budgets');
+                assert.equal(api.normalizeMaxTokens('2000'), 900, 'clamps huge token budgets');
+            });
+
+            QUnit.test('retries wllama model file misses without cache', async assert => {
+                const calls = [];
+                const fakeWllama = {
+                    loadModelFromHF: async (hfOptions, loadParams) => {
+                        calls.push({ type: 'hf', hfOptions, loadParams });
+                        throw new Error('Model file not found: https://huggingface.co/owner/model/resolve/main/file.gguf');
+                    },
+                    loadModelFromUrl: async (url, loadParams) => {
+                        calls.push({ type: 'url', url, loadParams });
+                        return 'loaded';
+                    }
+                };
+
+                const result = await api.loadModelFromHf(fakeWllama, {
+                    repo: 'owner/model',
+                    file: 'file.gguf'
+                }, { useCache: true });
+
+                assert.equal(result, 'loaded', 'returns the direct URL retry result');
+                assert.equal(calls.length, 2, 'tries HF helper then URL fallback');
+                assert.equal(calls[1].url, 'https://huggingface.co/owner/model/resolve/main/file.gguf', 'uses direct resolve URL');
+                assert.equal(calls[1].loadParams.useCache, false, 'bypasses stale browser cache on retry');
+            });
+
+            QUnit.test('suppresses noisy benign wllama loader warnings', assert => {
+                let warnCount = 0;
+                let errorCount = 0;
+                const logger = api.createWllamaLogger({
+                    log: () => {},
+                    warn: () => { warnCount += 1; },
+                    error: () => { errorCount += 1; }
+                });
+
+                assert.ok(api.shouldSuppressWllamaLog(['load: control-looking token: 212 </s>']), 'matches token metadata warning');
+                assert.ok(api.shouldSuppressWllamaLog(['llama_context: n_ctx_seq (1024) < n_ctx_train (32768)']), 'matches context capacity warning');
+                assert.ok(api.shouldSuppressWllamaLog(['common_speculative_init: no implementations specified']), 'matches speculative decoding warning');
+                logger.warn('load: control-looking token: 212 </s>');
+                logger.warn('real warning');
+                logger.error('real error');
+
+                assert.equal(warnCount, 1, 'passes through non-filtered warnings');
+                assert.equal(errorCount, 1, 'always passes through errors');
+            });
+
+            QUnit.test('parses fenced python code from agent responses', assert => {
+                const parsed = api.parseAgentResponse('Try this next.\n```python\nprint(42)\n```');
+
+                assert.equal(parsed.explanation, 'Try this next.', 'keeps explanation outside code fence');
+                assert.equal(parsed.code, 'print(42)', 'extracts code');
+            });
+
+            QUnit.test('extracts unfenced Python when coder models omit markdown fences', assert => {
+                const parsed = api.parseAgentResponse([
+                    'Here is a simple inspection cell:',
+                    'import pandas as pd',
+                    '',
+                    'df.info()',
+                    'df.describe(include="all").transpose()'
+                ].join('\n'));
+
+                assert.ok(api.isLikelyPythonLine('df.info()'), 'recognizes dataframe calls as Python');
+                assert.ok(api.extractUnfencedPythonCode(parsed.explanation).includes('df.info()'), 'can recover code from prose text');
+                assert.ok(parsed.code.includes('df.describe'), 'extracts an unfenced Python block');
+            });
+
+            QUnit.test('draft response adapts to chart requests', assert => {
+                const doc = api.createBlankNotebook();
+                const context = api.extractNotebookContext(doc, doc.cells[1].id);
+                const parsed = api.parseAgentResponse(api.createDraftResponse('make a chart', context));
+
+                assert.ok(parsed.code.includes('matplotlib'), 'chart draft uses plotting code');
+                assert.ok(parsed.code.includes('hist'), 'chart draft includes histogram starter');
+            });
+
+            QUnit.test('inserts generated markdown and code after selected cell', assert => {
+                const doc = api.createBlankNotebook();
+                const selected = doc.cells[0];
+                const next = api.insertGeneratedCell(doc, selected.id, 'print("next")', 'Next step');
+
+                assert.equal(next.cells.length, doc.cells.length + 2, 'adds explanation and code cells');
+                assert.equal(next.cells[1].cell_type, 'markdown', 'explanation follows selected cell');
+                assert.equal(next.cells[2].source, 'print("next")', 'code follows explanation');
+            });
+        });
+
+        QUnit.module('Notebook Studio Pyodide helpers', hooks => {
+            let api;
+
+            hooks.before(async () => {
+                api = await loadPilot();
+            });
+
+            QUnit.test('pins a stable Pyodide CDN URL', assert => {
+                assert.equal(api.PYODIDE_VERSION, '314.0.2', 'uses the current stable Pyodide version');
+                assert.ok(api.PYODIDE_SCRIPT_URL.includes('/pyodide/v314.0.2/full/pyodide.js'), 'builds a pinned script URL');
+            });
+
+            QUnit.test('parses package input into a unique normalized list', assert => {
+                assert.deepEqual(
+                    api.parsePackageList(' pandas, numpy, Pandas, matplotlib ,, '),
+                    ['pandas', 'numpy', 'matplotlib'],
+                    'trims, lowercases, removes blanks, and deduplicates'
+                );
+            });
+
+            QUnit.test('combines stdout stderr result and images into notebook outputs', assert => {
+                const outputs = api.combineRunOutputs('hello', 'careful', api.createRichResultOutput('42', '<table><tr><td>42</td></tr></table>'), ['abc123']);
+
+                assert.equal(outputs.length, 4, 'creates stream, result, and image outputs');
+                assert.equal(outputs[0].name, 'stdout', 'keeps stdout stream');
+                assert.equal(outputs[1].name, 'stderr', 'keeps stderr stream');
+                assert.equal(outputs[2].data['text/plain'], '42', 'keeps execute result text');
+                assert.ok(outputs[2].data['text/html'].includes('<table>'), 'keeps rich HTML output');
+                assert.equal(outputs[3].data['image/png'], 'abc123', 'keeps plot image data');
+            });
+
+            QUnit.test('combines plot-only output without placeholder text', assert => {
+                const outputs = api.combineRunOutputs('', '', api.createRichResultOutput('Figure(900x400)', ''), ['abc123']);
+
+                assert.equal(outputs.length, 1, 'keeps only the captured plot output');
+                assert.equal(outputs[0].output_type, 'display_data', 'uses display data for the plot');
+                assert.equal(outputs[0].data['image/png'], 'abc123', 'keeps the captured plot image');
+            });
+
+            QUnit.test('builds outputs from notebook-runner payloads', assert => {
+                const outputs = api.outputsFromPythonPayload({
+                    stdout: 'loaded',
+                    stderr: '',
+                    result: {
+                        text: '   a\n0  1',
+                        html: '<table><tr><td>1</td></tr></table>'
+                    },
+                    images: ['abc123']
+                });
+
+                assert.equal(outputs.length, 3, 'creates stream, rich result, and image output');
+                assert.equal(outputs[1].data['text/html'], '<table><tr><td>1</td></tr></table>', 'keeps dataframe HTML');
+                assert.equal(outputs[2].data['image/png'], 'abc123', 'keeps chart image');
+            });
+
+            QUnit.test('renders exploratory controls for chart images', assert => {
+                const html = api.renderPlotOutput('abc123', 0);
+
+                assert.ok(html.includes('data-action="plot-home"'), 'includes a home/reset control');
+                assert.ok(html.includes('data-action="plot-left"'), 'includes a left pan control');
+                assert.ok(html.includes('data-action="plot-right"'), 'includes a right pan control');
+                assert.ok(html.includes('data-action="plot-zoom-in"'), 'includes zoom in');
+                assert.ok(html.includes('data-action="plot-zoom-out"'), 'includes zoom out');
+            });
+
+            QUnit.test('notebook runner evaluates final expressions and captures plots', assert => {
+                const runner = api.buildNotebookRunnerCode();
+
+                assert.ok(runner.includes('ast.Expression'), 'evaluates final expression separately');
+                assert.ok(runner.includes('_repr_html_'), 'extracts rich dataframe HTML');
+                assert.ok(runner.includes('plt.get_fignums()'), 'captures matplotlib figures');
+                assert.ok(runner.includes('plt.show = lambda'), 'prevents browser show warnings');
+            });
+
+            QUnit.test('filters expected matplotlib Agg warnings', assert => {
+                const text = api.filterStreamText('ok\n<exec>:11: UserWarning: FigureCanvasAgg is non-interactive, and thus cannot be shown');
+
+                assert.equal(text, 'ok', 'removes the non-interactive show warning');
+            });
+
+            QUnit.test('marks error outputs for rendering', assert => {
+                assert.notOk(api.outputHasError([api.createStreamOutput('ok')]), 'stream output is not an error');
+                assert.ok(api.outputHasError([api.createErrorOutput(new Error('boom'))]), 'error output is detected');
+            });
+
+            QUnit.test('renders markdown preview HTML', assert => {
+                const html = api.renderMarkdown('# Title\n\nAsk for `next steps`.');
+
+                assert.ok(html.includes('<h1>Title</h1>'), 'renders headings');
+                assert.ok(html.includes('<code>next steps</code>'), 'renders inline code');
+            });
+
+            QUnit.test('sanitizes rich table HTML before rendering', assert => {
+                const html = api.sanitizeOutputHtml('<table onclick="x()"><tr><td style="color:red">A</td></tr></table><scr' + 'ipt>bad()</scr' + 'ipt>');
+
+                assert.ok(html.includes('<table>'), 'keeps table markup');
+                assert.notOk(html.includes('onclick'), 'removes event handlers');
+                assert.notOk(html.includes('style='), 'removes inline styles');
+                assert.notOk(html.includes('script'), 'removes scripts');
+            });
+
+            QUnit.test('detects rendered markdown cells', assert => {
+                assert.notOk(api.shouldRenderMarkdown(api.createCell('markdown', '# Draft')), 'new markdown cells are editable by default');
+                assert.ok(api.shouldRenderMarkdown({
+                    ...api.createCell('markdown', '# Rendered'),
+                    metadata: { notebookPilotRendered: true }
+                }), 'run markdown cells render a preview');
+            });
+
+            QUnit.test('converts Python proxy lists to JavaScript arrays', assert => {
+                let destroyed = false;
+                const proxy = {
+                    toJs: () => ['abc123'],
+                    destroy: () => {
+                        destroyed = true;
+                    }
+                };
+
+                assert.deepEqual(api.pyProxyToArray(proxy), ['abc123'], 'converts proxy values');
+                assert.ok(destroyed, 'destroys the proxy after conversion');
+            });
+
+            QUnit.test('formats Python code and sizes editors', assert => {
+                const highlighted = api.highlightPython('import pandas as pd\n# comment\nprint("ok")');
+
+                assert.ok(highlighted.includes('py-keyword'), 'highlights Python keywords');
+                assert.ok(highlighted.includes('py-comment'), 'highlights comments');
+                assert.equal(api.codeEditorHeight('a = 1', true), 190, 'collapsed editors use a fixed height');
+                assert.ok(api.codeEditorHeight('a = 1\nb = 2\nc = 3\nd = 4\ne = 5\nf = 6', false) > 120, 'expanded editors grow with code');
+            });
+
+            QUnit.test('supports global code line numbers', assert => {
+                const cell = api.createCell('code', 'a = 1\nb = 2\nc = 3');
+
+                assert.notOk(api.hasLineNumbers(), 'line numbers are off by default');
+                assert.equal(api.renderLineNumbers(cell.source), '1\n2\n3', 'renders one number per code line');
+            });
+
+            QUnit.test('creates a runnable sales demo notebook and dataset', assert => {
+                const csv = api.createSalesDemoCsv();
+                const demo = api.createSalesDemoNotebook();
+
+                assert.ok(csv.includes('date,region,channel,product,units,unit_price'), 'demo CSV has expected headers');
+                assert.ok(csv.includes('2026-01-05,North,Online'), 'demo CSV has deterministic rows');
+                assert.equal(demo.metadata.notebookPilot.demoFiles[0], 'sales_demo.csv', 'demo records its mounted data file');
+                assert.ok(demo.cells.some(cell => cell.source.includes('pd.read_csv("sales_demo.csv"')), 'demo reads the mounted CSV');
+                assert.ok(demo.cells.some(cell => cell.source.includes('plt.subplots')), 'demo includes a matplotlib plot cell');
+            });
+        });
+    </script>
+</body>
+
+</html>
