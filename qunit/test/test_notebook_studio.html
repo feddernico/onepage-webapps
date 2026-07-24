@@ -75,6 +75,30 @@
                 assert.equal(context.cells.length, 4, 'returns nearby cells');
                 assert.equal(context.selectedCell.source, 'third', 'includes selected cell');
             });
+
+            QUnit.test('compacts notebook context while preserving selected output', assert => {
+                const cells = Array.from({ length: 18 }, (_, index) => api.createCell(
+                    index % 3 === 0 ? 'markdown' : 'code',
+                    `# cell ${index}\nvalue_${index} = ${index}`,
+                    index === 9 ? [{
+                        output_type: 'error',
+                        ename: 'NameError',
+                        evalue: 'missing_value is not defined',
+                        traceback: ['Traceback line', 'NameError: missing_value']
+                    }] : [api.createStreamOutput(`output ${index}`)]
+                ));
+                const doc = { ...api.createBlankNotebook(), cells };
+                const context = api.compactNotebookContext(doc, cells[9].id, { maxCells: 7 });
+                const selectedSummary = context.cells.find(cell => cell.role === 'selected');
+                const distantSummary = context.cells.find(cell => cell.role === 'summary');
+
+                assert.equal(context.cells.length, 7, 'limits the number of context cells');
+                assert.ok(context.compacted, 'marks compacted notebooks');
+                assert.equal(context.omittedCellCount, 11, 'reports omitted cells');
+                assert.ok(selectedSummary.source.includes('value_9'), 'keeps selected source');
+                assert.ok(selectedSummary.error.includes('NameError'), 'keeps selected error output');
+                assert.ok(distantSummary.source.length < cells[distantSummary.index].source.length, 'summarizes distant source');
+            });
         });
 
         QUnit.module('Notebook Studio agent helpers', hooks => {
@@ -94,7 +118,7 @@
 
                 assert.ok(prompt.includes(api.DEFAULT_MODEL_URL), 'includes Gemma model target');
                 assert.ok(prompt.includes('plot the numbers'), 'includes user request');
-                assert.ok(prompt.includes('Nearby notebook context'), 'includes notebook context');
+                assert.ok(prompt.includes('Compacted notebook context'), 'includes notebook context');
                 assert.ok(prompt.includes('exactly two parts'), 'asks for a strict explanation plus code shape');
             });
 
@@ -120,12 +144,12 @@
 
                 assert.equal(options.repo, api.DEFAULT_GEMMA_REPO, 'trims the repo');
                 assert.equal(options.file, api.DEFAULT_GEMMA_FILE, 'trims the GGUF file');
-                assert.equal(api.DEFAULT_GEMMA_REPO, api.QWEN_CODER_REPO, 'uses Qwen Coder as the default repo');
-                assert.equal(api.DEFAULT_GEMMA_FILE, api.QWEN_CODER_FILE, 'uses Qwen Coder Q5_K_M as the default file');
+                assert.equal(api.DEFAULT_GEMMA_REPO, api.QWEN_CODER_FAST_REPO, 'uses Qwen Coder 0.5B as the default repo');
+                assert.equal(api.DEFAULT_GEMMA_FILE, api.QWEN_CODER_FAST_FILE, 'uses Qwen Coder 0.5B Q8_0 as the default file');
                 assert.equal(params.hfOptions.file, options.file, 'passes HF file to wllama');
                 assert.equal(params.loadParams.n_gpu_layers, 12, 'normalizes GPU layer count');
-                assert.equal(params.loadParams.n_ctx, 1024, 'uses an interactive notebook context');
-                assert.equal(params.loadParams.n_batch, 128, 'uses a smaller batch for browser responsiveness');
+                assert.equal(params.loadParams.n_ctx, api.AGENT_PERFORMANCE_PROFILES.fast.nCtx, 'uses the fast profile context');
+                assert.equal(params.loadParams.n_batch, api.AGENT_PERFORMANCE_PROFILES.fast.nBatch, 'uses the fast profile batch');
                 assert.ok(params.loadParams.n_threads >= 2 && params.loadParams.n_threads <= 6, 'bounds browser worker threads');
                 assert.equal(api.modelLabelFromSettings({
                     gemmaRepo: options.repo,
@@ -153,6 +177,11 @@
                     api.createHfResolveUrl({ repo: 'owner/model', file: 'folder/model file.gguf' }),
                     'https://huggingface.co/owner/model/resolve/main/folder/model%20file.gguf',
                     'builds encoded HF resolve URLs'
+                );
+                assert.equal(
+                    api.createHfDownloadUrl({ repo: 'owner/model', file: 'folder/model file.gguf' }),
+                    'https://huggingface.co/owner/model/resolve/main/folder/model%20file.gguf?download=true',
+                    'builds direct HF download URLs'
                 );
                 assert.equal(api.findHfFileMetadata(modelInfo, 'small.gguf').size, 1024, 'finds a GGUF file record');
                 assert.ok(api.isSplitGgufFile('large-00001-of-00003.gguf'), 'recognizes split GGUF shard names');
@@ -182,7 +211,31 @@
                 assert.equal(api.normalizeMaxTokens('2000'), 900, 'clamps huge token budgets');
             });
 
-            QUnit.test('retries wllama model file misses without cache', async assert => {
+            QUnit.test('uses performance profiles for compaction and generation budgets', assert => {
+                const fast = api.getAgentProfile('fast');
+                const deep = api.getAgentProfile('deep');
+                const fastParams = api.buildWllamaLoadParams({ agentProfile: 'fast' }, () => {});
+                const deepParams = api.buildWllamaLoadParams({ agentProfile: 'deep' }, () => {});
+
+                assert.equal(fast.maxTokens, 128, 'fast profile uses short generations');
+                assert.equal(fast.nCtx, 1536, 'fast profile still leaves room for real notebook prompts');
+                assert.ok(deep.maxContextCells > fast.maxContextCells, 'deep profile keeps more context cells');
+                assert.ok(deepParams.loadParams.n_ctx > fastParams.loadParams.n_ctx, 'deep profile uses a larger model context');
+            });
+
+            QUnit.test('compacts oversized prompts before browser model calls', assert => {
+                const hugePrompt = `${'context '.repeat(1600)}\nUser request: next chart`;
+                const compacted = api.compactPromptToFit(hugePrompt, {
+                    agentProfile: 'fast',
+                    gemmaMaxTokens: '128'
+                });
+
+                assert.ok(api.estimatePromptTokens(compacted) < api.estimatePromptTokens(hugePrompt), 'reduces oversized prompts');
+                assert.ok(compacted.includes('Notebook context compacted further'), 'marks the extra compaction');
+                assert.ok(compacted.includes('User request: next chart'), 'keeps the request tail');
+            });
+
+            QUnit.test('loads wllama models from direct Hugging Face download URLs', async assert => {
                 const calls = [];
                 const fakeWllama = {
                     loadModelFromHF: async (hfOptions, loadParams) => {
@@ -201,9 +254,40 @@
                 }, { useCache: true });
 
                 assert.equal(result, 'loaded', 'returns the direct URL retry result');
-                assert.equal(calls.length, 2, 'tries HF helper then URL fallback');
-                assert.equal(calls[1].url, 'https://huggingface.co/owner/model/resolve/main/file.gguf', 'uses direct resolve URL');
-                assert.equal(calls[1].loadParams.useCache, false, 'bypasses stale browser cache on retry');
+                assert.equal(calls.length, 1, 'uses direct URL loading first');
+                assert.equal(calls[0].url, 'https://huggingface.co/owner/model/resolve/main/file.gguf?download=true', 'uses direct download URL');
+                assert.equal(calls[0].loadParams.useCache, false, 'bypasses stale browser cache');
+            });
+
+            QUnit.test('pins official Qwen 0.5B fast preset to direct download URL loading', async assert => {
+                const calls = [];
+                const fakeWllama = {
+                    loadModelFromHF: async () => {
+                        calls.push({ type: 'hf' });
+                        throw new Error('HF helper should not be used for the fast preset');
+                    },
+                    loadModelFromUrl: async (url, loadParams) => {
+                        calls.push({ type: 'url', url, loadParams });
+                        return 'loaded-qwen-fast';
+                    }
+                };
+                const hfOptions = {
+                    repo: api.QWEN_CODER_FAST_REPO,
+                    file: api.QWEN_CODER_FAST_FILE
+                };
+
+                const result = await api.loadModelFromHf(fakeWllama, hfOptions, { useCache: true });
+
+                assert.equal(result, 'loaded-qwen-fast', 'loads the fast preset');
+                assert.equal(api.QWEN_CODER_FAST_REPO, 'Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF', 'keeps the official Qwen repo');
+                assert.equal(api.QWEN_CODER_FAST_FILE, 'qwen2.5-coder-0.5b-instruct-q8_0.gguf', 'keeps the known working Q8 file');
+                assert.equal(
+                    calls[0].url,
+                    'https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/resolve/main/qwen2.5-coder-0.5b-instruct-q8_0.gguf?download=true',
+                    'uses the direct download URL for the fragile model path'
+                );
+                assert.equal(calls.length, 1, 'does not call the fragile HF helper first');
+                assert.equal(calls[0].loadParams.useCache, false, 'forces a fresh browser download path');
             });
 
             QUnit.test('suppresses noisy benign wllama loader warnings', assert => {
@@ -247,6 +331,62 @@
                 assert.ok(parsed.code.includes('df.describe'), 'extracts an unfenced Python block');
             });
 
+            QUnit.test('normalizes malformed fences and removes duplicated generated code', assert => {
+                const response = [
+                    'Here is a concise explanation:',
+                    '```python',
+                    'import pandas as pd',
+                    'df.info()',
+                    'df.describe(include="all").transpose()',
+                    'import matplotlib.pyplot as plt',
+                    'plt.plot(df["units"], df["revenue"])',
+                    'plt.show()',
+                    '``',
+                    'Here is a concise explanation:',
+                    'import pandas as pd',
+                    'df.info()',
+                    'df.describe(include="all").transpose()',
+                    'import matplotlib.pyplot as plt',
+                    'plt.plot(df["units"], df["revenue"])',
+                    'plt.show()',
+                    '``'
+                ].join('\n');
+                const parsed = api.parseAgentResponse(response);
+
+                assert.ok(api.normalizeMarkdownFences(response).includes('```'), 'repairs two-backtick fence endings');
+                assert.ok(parsed.code.includes('plt.plot'), 'keeps the chart code');
+                assert.equal((parsed.code.match(/plt\.plot/g) || []).length, 1, 'does not duplicate the chart block');
+                assert.equal((parsed.code.match(/df\.info/g) || []).length, 1, 'does not duplicate inspection lines');
+            });
+
+            QUnit.test('removes already-run dataframe inspection from generated follow-up code', assert => {
+                const selected = api.createCell('code', [
+                    'import pandas as pd',
+                    'df.info()',
+                    'df.describe(include="all").transpose()'
+                ].join('\n'), [
+                    api.createStreamOutput('<class pandas.DataFrame>\nData columns (total 7 columns):')
+                ]);
+                const context = {
+                    selectedCell: selected
+                };
+                const cleaned = api.sanitizeGeneratedCode([
+                    'import pandas as pd',
+                    '',
+                    '# First pass: inspect the working dataframe.',
+                    'df.info()',
+                    'df.describe(include="all").transpose()',
+                    '',
+                    'import matplotlib.pyplot as plt',
+                    'plt.plot(df["units"], df["revenue"])',
+                    'plt.show()'
+                ].join('\n'), context);
+
+                assert.notOk(cleaned.includes('df.info()'), 'drops repeated dataframe info');
+                assert.notOk(cleaned.includes('df.describe(include="all").transpose()'), 'drops repeated dataframe describe');
+                assert.ok(cleaned.includes('plt.plot'), 'keeps new follow-up analysis');
+            });
+
             QUnit.test('draft response adapts to chart requests', assert => {
                 const doc = api.createBlankNotebook();
                 const context = api.extractNotebookContext(doc, doc.cells[1].id);
@@ -254,6 +394,62 @@
 
                 assert.ok(parsed.code.includes('matplotlib'), 'chart draft uses plotting code');
                 assert.ok(parsed.code.includes('hist'), 'chart draft includes histogram starter');
+            });
+
+            QUnit.test('builds fix-error requests with source and traceback', assert => {
+                const cell = api.createCell('code', 'df.missing_column.sum()', [{
+                    output_type: 'error',
+                    ename: 'AttributeError',
+                    evalue: "'DataFrame' object has no attribute 'missing_column'",
+                    traceback: ['Traceback line 1', 'AttributeError: missing_column']
+                }]);
+                const request = api.buildFixErrorRequest(cell);
+                const html = api.renderErrorFixAction(cell);
+
+                assert.ok(api.errorOutputsToText(cell.outputs).includes('Traceback line 1'), 'keeps traceback details');
+                assert.ok(request.includes('df.missing_column.sum()'), 'includes the script that was run');
+                assert.ok(request.includes('AttributeError'), 'includes the error received');
+                assert.ok(request.includes('Return a corrected Python notebook cell'), 'asks for a corrected cell');
+                assert.ok(html.includes('data-action="fix-error"'), 'renders a fix action for error cells');
+                assert.equal(api.renderErrorFixAction(api.createCell('code', 'print("ok")')), '', 'omits the action without an error');
+            });
+
+            QUnit.test('creates local fast repairs for common notebook errors', assert => {
+                const missingPandas = api.createLocalFixCode([
+                    'Fix the Python code cell below.',
+                    '```python',
+                    'df = pd.read_csv("sales.csv")',
+                    '```',
+                    '```text',
+                    "NameError: name 'pd' is not defined",
+                    '```'
+                ].join('\n'));
+                const attributeFix = api.createLocalFixCode([
+                    '```python',
+                    'df.revenue.sum()',
+                    '```',
+                    '```text',
+                    "AttributeError: 'DataFrame' object has no attribute 'revenue'",
+                    '```'
+                ].join('\n'));
+
+                assert.ok(missingPandas.startsWith('import pandas as pd'), 'adds missing pandas import');
+                assert.ok(attributeFix.includes('df["revenue"].sum()'), 'rewrites dataframe attribute access');
+                assert.equal(api.extractFirstFencedBlock('```python\nprint(1)\n```', 'python'), 'print(1)', 'extracts fenced code for fast repair');
+            });
+
+            QUnit.test('builds retry prompts from generated code and observed error', assert => {
+                const retry = api.buildRetryAfterErrorRequest('Fix the selected cell', 'df.bad()', [{
+                    output_type: 'error',
+                    ename: 'AttributeError',
+                    evalue: 'bad column',
+                    traceback: ['Traceback line', 'AttributeError: bad column']
+                }]);
+
+                assert.ok(retry.includes('Fix the selected cell'), 'keeps the original request');
+                assert.ok(retry.includes('df.bad()'), 'includes the generated code that failed');
+                assert.ok(retry.includes('AttributeError: bad column'), 'includes observed runtime output');
+                assert.ok(retry.includes('Return one corrected Python notebook cell'), 'asks for a focused corrected cell');
             });
 
             QUnit.test('inserts generated markdown and code after selected cell', assert => {
@@ -403,6 +599,18 @@
 
                 assert.notOk(api.hasLineNumbers(), 'line numbers are off by default');
                 assert.equal(api.renderLineNumbers(cell.source), '1\n2\n3', 'renders one number per code line');
+            });
+
+            QUnit.test('renders icon buttons without losing action attributes', assert => {
+                const runButton = api.renderIconOnlyButton('play', 'run', 'Run cell');
+                const lineToggle = api.renderIconLabel('list-numbers', 'Show Lines');
+
+                assert.ok(api.renderIcon('play').includes('<use href="#icon-play">'), 'uses the shared icon sprite');
+                assert.ok(runButton.includes('class="icon-button"'), 'uses the compact icon button style');
+                assert.ok(runButton.includes('data-action="run"'), 'keeps the cell action contract');
+                assert.ok(runButton.includes('aria-label="Run cell"'), 'keeps icon-only buttons accessible');
+                assert.ok(lineToggle.includes('<span>Show Lines</span>'), 'keeps readable labels next to toolbar icons');
+                assert.ok(lineToggle.includes('#icon-list-numbers'), 'uses the line number icon');
             });
 
             QUnit.test('creates a runnable sales demo notebook and dataset', assert => {
