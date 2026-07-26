@@ -165,14 +165,21 @@
         }
 
         header {
+            position: relative;
+            z-index: 50;
             display: grid;
-            grid-template-columns: 1fr auto;
-            align-items: center;
-            gap: 18px;
-            padding: 16px 22px;
+            gap: 8px;
+            padding: 10px 14px 8px;
             background: rgba(248, 249, 250, 0.94);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--line);
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
         }
 
         .brand-lockup {
@@ -183,18 +190,12 @@
         }
 
         .brand-mark {
-            width: 42px;
+            width: 44px;
             height: 42px;
             flex: 0 0 auto;
-            display: grid;
-            place-items: center;
-            border-radius: 50%;
-            color: #fff;
-            background: linear-gradient(135deg, var(--blue), #7b5cd6);
-            box-shadow: 0 0.5rem 1.4rem rgba(39, 128, 227, 0.18);
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.04em;
+            display: block;
+            object-fit: contain;
+            filter: drop-shadow(0 0.35rem 0.85rem rgba(39, 128, 227, 0.16));
         }
 
         .eyebrow {
@@ -208,10 +209,22 @@
 
         h1 {
             margin: 0;
-            font-size: 1.45rem;
-            font-weight: 600;
+            font-size: clamp(1.42rem, 2vw, 1.85rem);
+            font-weight: 700;
             line-height: 1.1;
             letter-spacing: 0;
+            text-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.92),
+                0 0.1rem 0.25rem rgba(33, 37, 41, 0.16);
+            white-space: nowrap;
+        }
+
+        .brand-name-primary {
+            color: #2f3a4d;
+        }
+
+        .brand-name-accent {
+            color: #0877f2;
         }
 
         .subtitle {
@@ -232,11 +245,113 @@
             background: #fff;
         }
 
-        .workspace {
+        .header-actions button.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .header-actions button.primary:hover {
+            background: var(--accent-dark);
+            border-color: var(--accent-dark);
+        }
+
+        .header-actions button.active {
+            border-color: rgba(39, 128, 227, 0.42);
+            background: var(--soft-blue);
+            color: var(--accent);
+        }
+
+        .menubar {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            min-height: 32px;
+        }
+
+        .menu {
+            position: relative;
+        }
+
+        .menu summary {
+            display: inline-flex;
+            align-items: center;
+            min-height: 30px;
+            padding: 0 11px;
+            border-radius: 6px;
+            color: var(--ink);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            list-style: none;
+        }
+
+        .menu summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .menu summary:hover,
+        .menu[open] summary {
+            background: #fff;
+            box-shadow: inset 0 0 0 1px var(--line);
+        }
+
+        .menu-panel {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            z-index: 80;
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 380px;
+            gap: 6px;
+            min-width: 190px;
+            padding: 8px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .menu-panel.wide {
+            min-width: min(720px, calc(100vw - 32px));
+        }
+
+        .menu-panel button {
+            justify-content: flex-start;
+            background: #fff;
+            border-color: transparent;
+            box-shadow: none;
+        }
+
+        .menu-panel button:hover {
+            background: var(--soft);
+            border-color: var(--line);
+        }
+
+        .status-strip {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+            margin-left: auto;
+        }
+
+        .status-strip .pill {
+            max-width: min(46vw, 520px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .workspace {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 48px minmax(0, 1fr);
             min-height: 0;
             overflow: hidden;
+        }
+
+        .app.agent-open .workspace {
+            grid-template-columns: 48px minmax(0, 1fr) 380px;
         }
 
         .notebook-pane,
@@ -244,17 +359,52 @@
             min-height: 0;
         }
 
+        .left-rail {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 6px;
+            background: #fff;
+            border-right: 1px solid var(--line);
+        }
+
+        .rail-button {
+            width: 36px;
+            min-width: 36px;
+            height: 36px;
+            padding: 0;
+            display: grid;
+            place-items: center;
+            border-color: transparent;
+            background: transparent;
+            color: rgba(52, 58, 64, 0.66);
+        }
+
+        .rail-button:hover,
+        .rail-button.active {
+            color: var(--accent);
+            background: var(--soft-blue);
+            border-color: rgba(39, 128, 227, 0.18);
+            box-shadow: none;
+        }
+
         .notebook-pane {
             overflow: auto;
-            padding: 20px 22px 28px;
+            padding: 28px 24px 40px;
         }
 
         .pilot-pane {
-            display: grid;
+            display: none;
             grid-template-rows: auto minmax(0, 1fr) auto;
             overflow: hidden;
             border-left: 1px solid var(--line);
             background: #fff;
+            box-shadow: -0.75rem 0 2rem rgba(52, 58, 64, 0.08);
+        }
+
+        .app.agent-open .pilot-pane {
+            display: grid;
         }
 
         .toolbar {
@@ -278,15 +428,12 @@
             display: grid;
             grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr) auto auto;
             gap: 8px;
-            padding: 10px;
-            margin-bottom: 14px;
+            padding: 0;
+            margin: 0;
             background: #fff;
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            box-shadow: 0 0.35rem 1rem rgba(52, 58, 64, 0.05);
-            max-width: 1060px;
-            margin-left: auto;
-            margin-right: auto;
+            border: 0;
+            box-shadow: none;
+            max-width: none;
         }
 
         .runtime-panel .field {
@@ -306,22 +453,25 @@
 
         .cell-list {
             display: grid;
-            gap: 10px;
-            max-width: 1060px;
+            gap: 14px;
+            max-width: 1040px;
             margin: 0 auto;
         }
 
         .cell {
             background: var(--panel);
             border: 1px solid var(--line);
-            border-radius: var(--radius);
+            border-left: 3px solid transparent;
+            border-radius: 7px;
             overflow: hidden;
-            box-shadow: 0 0.5rem 1.4rem rgba(52, 58, 64, 0.07);
+            box-shadow: 0 0.35rem 1.1rem rgba(52, 58, 64, 0.045);
+            transition: border-color 0.16s ease, box-shadow 0.16s ease;
         }
 
         .cell.selected {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(39, 128, 227, 0.12), 0 0.75rem 2rem rgba(52, 58, 64, 0.1);
+            border-color: var(--line);
+            border-left-color: #16b8ac;
+            box-shadow: 0 0 0 2px rgba(22, 184, 172, 0.18), 0 0.7rem 1.8rem rgba(52, 58, 64, 0.08);
         }
 
         .cell-head {
@@ -329,9 +479,9 @@
             justify-content: space-between;
             align-items: center;
             gap: 8px;
-            padding: 8px 10px;
-            background: var(--soft);
-            border-bottom: 1px solid var(--line);
+            padding: 6px 8px 6px 10px;
+            background: #fff;
+            border-bottom: 1px solid rgba(222, 226, 230, 0.72);
         }
 
         .cell-kind {
@@ -341,16 +491,26 @@
         }
 
         .cell-kind select {
-            border: 1.5px solid var(--line);
-            border-radius: var(--radius);
+            border: 1px solid transparent;
+            border-radius: 6px;
             background: #fff;
-            min-height: 30px;
-            padding: 0 8px;
+            color: var(--muted);
+            min-height: 28px;
+            padding: 0 7px;
+            font-size: 0.82rem;
         }
 
         .cell-actions {
             display: flex;
             gap: 6px;
+            opacity: 0;
+            transition: opacity 0.16s ease;
+        }
+
+        .cell:hover .cell-actions,
+        .cell.selected .cell-actions,
+        .cell:focus-within .cell-actions {
+            opacity: 1;
         }
 
         .code-wrap {
@@ -658,11 +818,12 @@
         }
 
         .pilot-head {
-            padding: 16px;
+            position: relative;
+            padding: 16px 16px 14px;
             border-bottom: 1px solid var(--line);
             display: grid;
             gap: 10px;
-            background: linear-gradient(180deg, #fff, var(--soft));
+            background: #fff;
         }
 
         .pilot-title {
@@ -670,12 +831,24 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
+            padding-right: 34px;
         }
 
         .pilot-title h2 {
             margin: 0;
             font-size: 1.15rem;
             font-weight: 600;
+        }
+
+        #closeAgentBtn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            color: var(--muted);
+        }
+
+        #closeAgentBtn:hover {
+            color: var(--ink);
         }
 
         .status {
@@ -900,25 +1073,57 @@
             }
 
             header {
-                grid-template-columns: 1fr;
+                position: sticky;
+                top: 0;
+                z-index: 30;
             }
 
+            .topbar,
             .header-actions {
+                align-items: flex-start;
+                flex-direction: column;
                 justify-content: flex-start;
             }
 
+            .menubar {
+                align-items: flex-start;
+                flex-wrap: wrap;
+            }
+
+            .status-strip {
+                width: 100%;
+                margin-left: 0;
+                overflow: auto;
+            }
+
+            .menu-panel,
+            .menu-panel.wide {
+                left: 0;
+                min-width: min(320px, calc(100vw - 24px));
+            }
+
             .workspace {
-                grid-template-columns: 1fr;
+                grid-template-columns: 44px minmax(0, 1fr);
                 overflow: visible;
+            }
+
+            .app.agent-open .workspace {
+                grid-template-columns: 44px minmax(0, 1fr);
+            }
+
+            .left-rail {
+                position: sticky;
+                top: 122px;
+                align-self: start;
+                min-height: calc(100vh - 122px);
+            }
+
+            .notebook-pane {
+                padding: 18px 12px 28px;
             }
 
             .runtime-panel {
                 grid-template-columns: 1fr;
-            }
-
-            .toolbar {
-                align-items: stretch;
-                flex-direction: column;
             }
 
             .composer-actions {
@@ -927,6 +1132,9 @@
             }
 
             .pilot-pane {
+                position: fixed;
+                inset: 0 0 0 44px;
+                z-index: 40;
                 min-height: 640px;
                 border-left: 0;
                 border-top: 1px solid var(--line);
@@ -1002,58 +1210,85 @@
     </svg>
     <div class="app">
         <header>
-            <div class="brand-lockup">
-                <div class="brand-mark" aria-hidden="true">NS</div>
-                <div>
-                    <div class="eyebrow">Machine Learning</div>
-                    <h1>Notebook Studio</h1>
-                    <p class="subtitle">Chat-guided Python notebooks with local models and WebMCP handoff points.</p>
+            <div class="topbar">
+                <div class="brand-lockup">
+                    <img class="brand-mark" src="logo.png" alt="" aria-hidden="true">
+                    <div>
+                        <div class="eyebrow">Machine Learning</div>
+                        <h1><span class="brand-name-primary">Notebook</span> <span class="brand-name-accent">Studio</span></h1>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="runSelectedBtn" class="primary icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Run Selected</span></button>
+                    <button id="askToggleBtn" class="icon-label" aria-controls="agentDrawer"><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg><span>Agent</span></button>
                 </div>
             </div>
-            <div class="header-actions">
+            <div class="menubar" aria-label="Notebook menus">
                 <input id="fileInput" class="hidden" type="file" accept=".ipynb,application/json">
-                <button id="loadBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-upload"></use></svg><span>Load .ipynb</span></button>
-                <button id="exportBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg><span>Export .ipynb</span></button>
-                <button id="sampleBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>Load Demo</span></button>
+                <details class="menu">
+                    <summary>File</summary>
+                    <div class="menu-panel">
+                        <button id="loadBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-upload"></use></svg><span>Load .ipynb</span></button>
+                        <button id="exportBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg><span>Export .ipynb</span></button>
+                        <button id="sampleBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>Load Demo</span></button>
+                    </div>
+                </details>
+                <details class="menu">
+                    <summary>Cell</summary>
+                    <div class="menu-panel">
+                        <button id="addMarkdownBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg><span>Markdown Cell</span></button>
+                        <button id="addCodeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg><span>Code Cell</span></button>
+                        <button id="runAllBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-run-all"></use></svg><span>Run All</span></button>
+                    </div>
+                </details>
+                <details class="menu runtime-menu">
+                    <summary>Runtime</summary>
+                    <div class="menu-panel wide">
+                        <div class="runtime-panel">
+                            <div class="field">
+                                <label for="packageInput">Pyodide packages</label>
+                                <input id="packageInput" value="pandas,numpy,matplotlib" spellcheck="false">
+                            </div>
+                            <div class="field">
+                                <label for="dataFileInput">Mount data file</label>
+                                <input id="dataFileInput" type="file">
+                            </div>
+                            <button id="initRuntimeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Init Pyodide</span></button>
+                            <button id="loadPackagesBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-package"></use></svg><span>Load Packages</span></button>
+                        </div>
+                    </div>
+                </details>
+                <details class="menu">
+                    <summary>View</summary>
+                    <div class="menu-panel">
+                        <button id="toggleLineNumbersBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-list-numbers"></use></svg><span>Show Lines</span></button>
+                    </div>
+                </details>
+                <div class="status-strip" aria-label="Notebook status">
+                    <span id="cellCount" class="pill">0 cells</span>
+                    <span id="runtimeStatus" class="pill">Pyodide adapter pending</span>
+                </div>
             </div>
         </header>
 
         <main class="workspace">
+            <nav class="left-rail" aria-label="Workspace sections">
+                <button class="rail-button active" type="button" title="Notebook"><svg class="icon" aria-hidden="true"><use href="#icon-rows"></use></svg><span class="sr-only">Notebook</span></button>
+                <button id="addCodeRailBtn" class="rail-button" type="button" title="Add code cell"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg><span class="sr-only">Add code cell</span></button>
+                <button id="runAllRailBtn" class="rail-button" type="button" title="Run all cells"><svg class="icon" aria-hidden="true"><use href="#icon-run-all"></use></svg><span class="sr-only">Run all cells</span></button>
+                <button id="agentRailBtn" class="rail-button" type="button" title="Notebook Agent" aria-controls="agentDrawer"><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg><span class="sr-only">Notebook Agent</span></button>
+            </nav>
             <section class="notebook-pane" aria-label="Notebook">
-                <div class="toolbar">
-                    <div class="toolbar-group">
-                        <button id="addMarkdownBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg><span>Markdown</span></button>
-                        <button id="addCodeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg><span>Code</span></button>
-                        <button id="runSelectedBtn" class="primary icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Run Selected</span></button>
-                        <button id="runAllBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-run-all"></use></svg><span>Run All</span></button>
-                        <button id="toggleLineNumbersBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-list-numbers"></use></svg><span>Show Lines</span></button>
-                    </div>
-                    <div class="toolbar-group">
-                        <span id="cellCount" class="pill">0 cells</span>
-                        <span id="runtimeStatus" class="pill">Pyodide adapter pending</span>
-                    </div>
-                </div>
-                <div class="runtime-panel">
-                    <div class="field">
-                        <label for="packageInput">Pyodide packages</label>
-                        <input id="packageInput" value="pandas,numpy,matplotlib" spellcheck="false">
-                    </div>
-                    <div class="field">
-                        <label for="dataFileInput">Mount data file</label>
-                        <input id="dataFileInput" type="file">
-                    </div>
-                    <button id="initRuntimeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Init Pyodide</span></button>
-                    <button id="loadPackagesBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-package"></use></svg><span>Load Packages</span></button>
-                </div>
                 <div id="cellList" class="cell-list"></div>
             </section>
 
-            <aside class="pilot-pane" aria-label="Pilot">
+            <aside id="agentDrawer" class="pilot-pane" aria-label="Notebook Agent">
                 <div class="pilot-head">
                     <div class="pilot-title">
                         <h2>Notebook Agent</h2>
                         <span id="agentStatus" class="status">draft mode</span>
                     </div>
+                    <button id="closeAgentBtn" class="icon-button" type="button" title="Close agent" aria-label="Close agent">&times;</button>
                     <div class="settings" aria-label="Pilot settings">
                         <div class="settings-row">
                             <div class="field">
@@ -3121,6 +3356,44 @@
                 render();
             });
 
+            function setAgentDrawer(open) {
+                const app = document.querySelector('.app');
+                const toggleButtons = [
+                    document.getElementById('askToggleBtn'),
+                    document.getElementById('agentRailBtn')
+                ].filter(Boolean);
+                if (!app) return;
+                app.classList.toggle('agent-open', open);
+                toggleButtons.forEach(button => {
+                    button.setAttribute('aria-expanded', String(open));
+                    button.classList.toggle('active', open);
+                });
+            }
+
+            function toggleAgentDrawer() {
+                setAgentDrawer(!document.querySelector('.app').classList.contains('agent-open'));
+            }
+
+            function closeNotebookMenus(exceptMenu) {
+                document.querySelectorAll('.menu[open]').forEach(menu => {
+                    if (menu !== exceptMenu) menu.removeAttribute('open');
+                });
+            }
+
+            document.querySelectorAll('.menu').forEach(menu => {
+                menu.addEventListener('toggle', () => {
+                    if (menu.open) closeNotebookMenus(menu);
+                });
+            });
+
+            document.querySelectorAll('.menu-panel button').forEach(button => {
+                button.addEventListener('click', () => closeNotebookMenus());
+            });
+
+            document.addEventListener('click', event => {
+                if (!event.target.closest('.menu')) closeNotebookMenus();
+            });
+
             document.getElementById('runSelectedBtn').addEventListener('click', async () => {
                 const cell = notebook.cells.find(item => item.id === selectedCellId);
                 const nextCell = await runCell(cell);
@@ -3129,6 +3402,12 @@
             });
 
             document.getElementById('runAllBtn').addEventListener('click', runAllCells);
+            document.getElementById('addCodeRailBtn').addEventListener('click', () => document.getElementById('addCodeBtn').click());
+            document.getElementById('runAllRailBtn').addEventListener('click', () => document.getElementById('runAllBtn').click());
+            document.getElementById('askToggleBtn').addEventListener('click', toggleAgentDrawer);
+            document.getElementById('agentRailBtn').addEventListener('click', toggleAgentDrawer);
+            document.getElementById('closeAgentBtn').addEventListener('click', () => setAgentDrawer(false));
+            setAgentDrawer(false);
 
             document.getElementById('toggleLineNumbersBtn').addEventListener('click', () => {
                 viewState.showLineNumbers = !viewState.showLineNumbers;
