@@ -115,6 +115,44 @@ document.getElementById('addCodeBtn').addEventListener('click', () => {
     render();
 });
 
+function setAgentDrawer(open) {
+    const app = document.querySelector('.app');
+    const toggleButtons = [
+        document.getElementById('askToggleBtn'),
+        document.getElementById('agentRailBtn')
+    ].filter(Boolean);
+    if (!app) return;
+    app.classList.toggle('agent-open', open);
+    toggleButtons.forEach(button => {
+        button.setAttribute('aria-expanded', String(open));
+        button.classList.toggle('active', open);
+    });
+}
+
+function toggleAgentDrawer() {
+    setAgentDrawer(!document.querySelector('.app').classList.contains('agent-open'));
+}
+
+function closeNotebookMenus(exceptMenu) {
+    document.querySelectorAll('.menu[open]').forEach(menu => {
+        if (menu !== exceptMenu) menu.removeAttribute('open');
+    });
+}
+
+document.querySelectorAll('.menu').forEach(menu => {
+    menu.addEventListener('toggle', () => {
+        if (menu.open) closeNotebookMenus(menu);
+    });
+});
+
+document.querySelectorAll('.menu-panel button').forEach(button => {
+    button.addEventListener('click', () => closeNotebookMenus());
+});
+
+document.addEventListener('click', event => {
+    if (!event.target.closest('.menu')) closeNotebookMenus();
+});
+
 document.getElementById('runSelectedBtn').addEventListener('click', async () => {
     const cell = notebook.cells.find(item => item.id === selectedCellId);
     const nextCell = await runCell(cell);
@@ -123,6 +161,12 @@ document.getElementById('runSelectedBtn').addEventListener('click', async () => 
 });
 
 document.getElementById('runAllBtn').addEventListener('click', runAllCells);
+document.getElementById('addCodeRailBtn').addEventListener('click', () => document.getElementById('addCodeBtn').click());
+document.getElementById('runAllRailBtn').addEventListener('click', () => document.getElementById('runAllBtn').click());
+document.getElementById('askToggleBtn').addEventListener('click', toggleAgentDrawer);
+document.getElementById('agentRailBtn').addEventListener('click', toggleAgentDrawer);
+document.getElementById('closeAgentBtn').addEventListener('click', () => setAgentDrawer(false));
+setAgentDrawer(false);
 
 document.getElementById('toggleLineNumbersBtn').addEventListener('click', () => {
     viewState.showLineNumbers = !viewState.showLineNumbers;
