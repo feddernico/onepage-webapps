@@ -79,58 +79,85 @@
     </svg>
     <div class="app">
         <header>
-            <div class="brand-lockup">
-                <div class="brand-mark" aria-hidden="true">NS</div>
-                <div>
-                    <div class="eyebrow">Machine Learning</div>
-                    <h1>Notebook Studio</h1>
-                    <p class="subtitle">Chat-guided Python notebooks with local models and WebMCP handoff points.</p>
+            <div class="topbar">
+                <div class="brand-lockup">
+                    <img class="brand-mark" src="logo.png" alt="" aria-hidden="true">
+                    <div>
+                        <div class="eyebrow">Machine Learning</div>
+                        <h1><span class="brand-name-primary">Notebook</span> <span class="brand-name-accent">Studio</span></h1>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="runSelectedBtn" class="primary icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Run Selected</span></button>
+                    <button id="askToggleBtn" class="icon-label" aria-controls="agentDrawer"><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg><span>Agent</span></button>
                 </div>
             </div>
-            <div class="header-actions">
+            <div class="menubar" aria-label="Notebook menus">
                 <input id="fileInput" class="hidden" type="file" accept=".ipynb,application/json">
-                <button id="loadBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-upload"></use></svg><span>Load .ipynb</span></button>
-                <button id="exportBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg><span>Export .ipynb</span></button>
-                <button id="sampleBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>Load Demo</span></button>
+                <details class="menu">
+                    <summary>File</summary>
+                    <div class="menu-panel">
+                        <button id="loadBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-upload"></use></svg><span>Load .ipynb</span></button>
+                        <button id="exportBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg><span>Export .ipynb</span></button>
+                        <button id="sampleBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>Load Demo</span></button>
+                    </div>
+                </details>
+                <details class="menu">
+                    <summary>Cell</summary>
+                    <div class="menu-panel">
+                        <button id="addMarkdownBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg><span>Markdown Cell</span></button>
+                        <button id="addCodeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg><span>Code Cell</span></button>
+                        <button id="runAllBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-run-all"></use></svg><span>Run All</span></button>
+                    </div>
+                </details>
+                <details class="menu runtime-menu">
+                    <summary>Runtime</summary>
+                    <div class="menu-panel wide">
+                        <div class="runtime-panel">
+                            <div class="field">
+                                <label for="packageInput">Pyodide packages</label>
+                                <input id="packageInput" value="pandas,numpy,matplotlib" spellcheck="false">
+                            </div>
+                            <div class="field">
+                                <label for="dataFileInput">Mount data file</label>
+                                <input id="dataFileInput" type="file">
+                            </div>
+                            <button id="initRuntimeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Init Pyodide</span></button>
+                            <button id="loadPackagesBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-package"></use></svg><span>Load Packages</span></button>
+                        </div>
+                    </div>
+                </details>
+                <details class="menu">
+                    <summary>View</summary>
+                    <div class="menu-panel">
+                        <button id="toggleLineNumbersBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-list-numbers"></use></svg><span>Show Lines</span></button>
+                    </div>
+                </details>
+                <div class="status-strip" aria-label="Notebook status">
+                    <span id="cellCount" class="pill">0 cells</span>
+                    <span id="runtimeStatus" class="pill">Pyodide adapter pending</span>
+                </div>
             </div>
         </header>
 
         <main class="workspace">
+            <nav class="left-rail" aria-label="Workspace sections">
+                <button class="rail-button active" type="button" title="Notebook"><svg class="icon" aria-hidden="true"><use href="#icon-rows"></use></svg><span class="sr-only">Notebook</span></button>
+                <button id="addCodeRailBtn" class="rail-button" type="button" title="Add code cell"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg><span class="sr-only">Add code cell</span></button>
+                <button id="runAllRailBtn" class="rail-button" type="button" title="Run all cells"><svg class="icon" aria-hidden="true"><use href="#icon-run-all"></use></svg><span class="sr-only">Run all cells</span></button>
+                <button id="agentRailBtn" class="rail-button" type="button" title="Notebook Agent" aria-controls="agentDrawer"><svg class="icon" aria-hidden="true"><use href="#icon-bot"></use></svg><span class="sr-only">Notebook Agent</span></button>
+            </nav>
             <section class="notebook-pane" aria-label="Notebook">
-                <div class="toolbar">
-                    <div class="toolbar-group">
-                        <button id="addMarkdownBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg><span>Markdown</span></button>
-                        <button id="addCodeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg><span>Code</span></button>
-                        <button id="runSelectedBtn" class="primary icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Run Selected</span></button>
-                        <button id="runAllBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-run-all"></use></svg><span>Run All</span></button>
-                        <button id="toggleLineNumbersBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-list-numbers"></use></svg><span>Show Lines</span></button>
-                    </div>
-                    <div class="toolbar-group">
-                        <span id="cellCount" class="pill">0 cells</span>
-                        <span id="runtimeStatus" class="pill">Pyodide adapter pending</span>
-                    </div>
-                </div>
-                <div class="runtime-panel">
-                    <div class="field">
-                        <label for="packageInput">Pyodide packages</label>
-                        <input id="packageInput" value="pandas,numpy,matplotlib" spellcheck="false">
-                    </div>
-                    <div class="field">
-                        <label for="dataFileInput">Mount data file</label>
-                        <input id="dataFileInput" type="file">
-                    </div>
-                    <button id="initRuntimeBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg><span>Init Pyodide</span></button>
-                    <button id="loadPackagesBtn" class="icon-label"><svg class="icon" aria-hidden="true"><use href="#icon-package"></use></svg><span>Load Packages</span></button>
-                </div>
                 <div id="cellList" class="cell-list"></div>
             </section>
 
-            <aside class="pilot-pane" aria-label="Pilot">
+            <aside id="agentDrawer" class="pilot-pane" aria-label="Notebook Agent">
                 <div class="pilot-head">
                     <div class="pilot-title">
                         <h2>Notebook Agent</h2>
                         <span id="agentStatus" class="status">draft mode</span>
                     </div>
+                    <button id="closeAgentBtn" class="icon-button" type="button" title="Close agent" aria-label="Close agent">&times;</button>
                     <div class="settings" aria-label="Pilot settings">
                         <div class="settings-row">
                             <div class="field">
