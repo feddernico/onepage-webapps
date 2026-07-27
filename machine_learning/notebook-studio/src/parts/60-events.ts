@@ -226,6 +226,16 @@ document.getElementById('sampleBtn').addEventListener('click', () => {
 });
 
 const NOTEBOOK_STUDIO_EXAMPLES = {
+    'lambdarank': {
+        url: '/downloads/lambdarank_learning_to_rank.ipynb',
+        files: [
+            {
+                name: 'lambdarank_search_relevance.csv',
+                url: '/downloads/lambdarank_search_relevance.csv'
+            }
+        ],
+        message: '<p>Loaded the LambdaRank learning-to-rank notebook and queued <code>lambdarank_search_relevance.csv</code>. Use Run All after Pyodide finishes loading, or inspect and edit the cells first.</p>'
+    },
     'missing-data': {
         url: '/downloads/missing_data_uci_adult.ipynb',
         files: [
