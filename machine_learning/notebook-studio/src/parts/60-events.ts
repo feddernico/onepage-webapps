@@ -226,6 +226,11 @@ document.getElementById('sampleBtn').addEventListener('click', () => {
 });
 
 const NOTEBOOK_STUDIO_EXAMPLES = {
+    'decision-trees': {
+        url: '/downloads/decision_trees_iris.ipynb',
+        files: [],
+        message: '<p>Loaded the decision trees Iris notebook. Use Run All after Pyodide finishes loading, or inspect and edit the cells first.</p>'
+    },
     'lambdarank': {
         url: '/downloads/lambdarank_learning_to_rank.ipynb',
         files: [
