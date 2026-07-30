@@ -45,10 +45,10 @@ The repo structure recently moved from one flat `.html` file per app to one fold
 | Prompt Stash | Productivity | stable | `productivity/prompt-stash/` |
 | Todo List | Productivity | stable | `productivity/todo-list/` |
 | PodCut Studio | Audio | stable | `audio/podcut/` |
+| AetherDepth | Media | stable | `media/aetherdepth/` |
 | Qraft | Writing | experimental | `writing/qraft/` |
 | Voice Refiner | Writing | stable | `writing/voice-refiner/` |
 | Writing Coach | Writing | stable | `writing/writing-coach/` |
-| AetherDepth | Lab | experimental | `lab/aetherdepth/` |
 | AI Video Generator | Lab | experimental | `lab/ai-video-generator/` |
 | Artemis II | Lab | experimental | `lab/artemis-ii/` |
 | Partial Derivative Slices Demo | Lab | experimental | `lab/calculus-partial-derivatives/` |
@@ -103,6 +103,10 @@ onepage-webapps/
       index.html
       app.yml
       thumbnail.png
+  media/
+    aetherdepth/
+      index.html
+      app.yml
   lab/
     newest-weird-thing/
       index.html
@@ -139,7 +143,7 @@ Add `thumbnail.png` when an app is ready to be shown in a gallery.
 
 ## Adding a new app
 
-1. Pick a category: `productivity`, `writing`, `family`, or `lab`.
+1. Pick a category: `productivity`, `writing`, `family`, `audio`, `media`, `machine_learning`, or `lab`.
 2. Create a slugged folder: `category/my-new-app/`.
 3. Add `index.html`.
 4. Add `app.yml`.
