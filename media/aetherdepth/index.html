@@ -8,7 +8,7 @@
     <!-- Google Fonts & Lucide Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Libre+Baskerville:ital@0;1&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <!-- Three.js CDN -->
@@ -16,19 +16,39 @@
 
     <style>
         :root {
-            --bg-color: #06050e;
-            --panel-bg: rgba(13, 11, 28, 0.7);
-            --panel-border: rgba(139, 92, 246, 0.15);
-            --accent-primary: #8b5cf6;
-            --accent-primary-glow: rgba(139, 92, 246, 0.5);
-            --accent-secondary: #06b6d4;
-            --accent-secondary-glow: rgba(6, 182, 212, 0.5);
-            --text-main: #f3f1f9;
-            --text-muted: #9f9bb3;
-            --danger: #ef4444;
-            --success: #10b981;
-            --card-radius: 16px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --blue: #2780e3;
+            --link-hover: #1f4eb6;
+            --link-active: #1a3e96;
+            --charcoal: #343a40;
+            --ink: #1e1e1e;
+            --text: #343a40;
+            --muted: rgba(52,58,64,.72);
+            --line: #dee2e6;
+            --soft: #f8f9fa;
+            --soft-blue: #d4e6f9;
+            --gray-200: #e9ecef;
+            --gray-600: #6c757d;
+            --danger: #ff0039;
+            --success: #3fb618;
+            --warning: #ff7518;
+            --font-sans: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-mono: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --radius: 9px;
+            --radius-pill: 999px;
+            --shadow: 0 .75rem 2rem rgba(52,58,64,.12);
+            --shadow-hover: 0 1rem 2.4rem rgba(39,128,227,.14);
+            --bg-color: #fff;
+            --panel-bg: #fff;
+            --panel-border: var(--line);
+            --accent-primary: var(--blue);
+            --accent-primary-glow: rgba(39,128,227,.22);
+            --accent-secondary: var(--blue);
+            --accent-secondary-glow: rgba(39,128,227,.18);
+            --text-main: var(--text);
+            --text-muted: var(--muted);
+            --card-radius: var(--radius);
+            --transition: all .18s ease;
+            font-size: 17px;
         }
 
         * {
@@ -40,45 +60,17 @@
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            line-height: 1.5;
+            background: var(--soft);
             color: var(--text-main);
             overflow: hidden;
             height: 100vh;
             display: flex;
             flex-direction: column;
             position: relative;
-        }
-
-        /* Ambient Glow Blobs */
-        .glow-blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(140px);
-            z-index: -1;
-            pointer-events: none;
-            opacity: 0.4;
-            animation: float 20s infinite ease-in-out alternate;
-        }
-        .glow-1 {
-            top: -10%;
-            left: -10%;
-            width: 50vw;
-            height: 50vw;
-            background: var(--accent-primary);
-        }
-        .glow-2 {
-            bottom: -10%;
-            right: -10%;
-            width: 45vw;
-            height: 45vw;
-            background: var(--accent-secondary);
-        }
-
-        @keyframes float {
-            0% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(5%, 5%) scale(1.1); }
-            100% { transform: translate(-5%, -5%) scale(0.9); }
+            -webkit-font-smoothing: antialiased;
         }
 
         /* Scrollbar styles */
@@ -89,11 +81,11 @@
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(52,58,64,.18);
             border-radius: 3px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--panel-border);
+            background: rgba(39,128,227,.35);
         }
 
         /* Header */
@@ -101,8 +93,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1.25rem 2rem;
-            background: rgba(6, 5, 14, 0.8);
+            padding: .85rem clamp(1rem, 3vw, 2rem);
+            background: rgba(248,249,250,.94);
             backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--panel-border);
             z-index: 10;
@@ -116,29 +108,25 @@
 
         .logo-icon {
             color: var(--accent-primary);
-            filter: drop-shadow(0 0 8px var(--accent-primary-glow));
         }
 
         .logo-text {
-            font-family: 'Outfit', sans-serif;
             font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+            color: var(--charcoal);
         }
 
         .status-badge {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: .25rem .65rem;
+            border-radius: var(--radius-pill);
+            background: #fff;
+            border: 1px solid rgba(52,58,64,.18);
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 650;
+            color: var(--muted);
         }
 
         .status-dot {
@@ -149,16 +137,13 @@
         }
         .status-dot.active {
             background: var(--success);
-            box-shadow: 0 0 8px var(--success);
         }
         .status-dot.loading {
             background: var(--accent-secondary);
-            box-shadow: 0 0 8px var(--accent-secondary-glow);
             animation: pulse 1.5s infinite ease-in-out;
         }
         .status-dot.error {
             background: var(--danger);
-            box-shadow: 0 0 8px var(--danger);
         }
 
         @keyframes pulse {
@@ -170,19 +155,19 @@
         #protoWarn {
             display: none;
             padding: 0.75rem 2rem;
-            background: rgba(239, 68, 68, 0.15);
-            border-bottom: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
+            background: rgba(255, 117, 24, 0.12);
+            border-bottom: 1px solid rgba(255, 117, 24, 0.28);
+            color: #8a3f00;
             font-size: 0.85rem;
             text-align: center;
             z-index: 11;
         }
         #protoWarn code {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.72);
             padding: 0.1rem 0.4rem;
             border-radius: 4px;
-            color: #fee2e2;
-            font-family: monospace;
+            color: var(--charcoal);
+            font-family: var(--font-mono);
         }
 
         /* Main Workspace Container */
@@ -197,7 +182,6 @@
         .sidebar {
             width: 380px;
             background: var(--panel-bg);
-            backdrop-filter: blur(12px);
             border-right: 1px solid var(--panel-border);
             display: flex;
             flex-direction: column;
@@ -208,7 +192,7 @@
         .sidebar-tabs {
             display: flex;
             border-bottom: 1px solid var(--panel-border);
-            background: rgba(0, 0, 0, 0.2);
+            background: var(--soft);
         }
 
         .tab-btn {
@@ -219,25 +203,25 @@
             color: var(--text-muted);
             font-family: inherit;
             font-size: 0.8rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 0.35rem;
             transition: var(--transition);
-            border-bottom: 2px solid transparent;
+            border-bottom: 3px solid transparent;
         }
 
         .tab-btn:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.02);
+            color: var(--blue);
+            background: rgba(39,128,227,.06);
         }
 
         .tab-btn.active {
             color: var(--accent-primary);
             border-bottom-color: var(--accent-primary);
-            background: rgba(139, 92, 246, 0.05);
+            background: #fff;
         }
 
         .tab-btn i {
@@ -247,7 +231,7 @@
         .sidebar-content {
             flex: 1;
             overflow-y: auto;
-            padding: 1.5rem;
+            padding: 1.35rem;
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
@@ -275,7 +259,7 @@
             flex-direction: column;
             gap: 0.75rem;
             padding-bottom: 1.25rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--line);
         }
         .control-group:last-child {
             border-bottom: none;
@@ -286,8 +270,8 @@
             font-size: 0.8rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--accent-secondary);
+            letter-spacing: 0.09em;
+            color: var(--accent-primary);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -302,12 +286,13 @@
 
         .preset-thumb {
             aspect-ratio: 1;
-            border-radius: 8px;
+            border-radius: var(--radius);
             overflow: hidden;
             cursor: pointer;
-            border: 2px solid transparent;
+            border: 1px solid rgba(52,58,64,.14);
             transition: var(--transition);
             position: relative;
+            background: var(--soft);
         }
 
         .preset-thumb img {
@@ -323,7 +308,7 @@
 
         .preset-thumb.active {
             border-color: var(--accent-primary);
-            box-shadow: 0 0 10px var(--accent-primary-glow);
+            box-shadow: 0 0 0 3px rgba(39,128,227,.15);
         }
 
         .preset-label {
@@ -336,17 +321,17 @@
             font-size: 0.65rem;
             text-align: center;
             color: white;
-            font-weight: 500;
+            font-weight: 700;
         }
 
         /* Upload Dropzone */
         .dropzone {
             border: 2px dashed var(--panel-border);
-            border-radius: 12px;
+            border-radius: var(--radius);
             padding: 1.5rem 1rem;
             text-align: center;
             cursor: pointer;
-            background: rgba(255, 255, 255, 0.01);
+            background: var(--soft);
             transition: var(--transition);
             display: flex;
             flex-direction: column;
@@ -356,7 +341,7 @@
 
         .dropzone:hover {
             border-color: var(--accent-primary);
-            background: rgba(139, 92, 246, 0.04);
+            background: rgba(39,128,227,.07);
         }
 
         .dropzone i {
@@ -372,7 +357,7 @@
 
         .dropzone span {
             font-size: 0.8rem;
-            font-weight: 500;
+            font-weight: 700;
             color: var(--text-main);
         }
 
@@ -392,7 +377,7 @@
             display: flex;
             justify-content: space-between;
             font-size: 0.75rem;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-muted);
         }
 
@@ -417,7 +402,7 @@
             width: 100%;
             height: 6px;
             border-radius: 3px;
-            background: rgba(255, 255, 255, 0.08);
+            background: var(--gray-200);
             outline: none;
             cursor: pointer;
             transition: var(--transition);
@@ -428,9 +413,9 @@
             width: 16px;
             height: 16px;
             border-radius: 50%;
-            background: var(--text-main);
+            background: #fff;
             border: 2px solid var(--accent-primary);
-            box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 2px 8px rgba(39,128,227,.25);
             transition: var(--transition);
         }
 
@@ -445,7 +430,7 @@
             align-items: center;
             justify-content: space-between;
             font-size: 0.8rem;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-muted);
             padding: 0.25rem 0;
         }
@@ -470,7 +455,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: var(--gray-200);
             border-radius: 34px;
             transition: var(--transition);
         }
@@ -482,7 +467,8 @@
             width: 14px;
             left: 3px;
             bottom: 3px;
-            background-color: var(--text-muted);
+            background-color: #fff;
+            box-shadow: 0 1px 4px rgba(52,58,64,.20);
             border-radius: 50%;
             transition: var(--transition);
         }
@@ -505,9 +491,9 @@
         .btn-select {
             flex: 1;
             padding: 0.5rem 0.25rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
             color: var(--text-muted);
             font-size: 0.75rem;
             font-weight: 600;
@@ -521,24 +507,25 @@
         }
 
         .btn-select:hover {
-            color: var(--text-main);
-            border-color: rgba(255, 255, 255, 0.15);
+            color: var(--blue);
+            border-color: rgba(39,128,227,.42);
+            background: rgba(39,128,227,.06);
         }
 
         .btn-select.active {
             background: var(--accent-primary);
             color: white;
             border-color: var(--accent-primary);
-            box-shadow: 0 0 10px var(--accent-primary-glow);
+            box-shadow: 0 2px 8px rgba(39,128,227,.30);
         }
 
         /* Primary Action Buttons */
         .btn-primary {
             width: 100%;
             padding: 0.75rem;
-            background: linear-gradient(135deg, var(--accent-primary) 0%, #7c3aed 100%);
+            background: var(--accent-primary);
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius);
             color: white;
             font-family: inherit;
             font-size: 0.85rem;
@@ -549,21 +536,23 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+            box-shadow: 0 2px 8px rgba(39,128,227,.24);
         }
 
         .btn-primary:hover {
-            filter: brightness(1.1);
+            background: var(--link-hover);
             transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(39,128,227,.30);
         }
 
         .btn-primary:active {
+            background: var(--link-active);
             transform: translateY(0);
         }
 
         .btn-primary:disabled {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.2);
+            background: var(--gray-200);
+            color: var(--gray-600);
             cursor: not-allowed;
             box-shadow: none;
         }
@@ -571,10 +560,10 @@
         .btn-secondary {
             width: 100%;
             padding: 0.75rem;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            color: var(--text-main);
+            background: var(--charcoal);
+            border: 1px solid var(--charcoal);
+            border-radius: var(--radius);
+            color: #fff;
             font-family: inherit;
             font-size: 0.85rem;
             font-weight: 600;
@@ -587,8 +576,9 @@
         }
 
         .btn-secondary:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.15);
+            background: var(--ink);
+            border-color: var(--ink);
+            transform: translateY(-1px);
         }
 
         .btn-secondary:disabled {
@@ -600,7 +590,11 @@
         .preview-area {
             flex: 1;
             position: relative;
-            background: #020106;
+            background:
+                linear-gradient(rgba(52,58,64,.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(52,58,64,.055) 1px, transparent 1px),
+                var(--soft);
+            background-size: 24px 24px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -613,11 +607,12 @@
             height: 100%;
             max-width: 1200px;
             max-height: 80vh;
-            border-radius: 12px;
+            border-radius: 18px;
             overflow: hidden;
             position: relative;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 100px rgba(139, 92, 246, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: var(--shadow), 0 1rem 2.4rem rgba(30,30,30,.14);
+            border: 6px solid var(--ink);
+            background: var(--ink);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -637,7 +632,7 @@
             left: 50%;
             width: 2px;
             background: white;
-            box-shadow: 0 0 8px rgba(255,255,255,0.8), 0 0 20px var(--accent-secondary);
+            box-shadow: 0 0 8px rgba(255,255,255,0.8), 0 0 18px rgba(39,128,227,.45);
             cursor: ew-resize;
             z-index: 6;
             display: none;
@@ -656,7 +651,7 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            color: #0d0b1c;
+            color: var(--charcoal);
             border: 1px solid rgba(0, 0, 0, 0.1);
             pointer-events: none;
         }
@@ -678,7 +673,7 @@
             width: 100%;
             height: 100%;
             object-fit: fill;
-            opacity: 0.15;
+            opacity: 0.85;
             display: block;
             pointer-events: none;
         }
@@ -692,6 +687,7 @@
             display: block;
             pointer-events: auto;
             cursor: crosshair;
+            opacity: 0.45;
         }
 
         /* Brush cursor overlay */
@@ -712,16 +708,16 @@
             bottom: 1.5rem;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(6, 5, 14, 0.7);
+            background: rgba(255,255,255,.92);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 30px;
+            border: 1px solid rgba(52,58,64,.14);
+            border-radius: var(--radius-pill);
             padding: 0.4rem;
             display: flex;
             align-items: center;
             gap: 0.25rem;
             z-index: 7;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            box-shadow: 0 .75rem 2rem rgba(52,58,64,.18);
         }
 
         .toolbar-btn {
@@ -739,19 +735,19 @@
         }
 
         .toolbar-btn:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
+            color: var(--blue);
+            background: rgba(39,128,227,.08);
         }
 
         .toolbar-btn.active {
             color: var(--accent-primary);
-            background: rgba(139, 92, 246, 0.1);
+            background: rgba(39,128,227,.12);
         }
 
         .toolbar-divider {
             width: 1px;
             height: 20px;
-            background: rgba(255, 255, 255, 0.08);
+            background: var(--line);
             margin: 0 0.2rem;
         }
 
@@ -762,7 +758,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(6, 5, 14, 0.85);
+            background: rgba(248,249,250,.88);
             backdrop-filter: blur(10px);
             z-index: 9;
             display: flex;
@@ -775,20 +771,20 @@
         }
 
         .loading-card {
-            background: rgba(18, 16, 35, 0.6);
-            border: 1px solid var(--panel-border);
+            background: #fff;
+            border: 1px solid var(--line);
             padding: 2.5rem;
             border-radius: var(--card-radius);
             max-width: 450px;
             width: 100%;
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            box-shadow: var(--shadow);
         }
 
         .spinner {
             width: 50px;
             height: 50px;
-            border: 3px solid rgba(139, 92, 246, 0.15);
+            border: 3px solid rgba(39,128,227,.15);
             border-top: 3px solid var(--accent-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -803,7 +799,7 @@
         .progress-bar-container {
             width: 100%;
             height: 8px;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--gray-200);
             border-radius: 4px;
             overflow: hidden;
             margin-top: 1rem;
@@ -812,7 +808,7 @@
         .progress-bar-fill {
             width: 0%;
             height: 100%;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            background: var(--accent-primary);
             border-radius: 4px;
             transition: width 0.1s ease;
         }
@@ -834,7 +830,7 @@
             flex: 1;
             height: 24px;
             border-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(52,58,64,.18);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -850,12 +846,12 @@
 
         .color-preset:hover {
             transform: scale(1.05);
-            border-color: white;
+            border-color: var(--blue);
         }
 
         .color-preset.active {
             border: 2px solid var(--accent-primary);
-            box-shadow: 0 0 6px var(--accent-primary-glow);
+            box-shadow: 0 0 0 3px rgba(39,128,227,.15);
         }
 
         /* Tooltip */
@@ -868,9 +864,9 @@
             bottom: 125%;
             left: 50%;
             transform: translateX(-50%);
-            background: #0d0b1c;
-            border: 1px solid var(--panel-border);
-            color: var(--text-main);
+            background: var(--ink);
+            border: 1px solid rgba(255,255,255,.16);
+            color: #fff;
             padding: 0.35rem 0.6rem;
             border-radius: 6px;
             font-size: 0.7rem;
@@ -878,7 +874,7 @@
             opacity: 0;
             pointer-events: none;
             transition: var(--transition);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.22);
         }
         .tooltip:hover:before {
             opacity: 1;
@@ -917,10 +913,6 @@
     </style>
 </head>
 <body>
-
-    <!-- Ambient glow elements -->
-    <div class="glow-blob glow-1"></div>
-    <div class="glow-blob glow-2"></div>
 
     <!-- Header -->
     <header>
@@ -1000,16 +992,13 @@
 
                     <div class="control-group">
                         <span class="group-title">AI Estimation Engine</span>
-                        <div class="slider-container" style="margin-bottom: 0.5rem;">
-                            <span class="slider-header">Model Accuracy</span>
-                            <div class="btn-row">
-                                <button class="btn-select active" id="btn-model-v2" data-model="v2">DepthAnythingV2 (Better)</button>
-                                <button class="btn-select" id="btn-model-fast" data-model="fast">DepthAnythingV1 (Fast)</button>
-                            </div>
-                        </div>
                         <button class="btn-primary" id="btn-generate-depth" style="margin-top:0.25rem">
                             <i data-lucide="brain"></i>
                             Run AI Depth Analysis
+                        </button>
+                        <button class="btn-secondary" id="btn-generate-matte" style="margin-top:0.5rem">
+                            <i data-lucide="user-round-check"></i>
+                            Run Subject Matting
                         </button>
                     </div>
                 </div>
@@ -1056,13 +1045,11 @@
                     <div class="control-group">
                         <span class="group-title">Autopilot & Orbit</span>
                         
-                        <div class="toggle-container">
-                            <span>Auto-Orbit (Gentle Sway)</span>
-                            <label class="switch">
-                                <input type="checkbox" id="toggle-orbit" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
+                        <input type="checkbox" id="toggle-orbit" checked hidden>
+                        <button class="btn-primary" id="btn-toggle-orbit" type="button" aria-pressed="true">
+                            <i data-lucide="pause"></i>
+                            <span id="orbit-toggle-label">Stop Rotation</span>
+                        </button>
 
                         <div class="slider-container">
                             <div class="slider-header">
@@ -1092,7 +1079,7 @@
                         
                         <div class="slider-container">
                             <div class="slider-header">
-                                <span>Edge Scale (Zoom bleed)</span>
+                                <span>Zoom Factor</span>
                                 <span class="slider-val" id="val-zoom">7%</span>
                             </div>
                             <div class="slider-wrapper">
@@ -1105,6 +1092,30 @@
 
                 <!-- TAB 3: Depth Editor -->
                 <div class="tab-panel" id="tab-edit">
+                    <div class="control-group">
+                        <span class="group-title">Edit View</span>
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Photo Visibility</span>
+                                <span class="slider-val" id="val-edit-photo-opacity">85%</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="image"></i>
+                                <input type="range" id="slider-edit-photo-opacity" min="0" max="100" value="85">
+                            </div>
+                        </div>
+                        <div class="slider-container">
+                            <div class="slider-header">
+                                <span>Mask Visibility</span>
+                                <span class="slider-val" id="val-edit-mask-opacity">45%</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <i data-lucide="layers"></i>
+                                <input type="range" id="slider-edit-mask-opacity" min="0" max="100" value="45">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="control-group">
                         <span class="group-title">Brush Mode</span>
                         <div class="btn-row">
@@ -1245,8 +1256,12 @@
                             <i data-lucide="globe"></i>
                             Export Standalone 3D Page
                         </button>
+                        <button class="btn-primary" id="btn-export-video" style="margin-top:0.5rem">
+                            <i data-lucide="video"></i>
+                            Export Watermarked Video
+                        </button>
                         <p style="font-size:0.7rem; color:var(--text-muted); text-align:center; margin-top:0.25rem">
-                            Generates a self-contained 3D parallax webpage (HTML file) that runs offline.
+                            Exports use the current effect and global adjustment values.
                         </p>
                     </div>
                 </div>
@@ -1278,7 +1293,7 @@
                 <div class="model-loading-overlay" id="loading-overlay" style="display:none">
                     <div class="loading-card">
                         <div class="spinner"></div>
-                        <h3 id="loader-title" style="margin-bottom:0.5rem; font-family:'Outfit',sans-serif">Downloading Neural Network</h3>
+                        <h3 id="loader-title" style="margin-bottom:0.5rem; font-weight:600; line-height:1.2">Downloading Neural Network</h3>
                         <p id="loader-desc" style="font-size:0.85rem; color:var(--text-muted)">Please wait while we initialize model files (~30MB)...</p>
                         
                         <div class="progress-bar-container" id="loader-progress-container">
@@ -1331,7 +1346,9 @@
         // Interactive control variables
         let isOrbitActive = true;
         let isGyroActive = false;
+        let orbitWasActiveBeforeGyro = true;
         let orbitTime = 0;
+        let zoomFactor = 0.07;
         let splitMode = 0; // 0 = normal, 1 = image split, 2 = depth split
         let splitPos = -1.0; // default hidden split
         
@@ -1530,6 +1547,10 @@
                 // Circular Orbit Sway
                 mouseTarget.x = Math.sin(orbitTime) * 0.45;
                 mouseTarget.y = Math.cos(orbitTime) * 0.3;
+
+                // Gentle breathing zoom that stays within the selected crop budget.
+                const zoomPulse = 0.75 + 0.25 * ((Math.sin(orbitTime * 0.45) + 1) / 2);
+                material.uniforms.uScale.value = 1 - (zoomFactor * zoomPulse);
             }
 
             // Smooth linear interpolation (lerp)
@@ -1541,13 +1562,9 @@
 
         // Mouse/Pointer event listener for interactive tilting
         document.getElementById('canvas-container').addEventListener('pointermove', (e) => {
-            if (isGyroActive || (document.getElementById('btn-tab-edit').classList.contains('active') && isPaintActive)) return;
+            if (isGyroActive || isOrbitActive || (document.getElementById('btn-tab-edit').classList.contains('active') && isPaintActive)) return;
             
-            // Deactivate orbit while user is manually hovering
             if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
-                isOrbitActive = false;
-                document.getElementById('toggle-orbit').checked = false;
-
                 const rect = container.getBoundingClientRect();
                 const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
                 const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
@@ -1558,10 +1575,8 @@
         });
 
         document.getElementById('canvas-container').addEventListener('pointerleave', () => {
-            if (!isGyroActive && !document.getElementById('btn-tab-edit').classList.contains('active')) {
-                // Resume orbit sway when mouse leaves
-                isOrbitActive = true;
-                document.getElementById('toggle-orbit').checked = true;
+            if (!isGyroActive && !isOrbitActive) {
+                mouseTarget.set(0, 0);
             }
         });
 
@@ -1570,27 +1585,28 @@
         // ----------------------------------------------------
         const workerCode = `
             // Load Transformers.js inside the Web Worker
-            import { pipeline, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
+            import { pipeline, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
             
             env.allowLocalModels = false;
 
-            let pipe = null;
-            let currentModel = '';
+            let depthPipe = null;
+            let mattePipe = null;
+            let currentDepthModel = '';
 
             self.onmessage = async function(e) {
                 const { type, payload } = e.data;
 
-                if (type === 'init') {
+                if (type === 'init-depth') {
                     const modelName = payload;
-                    if (pipe && currentModel === modelName) {
-                        self.postMessage({ type: 'ready' });
+                    if (depthPipe && currentDepthModel === modelName) {
+                        self.postMessage({ type: 'ready', task: 'depth' });
                         return;
                     }
                     
                     try {
                         self.postMessage({ type: 'status', message: 'Downloading depth model (approx. 50MB)...' });
                         
-                        pipe = await pipeline('depth-estimation', modelName, {
+                        depthPipe = await pipeline('depth-estimation', modelName, {
                             progress_callback: (progressData) => {
                                 if (progressData.status === 'progress') {
                                     self.postMessage({ 
@@ -1602,13 +1618,13 @@
                             }
                         });
                         
-                        currentModel = modelName;
-                        self.postMessage({ type: 'ready' });
+                        currentDepthModel = modelName;
+                        self.postMessage({ type: 'ready', task: 'depth' });
                     } catch (err) {
                         self.postMessage({ type: 'error', error: err.message });
                     }
-                } else if (type === 'predict') {
-                    if (!pipe) {
+                } else if (type === 'predict-depth') {
+                    if (!depthPipe) {
                         self.postMessage({ type: 'error', error: 'Model not initialized' });
                         return;
                     }
@@ -1623,17 +1639,59 @@
                         const raw = new RawImage(new Uint8ClampedArray(dataBuffer), width, height, channels);
                         
                         // Run monocular depth estimation
-                        const result = await pipe(raw);
+                        const result = await depthPipe(raw);
                         
                         // Send grayscale Uint8Array output back
                         const depthRaw = result.depth;
                         
                         self.postMessage({ 
                             type: 'result', 
+                            task: 'depth',
                             width: depthRaw.width, 
                             height: depthRaw.height, 
                             data: depthRaw.data 
                         });
+                    } catch (err) {
+                        self.postMessage({ type: 'error', error: err.message });
+                    }
+                } else if (type === 'predict-matte') {
+                    try {
+                        if (!mattePipe) {
+                            self.postMessage({ type: 'status', message: 'Downloading subject matting model (MODNet)...' });
+                            mattePipe = await pipeline('background-removal', 'Xenova/modnet', {
+                                progress_callback: (progressData) => {
+                                    if (progressData.status === 'progress') {
+                                        self.postMessage({ 
+                                            type: 'progress', 
+                                            file: progressData.file, 
+                                            progress: progressData.progress 
+                                        });
+                                    }
+                                }
+                            });
+                            self.postMessage({ type: 'ready', task: 'matte' });
+                        }
+
+                        self.postMessage({ type: 'status', message: 'Extracting foreground alpha matte...' });
+
+                        const { dataBuffer, width, height, channels } = payload;
+                        const raw = new RawImage(new Uint8ClampedArray(dataBuffer), width, height, channels);
+                        const output = await mattePipe(raw);
+                        const cutout = Array.isArray(output) ? output[0] : output;
+                        const rgba = cutout.data;
+                        const alpha = new Uint8ClampedArray(cutout.width * cutout.height);
+
+                        for (let i = 0; i < alpha.length; i++) {
+                            alpha[i] = rgba[i * 4 + 3];
+                        }
+
+                        self.postMessage({
+                            type: 'result',
+                            task: 'matte',
+                            width: cutout.width,
+                            height: cutout.height,
+                            data: alpha
+                        }, [alpha.buffer]);
                     } catch (err) {
                         self.postMessage({ type: 'error', error: err.message });
                     }
@@ -1646,6 +1704,33 @@
 
         let isModelReady = false;
         let selectedModel = 'onnx-community/depth-anything-v2-small';
+
+        function setOrbitActive(enabled) {
+            isOrbitActive = enabled;
+            const toggle = document.getElementById('toggle-orbit');
+            const button = document.getElementById('btn-toggle-orbit');
+
+            if (toggle) {
+                toggle.checked = enabled;
+            }
+            if (button) {
+                button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+                button.className = enabled ? 'btn-primary' : 'btn-secondary';
+                button.innerHTML = enabled
+                    ? '<i data-lucide="pause"></i><span id="orbit-toggle-label">Stop Rotation</span>'
+                    : '<i data-lucide="play"></i><span id="orbit-toggle-label">Start Rotation</span>';
+                lucide.createIcons();
+            }
+
+            if (enabled) {
+                mouseTarget.set(Math.sin(orbitTime) * 0.45, Math.cos(orbitTime) * 0.3);
+            } else if (!isGyroActive) {
+                mouseTarget.set(0, 0);
+                if (material) {
+                    material.uniforms.uScale.value = 1 - zoomFactor;
+                }
+            }
+        }
 
         // UI Loader Helpers
         const overlay = document.getElementById('loading-overlay');
@@ -1662,18 +1747,20 @@
 
         // Web Worker listener
         worker.onmessage = function(e) {
-            const { type, message, progress, error, width, height, data } = e.data;
+            const { type, task, message, progress, error, width, height, data } = e.data;
 
             if (type === 'status') {
                 updateLoaderStatus(message);
             } else if (type === 'progress') {
                 updateLoaderProgress(progress);
             } else if (type === 'ready') {
-                isModelReady = true;
+                if (task === 'depth') {
+                    isModelReady = true;
+                }
                 updateStatusBadge('ready');
                 hideLoader();
                 // Trigger auto run if there's a loaded image waiting
-                if (pendingDepthRun) {
+                if (task === 'depth' && pendingDepthRun) {
                     runAiDepth();
                 }
             } else if (type === 'error') {
@@ -1682,8 +1769,12 @@
                 console.error(error);
                 pendingDepthRun = false;
             } else if (type === 'result') {
-                // Draw estimated depth values onto Canvas
-                loadDepthMapFromArray(data, width, height);
+                if (task === 'matte') {
+                    loadMatteMapFromArray(data, width, height);
+                } else {
+                    // Draw estimated depth values onto Canvas
+                    loadDepthMapFromArray(data, width, height);
+                }
                 updateStatusBadge('ready');
                 hideLoader();
                 pendingDepthRun = false;
@@ -1694,7 +1785,7 @@
             isModelReady = false;
             updateStatusBadge('loading');
             showLoader('Initializing AI Model', `Loading ${modelName.split('/').pop()} from Hugging Face...`);
-            worker.postMessage({ type: 'init', payload: modelName });
+            worker.postMessage({ type: 'init-depth', payload: modelName });
         }
 
         // Start initial model download
@@ -1776,6 +1867,7 @@
 
                 // 2. Clear out depth map canvas & paint overlay to match
                 setupEditorDimensions(imageWidth, imageHeight);
+                document.getElementById('editor-bg-image').src = img.src;
                 
                 // Clear depth map canvas to default gray (50% depth focus)
                 depthCanvas.width = imageWidth;
@@ -1825,6 +1917,16 @@
         });
 
         // Trigger AI analysis pipeline
+        function createPreprocessedImageData(maxWidth = 1024) {
+            const procCanvas = document.createElement('canvas');
+            procCanvas.width = Math.min(imageWidth, maxWidth);
+            procCanvas.height = Math.round(procCanvas.width * (imageHeight / imageWidth));
+            const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
+
+            procCtx.drawImage(currentImageElement, 0, 0, procCanvas.width, procCanvas.height);
+            return procCtx.getImageData(0, 0, procCanvas.width, procCanvas.height);
+        }
+
         function runAiDepth() {
             if (!currentImageElement) return;
             if (!isModelReady) {
@@ -1835,18 +1937,29 @@
 
             showLoader('Analyzing Photo Depth', 'Preprocessing image pixels...');
 
-            // Create offscreen canvas to extract raw ImageData
-            const procCanvas = document.createElement('canvas');
-            procCanvas.width = Math.min(imageWidth, 1024); // Cap max dimensions to keep inference fast
-            procCanvas.height = Math.round(procCanvas.width * (imageHeight / imageWidth));
-            const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
-            procCtx.drawImage(currentImageElement, 0, 0, procCanvas.width, procCanvas.height);
-
-            const imgData = procCtx.getImageData(0, 0, procCanvas.width, procCanvas.height);
+            const imgData = createPreprocessedImageData(1024);
             
             // Pass array buffer for high performance rendering without locks
             worker.postMessage({
-                type: 'predict',
+                type: 'predict-depth',
+                payload: {
+                    dataBuffer: imgData.data.buffer,
+                    width: imgData.width,
+                    height: imgData.height,
+                    channels: 4
+                }
+            }, [imgData.data.buffer]);
+        }
+
+        function runSubjectMatting() {
+            if (!currentImageElement) return;
+
+            showLoader('Matting Main Subject', 'Preparing image for foreground extraction...');
+
+            const imgData = createPreprocessedImageData(1024);
+
+            worker.postMessage({
+                type: 'predict-matte',
                 payload: {
                     dataBuffer: imgData.data.buffer,
                     width: imgData.width,
@@ -1890,6 +2003,35 @@
             saveUndoState();
         }
 
+        function loadMatteMapFromArray(array, w, h) {
+            depthCanvas.width = imageWidth;
+            depthCanvas.height = imageHeight;
+
+            const temp = document.createElement('canvas');
+            temp.width = w;
+            temp.height = h;
+            const tCtx = temp.getContext('2d', { willReadFrequently: true });
+            const imgData = tCtx.createImageData(w, h);
+
+            for (let i = 0; i < array.length; i++) {
+                const alpha = array[i];
+                const softened = alpha < 20 ? 0 : alpha > 235 ? 255 : alpha;
+                const idx = i * 4;
+                imgData.data[idx] = softened;
+                imgData.data[idx + 1] = softened;
+                imgData.data[idx + 2] = softened;
+                imgData.data[idx + 3] = 255;
+            }
+
+            tCtx.putImageData(imgData, 0, 0);
+            depthCtx.clearRect(0, 0, imageWidth, imageHeight);
+            depthCtx.drawImage(temp, 0, 0, imageWidth, imageHeight);
+
+            depthTexture.needsUpdate = true;
+            syncPaintCanvasWithDepth();
+            saveUndoState();
+        }
+
         // ----------------------------------------------------
         // Mask Painting Editor Engine (2D Canvas Overlay)
         // ----------------------------------------------------
@@ -1907,6 +2049,13 @@
         let brushOpacity = 0.5;
         let brushValue = 255; // default foreground
         let brushMode = 'paint'; // paint, erase, blur
+
+        function updateEditViewOpacity() {
+            const photoOpacity = parseInt(document.getElementById('slider-edit-photo-opacity').value) / 100;
+            const maskOpacity = parseInt(document.getElementById('slider-edit-mask-opacity').value) / 100;
+            document.getElementById('editor-bg-image').style.opacity = photoOpacity;
+            paintCanvas.style.opacity = maskOpacity;
+        }
 
         // Adjust Paint Canvas and Container Dimensions
         function setupEditorDimensions(w, h) {
@@ -2090,6 +2239,11 @@
         function initUndoStack() {
             undoStack = [];
             redoStack = [];
+            if (paintCanvas.width && paintCanvas.height && depthCanvas.width && depthCanvas.height) {
+                paintCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
+                paintCtx.drawImage(depthCanvas, 0, 0);
+                undoStack.push(paintCtx.getImageData(0, 0, paintCanvas.width, paintCanvas.height));
+            }
             updateHistoryButtons();
         }
 
@@ -2158,12 +2312,9 @@
                 // Toggle mask painting overlay depending on Tab
                 if (target === 'tab-edit') {
                     syncPaintCanvasWithDepth();
+                    updateEditViewOpacity();
                     editorWrapper.classList.add('active');
                     brushCursor.style.display = 'block';
-                    
-                    // Stop orbit while editing to make it easier to paint
-                    isOrbitActive = false;
-                    document.getElementById('toggle-orbit').checked = false;
                 } else {
                     editorWrapper.classList.remove('active');
                     brushCursor.style.display = 'none';
@@ -2190,8 +2341,8 @@
             material.uniforms.uFocusPoint.value = val;
         });
 
-        document.getElementById('toggle-orbit').addEventListener('change', (e) => {
-            isOrbitActive = e.target.checked;
+        document.getElementById('btn-toggle-orbit').addEventListener('click', () => {
+            setOrbitActive(!isOrbitActive);
         });
 
         document.getElementById('slider-orbit-speed').addEventListener('input', (e) => {
@@ -2207,7 +2358,20 @@
         document.getElementById('slider-zoom').addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             document.getElementById('val-zoom').textContent = val + '%';
-            material.uniforms.uScale.value = 1 - (val / 100);
+            zoomFactor = val / 100;
+            material.uniforms.uScale.value = 1 - zoomFactor;
+        });
+
+        document.getElementById('slider-edit-photo-opacity').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            document.getElementById('val-edit-photo-opacity').textContent = val + '%';
+            updateEditViewOpacity();
+        });
+
+        document.getElementById('slider-edit-mask-opacity').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            document.getElementById('val-edit-mask-opacity').textContent = val + '%';
+            updateEditViewOpacity();
         });
 
         // Global Adjustments
@@ -2298,6 +2462,23 @@
         document.getElementById('btn-undo').addEventListener('click', triggerUndo);
         document.getElementById('btn-redo').addEventListener('click', triggerRedo);
 
+        document.addEventListener('keydown', (e) => {
+            const target = e.target;
+            const isTextInput = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+            const isEditingDepth = document.getElementById('btn-tab-edit').classList.contains('active');
+            const wantsUndo = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z';
+            const wantsRedo = wantsUndo && e.shiftKey || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y');
+
+            if (!isEditingDepth || isTextInput || (!wantsUndo && !wantsRedo)) return;
+
+            e.preventDefault();
+            if (wantsRedo) {
+                triggerRedo();
+            } else {
+                triggerUndo();
+            }
+        });
+
         document.getElementById('btn-clear-depth').addEventListener('click', () => {
             if (confirm('Are you sure you want to clear your current depth map mask?')) {
                 paintCtx.fillStyle = '#000000';
@@ -2311,20 +2492,9 @@
             }
         });
 
-        // Model selection selector
-        document.querySelectorAll('[data-model]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('[data-model]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                selectedModel = btn.getAttribute('data-model') === 'fast' ? 'Xenova/depth-anything-small-hf' : 'onnx-community/depth-anything-v2-small';
-                if (window.location.protocol !== 'file:') {
-                    initModel(selectedModel);
-                }
-            });
-        });
-
         // Trigger manual run AI depth buttons
         document.getElementById('btn-generate-depth').addEventListener('click', runAiDepth);
+        document.getElementById('btn-generate-matte').addEventListener('click', runSubjectMatting);
 
         // Upload custom image
         const dropzone = document.getElementById('dropzone');
@@ -2335,24 +2505,24 @@
         dropzone.addEventListener('dragenter', (e) => {
             e.preventDefault();
             dropzone.style.borderColor = 'var(--accent-primary)';
-            dropzone.style.background = 'rgba(139, 92, 246, 0.06)';
+            dropzone.style.background = 'rgba(39, 128, 227, 0.07)';
         });
 
         dropzone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropzone.style.borderColor = 'var(--accent-primary)';
-            dropzone.style.background = 'rgba(139, 92, 246, 0.06)';
+            dropzone.style.background = 'rgba(39, 128, 227, 0.07)';
         });
 
         dropzone.addEventListener('dragleave', () => {
             dropzone.style.borderColor = 'var(--panel-border)';
-            dropzone.style.background = 'rgba(255, 255, 255, 0.01)';
+            dropzone.style.background = 'var(--soft)';
         });
 
         dropzone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropzone.style.borderColor = 'var(--panel-border)';
-            dropzone.style.background = 'rgba(255, 255, 255, 0.01)';
+            dropzone.style.background = 'var(--soft)';
 
             const file = e.dataTransfer.files[0];
             if (file && file.type.startsWith('image/')) {
@@ -2465,7 +2635,7 @@
                 isGyroActive = false;
                 toolGyro.classList.remove('active');
                 window.removeEventListener('deviceorientation', handleOrientation);
-                isOrbitActive = document.getElementById('toggle-orbit').checked;
+                setOrbitActive(orbitWasActiveBeforeGyro);
             } else {
                 // Enable Gyro
                 showLoader('Enabling Motion Sensors', 'Requesting device orientation access...');
@@ -2473,9 +2643,10 @@
                 hideLoader();
 
                 if (granted) {
+                    orbitWasActiveBeforeGyro = isOrbitActive;
                     isGyroActive = true;
                     toolGyro.classList.add('active');
-                    isOrbitActive = false;
+                    setOrbitActive(false);
                 } else {
                     alert('Sensor permission denied or gyroscope not supported on this device.');
                 }
@@ -2560,6 +2731,111 @@
             link.click();
         });
 
+        function getCurrentExportSettings() {
+            return {
+                strengthX: parseFloat(document.getElementById('slider-strength-x').value),
+                strengthY: parseFloat(document.getElementById('slider-strength-y').value),
+                focus: parseFloat(document.getElementById('slider-focus').value),
+                orbit: document.getElementById('toggle-orbit').checked,
+                orbitSpeed: parseFloat(document.getElementById('slider-orbit-speed').value),
+                smooth: parseInt(document.getElementById('slider-smoothing').value) / 100,
+                cropZoom: 1 - (parseInt(document.getElementById('slider-zoom').value) / 100),
+                contrast: parseFloat(document.getElementById('slider-contrast').value),
+                brightness: parseFloat(document.getElementById('slider-brightness').value),
+                blur: parseFloat(document.getElementById('slider-blur').value) / 1000,
+                invert: document.getElementById('toggle-invert').checked ? 1 : 0
+            };
+        }
+
+        function createOriginalImageDataUrl() {
+            const origCanvas = document.createElement('canvas');
+            origCanvas.width = imageWidth;
+            origCanvas.height = imageHeight;
+            const oCtx = origCanvas.getContext('2d', { willReadFrequently: true });
+            oCtx.drawImage(currentImageElement, 0, 0);
+            return origCanvas.toDataURL('image/jpeg', 0.9);
+        }
+
+        function triggerDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.download = filename;
+            a.href = url;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function drawAetherDepthWatermark(ctx, width, height, scale = 1) {
+            const pad = Math.max(16, Math.round(width * 0.018)) * scale;
+            const fontSize = Math.max(17, Math.round(width * 0.018)) * scale;
+            const icon = fontSize * 0.95;
+            const gap = fontSize * 0.38;
+            const text = 'AetherDepth';
+
+            ctx.save();
+            ctx.font = `600 ${fontSize}px "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif`;
+            ctx.textBaseline = 'middle';
+            const textWidth = ctx.measureText(text).width;
+            const boxW = icon + gap + textWidth + pad * 1.35;
+            const boxH = fontSize * 1.8;
+            const x = width - boxW - pad;
+            const y = height - boxH - pad;
+
+            ctx.shadowColor = 'rgba(0,0,0,.28)';
+            ctx.shadowBlur = 16 * scale;
+            ctx.fillStyle = 'rgba(255,255,255,.86)';
+            ctx.strokeStyle = 'rgba(222,226,230,.72)';
+            ctx.lineWidth = 1 * scale;
+            roundRect(ctx, x, y, boxW, boxH, 999);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.shadowBlur = 0;
+            drawLayerLogoMark(ctx, x + pad * 0.62, y + boxH / 2, icon, '#2780e3');
+            ctx.fillStyle = '#343a40';
+            ctx.fillText(text, x + pad * 0.62 + icon + gap, y + boxH / 2);
+            ctx.restore();
+        }
+
+        function drawLayerLogoMark(ctx, x, cy, size, color) {
+            const w = size;
+            const h = size * 0.45;
+            const drawLayer = (offsetY) => {
+                ctx.beginPath();
+                ctx.moveTo(x + w * 0.5, cy - h * 0.52 + offsetY);
+                ctx.lineTo(x + w, cy - h * 0.12 + offsetY);
+                ctx.lineTo(x + w * 0.5, cy + h * 0.3 + offsetY);
+                ctx.lineTo(x, cy - h * 0.12 + offsetY);
+                ctx.closePath();
+                ctx.stroke();
+            };
+
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = Math.max(2, size * 0.12);
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            drawLayer(-size * 0.24);
+            drawLayer(size * 0.04);
+            drawLayer(size * 0.32);
+            ctx.restore();
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            const r = Math.min(radius, width / 2, height / 2);
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + width - r, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+            ctx.lineTo(x + width, y + height - r);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+            ctx.lineTo(x + r, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
         // Export standalone interactive 3D Page (Single HTML File)
         document.getElementById('btn-export-html').addEventListener('click', () => {
             if (!currentImageElement) {
@@ -2569,32 +2845,9 @@
 
             showLoader('Bundling Standalone Page', 'Encoding assets to Base64 (this may take a moment)...');
 
-            // 1. Get original image dataURL
-            // Since Unsplash might be cross-origin, we draw onto offscreen canvas
-            const origCanvas = document.createElement('canvas');
-            origCanvas.width = imageWidth;
-            origCanvas.height = imageHeight;
-            const oCtx = origCanvas.getContext('2d', { willReadFrequently: true });
-            oCtx.drawImage(currentImageElement, 0, 0);
-            const origDataUrl = origCanvas.toDataURL('image/jpeg', 0.9);
-
-            // 2. Get depth image dataURL
+            const origDataUrl = createOriginalImageDataUrl();
             const depthDataUrl = depthCanvas.toDataURL('image/png');
-
-            // Fetch settings values for export template
-            const strengthX = parseFloat(document.getElementById('slider-strength-x').value);
-            const strengthY = parseFloat(document.getElementById('slider-strength-y').value);
-            const focus = parseFloat(document.getElementById('slider-focus').value);
-            const orbit = document.getElementById('toggle-orbit').checked;
-            const orbitSpeed = parseFloat(document.getElementById('slider-orbit-speed').value);
-            const smooth = parseInt(document.getElementById('slider-smoothing').value) / 100;
-            const cropZoom = 1 - (parseInt(document.getElementById('slider-zoom').value) / 100);
-            
-            // Adjustments
-            const contrast = parseFloat(document.getElementById('slider-contrast').value);
-            const brightness = parseFloat(document.getElementById('slider-brightness').value);
-            const blur = parseFloat(document.getElementById('slider-blur').value) / 1000;
-            const invert = document.getElementById('toggle-invert').checked ? 1 : 0;
+            const settings = getCurrentExportSettings();
 
             // Generate self-contained HTML Code
             const exportedHTML = `<!DOCTYPE html>
@@ -2605,30 +2858,63 @@
     <title>AetherDepth - Standalone 3D Photo</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>
     <style>
-        * { margin: 0; padding: 0; overflow: hidden; width: 100vw; height: 100vh; background: #000; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
         #canvas { display: block; width: 100%; height: 100%; cursor: grab; }
         #canvas:active { cursor: grabbing; }
+        .aether-credit {
+            position: fixed;
+            right: clamp(14px, 2vw, 28px);
+            bottom: clamp(14px, 2vw, 28px);
+            z-index: 10;
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            min-height: 2rem;
+            padding: .34rem .72rem;
+            border: 1px solid rgba(222,226,230,.72);
+            border-radius: 999px;
+            background: rgba(255,255,255,.86);
+            color: #343a40;
+            font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            font-size: .95rem;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 .75rem 2rem rgba(0,0,0,.20);
+            backdrop-filter: blur(8px);
+            transition: transform .18s ease, background .18s ease;
+        }
+        .aether-credit:hover { transform: translateY(-2px); background: rgba(255,255,255,.95); }
+        .aether-credit svg { width: 1.15rem; height: 1.15rem; color: #2780e3; }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
+    <a class="aether-credit" href="https://viscioletti.com/aetherdepth" target="_blank" rel="noopener noreferrer" aria-label="Visit Federico Viscioletti">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m12 2 9 5-9 5-9-5 9-5Z"></path>
+            <path d="m3 12 9 5 9-5"></path>
+            <path d="m3 17 9 5 9-5"></path>
+        </svg>
+        <span>AetherDepth</span>
+    </a>
     
     <script>
         const imageBase64 = "${origDataUrl}";
         const depthBase64 = "${depthDataUrl}";
 
         const settings = {
-            strengthX: ${strengthX},
-            strengthY: ${strengthY},
-            focus: ${focus},
-            orbit: ${orbit},
-            orbitSpeed: ${orbitSpeed},
-            smooth: ${smooth},
-            cropZoom: ${cropZoom},
-            contrast: ${contrast},
-            brightness: ${brightness},
-            blur: ${blur},
-            invert: ${invert}
+            strengthX: ${settings.strengthX},
+            strengthY: ${settings.strengthY},
+            focus: ${settings.focus},
+            orbit: ${settings.orbit},
+            orbitSpeed: ${settings.orbitSpeed},
+            smooth: ${settings.smooth},
+            cropZoom: ${settings.cropZoom},
+            contrast: ${settings.contrast},
+            brightness: ${settings.brightness},
+            blur: ${settings.blur},
+            invert: ${settings.invert}
         };
 
         const canvas = document.getElementById('canvas');
@@ -2725,6 +3011,7 @@
         let mouseCurrent = new THREE.Vector2(0, 0);
         let orbitTime = 0;
         let isOrbitActive = settings.orbit;
+        const zoomFactor = 1 - settings.cropZoom;
 
         function updateAspect() {
             if (!originalTexture.image) return;
@@ -2754,7 +3041,8 @@
         });
 
         window.addEventListener('pointermove', (e) => {
-            isOrbitActive = false;
+            if (isOrbitActive) return;
+
             const x = (e.clientX / window.innerWidth) * 2 - 1;
             const y = -((e.clientY / window.innerHeight) * 2 - 1);
             
@@ -2763,7 +3051,10 @@
         });
 
         window.addEventListener('pointerleave', () => {
-            isOrbitActive = settings.orbit;
+            if (!isOrbitActive) {
+                mouseTarget.set(0, 0);
+                material.uniforms.uScale.value = settings.cropZoom;
+            }
         });
 
         renderer.setAnimationLoop(() => {
@@ -2771,6 +3062,9 @@
                 orbitTime += 0.015 * settings.orbitSpeed;
                 mouseTarget.x = Math.sin(orbitTime) * 0.45;
                 mouseTarget.y = Math.cos(orbitTime) * 0.3;
+
+                const zoomPulse = 0.75 + 0.25 * ((Math.sin(orbitTime * 0.45) + 1) / 2);
+                material.uniforms.uScale.value = 1 - (zoomFactor * zoomPulse);
             }
             mouseCurrent.x += (mouseTarget.x - mouseCurrent.x) * settings.smooth;
             mouseCurrent.y += (mouseTarget.y - mouseCurrent.y) * settings.smooth;
@@ -2783,13 +3077,85 @@
 </html>`;
 
             // Download file trigger
-            const blob = new Blob([exportedHTML], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.download = 'spatial_photo_3d.html';
-            a.href = url;
-            a.click();
+            triggerDownload(new Blob([exportedHTML], { type: 'text/html' }), 'spatial_photo_3d.html');
             
+            hideLoader();
+        });
+
+        document.getElementById('btn-export-video').addEventListener('click', async () => {
+            if (!currentImageElement) {
+                alert('Please load an image first before exporting.');
+                return;
+            }
+
+            if (typeof MediaRecorder === 'undefined') {
+                alert('Video export is not supported in this browser.');
+                return;
+            }
+
+            const mimeType = [
+                'video/webm;codecs=vp9',
+                'video/webm;codecs=vp8',
+                'video/webm'
+            ].find(type => MediaRecorder.isTypeSupported(type));
+
+            if (!mimeType) {
+                alert('This browser cannot encode WebM video from the canvas.');
+                return;
+            }
+
+            showLoader('Recording Watermarked Video', 'Capturing the current spatial animation...');
+
+            const recordingCanvas = document.createElement('canvas');
+            recordingCanvas.width = canvas.width;
+            recordingCanvas.height = canvas.height;
+            const recordingCtx = recordingCanvas.getContext('2d');
+            const stream = recordingCanvas.captureStream(30);
+            const recorder = new MediaRecorder(stream, {
+                mimeType,
+                videoBitsPerSecond: 8_000_000
+            });
+            const chunks = [];
+            const durationMs = 6000;
+            const startedAt = performance.now();
+
+            recorder.ondataavailable = (event) => {
+                if (event.data && event.data.size) {
+                    chunks.push(event.data);
+                }
+            };
+
+            const recordingDone = new Promise((resolve) => {
+                recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+            });
+
+            let frameId = null;
+            const drawFrame = () => {
+                recordingCtx.clearRect(0, 0, recordingCanvas.width, recordingCanvas.height);
+                recordingCtx.drawImage(canvas, 0, 0, recordingCanvas.width, recordingCanvas.height);
+                drawAetherDepthWatermark(recordingCtx, recordingCanvas.width, recordingCanvas.height);
+
+                const elapsed = performance.now() - startedAt;
+                const pct = Math.min(100, Math.round((elapsed / durationMs) * 100));
+                progressBar.style.width = pct + '%';
+                progressText.textContent = pct + '%';
+
+                if (elapsed < durationMs && recorder.state === 'recording') {
+                    frameId = requestAnimationFrame(drawFrame);
+                } else if (recorder.state === 'recording') {
+                    recorder.stop();
+                }
+            };
+
+            recorder.start();
+            drawFrame();
+
+            const blob = await recordingDone;
+            if (frameId) {
+                cancelAnimationFrame(frameId);
+            }
+
+            triggerDownload(blob, 'aetherdepth_spatial_video.webm');
             hideLoader();
         });
 
