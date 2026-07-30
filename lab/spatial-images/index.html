@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spatial Depth AI</title>
+
+<style>
+:root, [data-theme="light"] {
+  --bg: #f6f4ef;
+  --bg-2: #ece8df;
+  --surface: rgba(251,250,246,.88);
+  --surface-2: rgba(255,255,255,.52);
+  --text: #23201b;
+  --muted: #6f6a62;
+  --faint: #9f988f;
+  --border: rgba(35,32,27,.10);
+  --border-2: rgba(35,32,27,.06);
+  --primary: #0d6f70;
+  --primary-hover: #0a5859;
+  --primary-soft: rgba(13,111,112,.12);
+  --ok: #4b8c34;
+  --warn: #c58a06;
+  --danger: #b5456a;
+  --shadow-sm: 0 3px 10px rgba(28,24,18,.06);
+  --shadow-md: 0 18px 48px rgba(28,24,18,.10);
+  --shadow-lg: 0 26px 78px rgba(28,24,18,.14);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --text-xs: clamp(.75rem, .72rem + .18vw, .875rem);
+  --text-sm: clamp(.875rem, .84rem + .2vw, 1rem);
+  --text-base: clamp(1rem, .96rem + .25vw, 1.1rem);
+  --text-lg: clamp(1.125rem, 1rem + .75vw, 1.5rem);
+  --text-xl: clamp(1.5rem, 1.2rem + 1.2vw, 2.2rem);
+  --tx: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] {
+  --bg: #141310;
+  --bg-2: #1a1815;
+  --surface: rgba(29,27,24,.82);
+  --surface-2: rgba(255,255,255,.03);
+  --text: #d6d1c9;
+  --muted: #989188;
+  --faint: #6f6860;
+  --border: rgba(255,255,255,.09);
+  --border-2: rgba(255,255,255,.06);
+  --primary: #5fa8ad;
+  --primary-hover: #3f868b;
+  --primary-soft: rgba(95,168,173,.14);
+  --shadow-sm: 0 3px 10px rgba(0,0,0,.18);
+  --shadow-md: 0 18px 48px rgba(0,0,0,.24);
+  --shadow-lg: 0 26px 78px rgba(0,0,0,.34);
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: var(--text-base);
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 10%, transparent), transparent 28%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+  min-height: 100dvh;
+}
+
+button, input, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+img, canvas {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+.app {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-5);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(12px);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-5);
+  position: sticky;
+  top: var(--space-4);
+  z-index: 20;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.brand-copy strong {
+  display: block;
+  font-size: var(--text-sm);
+}
+
+.brand-copy span {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.btn,
+.upload-label,
+.icon-btn {
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  transition:
+    background var(--tx),
+    color var(--tx),
+    border-color var(--tx),
+    transform var(--tx),
+    box-shadow var(--tx);
+}
+
+.btn,
+.upload-label {
+  padding: 0 var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.icon-btn {
+  width: 44px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.upload-label,
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: transparent;
+}
+
+.btn:hover,
+.upload-label:hover,
+.icon-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.upload-label:hover,
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.sidebar {
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-5);
+  position: sticky;
+  top: calc(var(--space-4) + 84px);
+}
+
+.eyebrow {
+  font-size: var(--text-xs);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: var(--text-xl);
+  line-height: 1.04;
+  letter-spacing: -.03em;
+  max-width: 11ch;
+}
+
+.hero p {
+  margin: var(--space-3) 0 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  max-width: 34ch;
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.info,
+.card,
+.strip {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+.info {
+  padding: var(--space-4);
+}
+
+.info strong {
+  display: block;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: var(--space-2);
+}
+
+.info span {
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.card {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.card-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.control {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.control label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.control label strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+
+select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 var(--space-3);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.main {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.top-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.strip {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.strip strong {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+}
+
+.strip span {
+  font-size: var(--text-sm);
+}
+
+.stage-panel {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.stage-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-2);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.status.ready .status-dot { background: var(--ok); }
+.status.busy .status-dot { background: var(--warn); }
+.status.error .status-dot { background: var(--danger); }
+
+.dropzone {
+  position: relative;
+  min-height: min(78dvh, 900px);
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,.12), transparent 24%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface) 78%, transparent));
+  box-shadow: var(--shadow-lg);
+  isolation: isolate;
+}
+
+.dropzone.dragover {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.stage:active {
+  cursor: grabbing;
+}
+
+.layer {
+  position: absolute;
+  inset: -6%;
+  width: 112%;
+  height: 112%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.layer.hidden {
+  display: none;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,.14), transparent 20%),
+    radial-gradient(ellipse at 50% 130%, rgba(0,0,0,.23), transparent 36%);
+  mix-blend-mode: overlay;
+}
+
+.glass {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: rgba(8,10,13,.54);
+  border: 1px solid rgba(255,255,255,.08);
+  color: rgba(239,242,245,.88);
+  font-size: var(--text-xs);
+  backdrop-filter: blur(14px);
+}
+
+.empty {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--space-8);
+}
+
+.empty-card {
+  width: min(560px, 100%);
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.empty-card h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+  line-height: 1.12;
+  letter-spacing: -.02em;
+  max-width: 18ch;
+}
+
+.empty-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  max-width: 42ch;
+}
+
+.empty-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.progress {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  overflow: hidden;
+}
+
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 70%, white));
+  transition: width 220ms ease;
+}
+
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 1120px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 780px) {
+  .app {
+    padding: var(--space-3);
+  }
+  .top-strip {
+    grid-template-columns: 1fr;
+  }
+  .dropzone {
+    min-height: 64dvh;
+  }
+  .glass {
+    border-radius: var(--radius-md);
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar panel">
+    <div class="brand" aria-label="Spatial Depth AI">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="4"></rect>
+          <path d="M8 14c1.6-2 3-3 4.6-3 1.4 0 2.4.6 4.4 2.4"></path>
+          <path d="M12 5v14"></path>
+        </svg>
+      </div>
+      <div class="brand-copy">
+        <strong>Spatial Depth AI</strong>
+        <span>Browser-only AI segmentation + depth parallax</span>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button id="themeToggle" class="icon-btn" type="button" aria-label="Toggle theme">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+      <label class="upload-label" for="fileInput">Upload image</label>
+      <button id="demoBtn" class="btn" type="button">Load demo</button>
+      <button id="recenterBtn" class="btn" type="button">Recenter</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar panel" aria-label="Controls">
+      <section class="hero">
+        <div class="eyebrow">Local AI prototype</div>
+        <h1>Real browser models, no backend.</h1>
+        <p>This version loads local browser AI models for background removal and depth estimation, removes the subject from the background plate, estimates depth, then animates multiple image planes for a more believable spatial effect.</p>
+      </section>
+
+      <div class="stack">
+        <div class="info">
+          <strong>Models</strong>
+          <span>Background removal uses RMBG-style processing. Depth estimation uses a Depth Anything pipeline in-browser. First run is heavy because the browser downloads the model weights.</span>
+        </div>
+        <div class="info">
+          <strong>Device note</strong>
+          <span>WebGPU is usually much faster. If unavailable, the app falls back to WASM, which still works but can be slower on large images.</span>
+        </div>
+      </div>
+
+      <section class="card" aria-labelledby="ai-heading">
+        <div class="card-title" id="ai-heading">AI settings</div>
+
+        <div class="control">
+          <label for="bgModel"><strong>Background model</strong><span id="bgModelText">RMBG-1.4</span></label>
+          <select id="bgModel">
+            <option value="briaai/RMBG-1.4">RMBG-1.4</option>
+            <option value="briaai/RMBG-2.0">RMBG-2.0</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="depthModel"><strong>Depth model</strong><span id="depthModelText">Depth Anything Small</span></label>
+          <select id="depthModel">
+            <option value="Xenova/depth-anything-small-hf">Depth Anything Small</option>
+            <option value="Xenova/depth-anything-base-hf">Depth Anything Base</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="deviceMode"><strong>Acceleration</strong><span id="deviceText">Auto</span></label>
+          <select id="deviceMode">
+            <option value="auto">Auto</option>
+            <option value="webgpu">Prefer WebGPU</option>
+            <option value="wasm">Force WASM</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="motion-heading">
+        <div class="card-title" id="motion-heading">Motion</div>
+
+        <div class="control">
+          <label for="nearRange"><strong>Near bands</strong><span id="nearVal">24 px</span></label>
+          <input id="nearRange" type="range" min="8" max="48" value="24">
+        </div>
+
+        <div class="control">
+          <label for="farRange"><strong>Far bands</strong><span id="farVal">6 px</span></label>
+          <input id="farRange" type="range" min="2" max="18" value="6">
+        </div>
+
+        <div class="control">
+          <label for="subjectRange"><strong>Subject motion</strong><span id="subjectVal">34 px</span></label>
+          <input id="subjectRange" type="range" min="10" max="64" value="34">
+        </div>
+
+        <div class="control">
+          <label for="bandsRange"><strong>Depth bands</strong><span id="bandsVal">6</span></label>
+          <input id="bandsRange" type="range" min="3" max="8" value="6">
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="render-heading">
+        <div class="card-title" id="render-heading">Rendering</div>
+
+        <div class="control">
+          <label for="blurRange"><strong>BG blur</strong><span id="blurVal">8 px</span></label>
+          <input id="blurRange" type="range" min="0" max="20" value="8">
+        </div>
+
+        <div class="control">
+          <label for="fillRange"><strong>Hole fill</strong><span id="fillVal">54 px</span></label>
+          <input id="fillRange" type="range" min="16" max="90" value="54">
+        </div>
+
+        <div class="control">
+          <label for="featherRange"><strong>Mask feather</strong><span id="featherVal">10 px</span></label>
+          <input id="featherRange" type="range" min="2" max="24" value="10">
+        </div>
+
+        <div class="control">
+          <label for="edgeExpandRange"><strong>Mask expand</strong><span id="edgeExpandVal">6 px</span></label>
+          <input id="edgeExpandRange" type="range" min="0" max="18" value="6">
+        </div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <section class="top-strip" aria-label="Highlights">
+        <article class="strip">
+          <strong>AI subject mask</strong>
+          <span>The subject mask comes from an in-browser segmentation model instead of a synthetic silhouette.</span>
+        </article>
+        <article class="strip">
+          <strong>AI depth map</strong>
+          <span>The background is sliced using real depth-estimation output, which gives more layered motion than a flat fallback.</span>
+        </article>
+        <article class="strip">
+          <strong>Ghost removed</strong>
+          <span>The subject region is erased from the background plate before depth slicing, so the duplicate subject is not baked into the background.</span>
+        </article>
+      </section>
+
+      <section class="stage-panel panel">
+        <div class="stage-toolbar">
+          <div id="status" class="status" aria-live="polite">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="statusText">Waiting for models</span>
+          </div>
+
+          <div class="progress" style="min-width:min(360px,100%); flex:1;">
+            <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+            <div class="progress-meta">
+              <span id="progressLabel">Preparing app…</span>
+              <span id="progressPct">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <input id="fileInput" class="sr-only" type="file" accept="image/*">
+        <img id="sourceImage" class="sr-only" alt="">
+
+        <div id="dropzone" class="dropzone" tabindex="0" role="region" aria-label="Spatial image preview">
+          <div id="stage" class="stage">
+            <canvas id="bgBand0" class="layer"></canvas>
+            <canvas id="bgBand1" class="layer"></canvas>
+            <canvas id="bgBand2" class="layer"></canvas>
+            <canvas id="bgBand3" class="layer"></canvas>
+            <canvas id="bgBand4" class="layer"></canvas>
+            <canvas id="bgBand5" class="layer"></canvas>
+            <canvas id="bgBand6" class="layer"></canvas>
+            <canvas id="bgBand7" class="layer"></canvas>
+            <canvas id="subjectCanvas" class="layer"></canvas>
+            <div class="vignette"></div>
+            <div class="glass">
+              <span id="glassLeft">Background removal + depth estimation run in-browser.</span>
+              <span id="glassRight">No image loaded.</span>
+            </div>
+          </div>
+
+          <div id="emptyState" class="empty">
+            <div class="empty-card">
+              <div class="eyebrow">Get started</div>
+              <h2>Upload an image and let the browser build the spatial stack.</h2>
+              <p>This app loads local browser AI models, removes the subject from the background plate, estimates depth, then animates multiple image planes for a more convincing parallax effect.</p>
+              <div class="empty-actions">
+                <label class="upload-label" for="fileInput">Choose image</label>
+                <button id="emptyDemoBtn" class="btn" type="button">Try demo image</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+import { pipeline, AutoModel, AutoProcessor, RawImage, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm';
+
+const state = {
+  theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+  models: {
+    bgModelId: 'briaai/RMBG-1.4',
+    depthModelId: 'Xenova/depth-anything-small-hf',
+    deviceMode: 'auto',
+    bgModel: null,
+    bgProcessor: null,
+    depthEstimator: null,
+  },
+  image: {
+    bitmap: null,
+    width: 0,
+    height: 0,
+    loaded: false,
+    src: ''
+  },
+  motion: {
+    targetX: 0,
+    targetY: 0,
+    currentX: 0,
+    currentY: 0,
+  },
+  renderToken: 0,
+  dpr: 1
+};
+
+const el = {
+  html: document.documentElement,
+  themeToggle: document.getElementById('themeToggle'),
+  fileInput: document.getElementById('fileInput'),
+  sourceImage: document.getElementById('sourceImage'),
+  dropzone: document.getElementById('dropzone'),
+  stage: document.getElementById('stage'),
+  emptyState: document.getElementById('emptyState'),
+  demoBtn: document.getElementById('demoBtn'),
+  emptyDemoBtn: document.getElementById('emptyDemoBtn'),
+  recenterBtn: document.getElementById('recenterBtn'),
+  status: document.getElementById('status'),
+  statusText: document.getElementById('statusText'),
+  progressFill: document.getElementById('progressFill'),
+  progressLabel: document.getElementById('progressLabel'),
+  progressPct: document.getElementById('progressPct'),
+  glassLeft: document.getElementById('glassLeft'),
+  glassRight: document.getElementById('glassRight'),
+  bgModel: document.getElementById('bgModel'),
+  depthModel: document.getElementById('depthModel'),
+  deviceMode: document.getElementById('deviceMode'),
+  bgModelText: document.getElementById('bgModelText'),
+  depthModelText: document.getElementById('depthModelText'),
+  deviceText: document.getElementById('deviceText'),
+  nearRange: document.getElementById('nearRange'),
+  farRange: document.getElementById('farRange'),
+  subjectRange: document.getElementById('subjectRange'),
+  bandsRange: document.getElementById('bandsRange'),
+  blurRange: document.getElementById('blurRange'),
+  fillRange: document.getElementById('fillRange'),
+  featherRange: document.getElementById('featherRange'),
+  edgeExpandRange: document.getElementById('edgeExpandRange'),
+  nearVal: document.getElementById('nearVal'),
+  farVal: document.getElementById('farVal'),
+  subjectVal: document.getElementById('subjectVal'),
+  bandsVal: document.getElementById('bandsVal'),
+  blurVal: document.getElementById('blurVal'),
+  fillVal: document.getElementById('fillVal'),
+  featherVal: document.getElementById('featherVal'),
+  edgeExpandVal: document.getElementById('edgeExpandVal'),
+  bandCanvases: Array.from({ length: 8 }, (_, i) => document.getElementById(`bgBand${i}`)),
+  subjectCanvas: document.getElementById('subjectCanvas')
+};
+
+const bandCtxs = el.bandCanvases.map(c => c.getContext('2d'));
+const subjectCtx = el.subjectCanvas.getContext('2d');
+
+const work = {
+  mask: document.createElement('canvas'),
+  invertMask: document.createElement('canvas'),
+  backgroundPlate: document.createElement('canvas'),
+  holeFill: document.createElement('canvas'),
+  depthMap: document.createElement('canvas'),
+  shadow: document.createElement('canvas'),
+  scratch: document.createElement('canvas')
+};
+
+const ctx = {
+  mask: work.mask.getContext('2d', { willReadFrequently: true }),
+  invertMask: work.invertMask.getContext('2d', { willReadFrequently: true }),
+  backgroundPlate: work.backgroundPlate.getContext('2d', { willReadFrequently: true }),
+  holeFill: work.holeFill.getContext('2d', { willReadFrequently: true }),
+  depthMap: work.depthMap.getContext('2d', { willReadFrequently: true }),
+  shadow: work.shadow.getContext('2d', { willReadFrequently: true }),
+  scratch: work.scratch.getContext('2d', { willReadFrequently: true })
+};
+
+function setTheme() {
+  el.html.setAttribute('data-theme', state.theme);
+  el.themeToggle.innerHTML = state.theme === 'dark'
+    ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>'
+    : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>';
+}
+setTheme();
+
+function setStatus(type, text) {
+  el.status.classList.remove('ready', 'busy', 'error');
+  if (type) el.status.classList.add(type);
+  el.statusText.textContent = text;
+}
+
+function setProgress(label, value) {
+  const pct = Math.max(0, Math.min(100, value));
+  el.progressLabel.textContent = label;
+  el.progressPct.textContent = `${Math.round(pct)}%`;
+  el.progressFill.style.width = `${pct}%`;
+}
+
+function updateLabels() {
+  el.bgModelText.textContent = el.bgModel.options[el.bgModel.selectedIndex].text;
+  el.depthModelText.textContent = el.depthModel.options[el.depthModel.selectedIndex].text;
+  el.deviceText.textContent = el.deviceMode.options[el.deviceMode.selectedIndex].text;
+  el.nearVal.textContent = `${el.nearRange.value} px`;
+  el.farVal.textContent = `${el.farRange.value} px`;
+  el.subjectVal.textContent = `${el.subjectRange.value} px`;
+  el.bandsVal.textContent = `${el.bandsRange.value}`;
+  el.blurVal.textContent = `${el.blurRange.value} px`;
+  el.fillVal.textContent = `${el.fillRange.value} px`;
+  el.featherVal.textContent = `${el.featherRange.value} px`;
+  el.edgeExpandVal.textContent = `${el.edgeExpandRange.value} px`;
+}
+updateLabels();
+
+function preferredDevice() {
+  if (state.models.deviceMode === 'wasm') return 'wasm';
+  if (state.models.deviceMode === 'webgpu') return 'webgpu';
+  return ('gpu' in navigator) ? 'webgpu' : 'wasm';
+}
+
+function coverRect(imgW, imgH, boxW, boxH, scale = 1) {
+  const imgRatio = imgW / imgH;
+  const boxRatio = boxW / boxH;
+  let drawW, drawH;
+  if (imgRatio > boxRatio) {
+    drawH = boxH * scale;
+    drawW = drawH * imgRatio;
+  } else {
+    drawW = boxW * scale;
+    drawH = drawW / imgRatio;
+  }
+  return { x: (boxW - drawW) / 2, y: (boxH - drawH) / 2, drawW, drawH };
+}
+
+function drawCover(targetCtx, img, boxW, boxH, scale = 1) {
+  const r = coverRect(img.width, img.height, boxW, boxH, scale);
+  targetCtx.drawImage(img, r.x, r.y, r.drawW, r.drawH);
+}
+
+function resizeAll() {
+  const rect = el.stage.getBoundingClientRect();
+  state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const width = Math.max(1, Math.round(rect.width * state.dpr));
+  const height = Math.max(1, Math.round(rect.height * state.dpr));
+
+  [...el.bandCanvases, el.subjectCanvas, ...Object.values(work)].forEach(canvas => {
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+  });
+
+  [...bandCtxs, subjectCtx, ...Object.values(ctx)].forEach(context => {
+    context.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+  });
+}
+
+async function ensureModels(force = false) {
+  if (!force && state.models.bgModel && state.models.bgProcessor && state.models.depthEstimator) return;
+
+  env.allowLocalModels = false;
+  env.allowRemoteModels = true;
+  if (env.backends?.onnx?.wasm) env.backends.onnx.wasm.proxy = true;
+
+  const device = preferredDevice();
+  setStatus('busy', 'Loading browser AI models…');
+  setProgress('Preparing runtime…', 8);
+
+  state.models.bgModel = null;
+  state.models.bgProcessor = null;
+  state.models.depthEstimator = null;
+
+  state.models.bgModelId = el.bgModel.value;
+  state.models.depthModelId = el.depthModel.value;
+  state.models.deviceMode = el.deviceMode.value;
+
+  setProgress('Loading background model…', 24);
+  state.models.bgModel = await AutoModel.from_pretrained(state.models.bgModelId, {
+    device,
+    config: { model_type: 'custom' }
+  });
+
+  state.models.bgProcessor = await AutoProcessor.from_pretrained(state.models.bgModelId, {
+    config: {
+      do_normalize: true,
+      do_pad: false,
+      do_rescale: true,
+      do_resize: true,
+      image_mean: [0.5, 0.5, 0.5],
+      feature_extractor_type: 'ImageFeatureExtractor',
+      image_std: [1, 1, 1],
+      resample: 2,
+      rescale_factor: 0.00392156862745098,
+      size: { width: 1024, height: 1024 }
+    }
+  });
+
+  setProgress('Loading depth model…', 62);
+  state.models.depthEstimator = await pipeline('depth-estimation', state.models.depthModelId, {
+    device
+  });
+
+  setProgress('Models ready', 100);
+  setStatus('ready', `Models ready · ${device.toUpperCase()}`);
+  el.glassLeft.textContent = `Background removal and depth estimation loaded in-browser via ${device.toUpperCase()}.`;
+}
+
+async function rawImageFromSource(src) {
+  return await RawImage.fromURL(src);
+}
+
+function rawToCanvas(raw) {
+  const canvas = document.createElement('canvas');
+  canvas.width = raw.width;
+  canvas.height = raw.height;
+  const c = canvas.getContext('2d');
+  if (typeof raw.toCanvas === 'function') {
+    c.drawImage(raw.toCanvas(), 0, 0);
+  } else if (raw.data) {
+    const channels = raw.channels || 1;
+    if (channels === 1) {
+      const imageData = c.createImageData(raw.width, raw.height);
+      for (let i = 0; i < raw.data.length; i++) {
+        const v = raw.data[i];
+        imageData.data[i * 4 + 0] = v;
+        imageData.data[i * 4 + 1] = v;
+        imageData.data[i * 4 + 2] = v;
+        imageData.data[i * 4 + 3] = 255;
+      }
+      c.putImageData(imageData, 0, 0);
+    } else {
+      const imageData = new ImageData(new Uint8ClampedArray(raw.data), raw.width, raw.height);
+      c.putImageData(imageData, 0, 0);
+    }
+  }
+  return canvas;
+}
+
+async function makeMask(src) {
+  setProgress('Running background removal…', 18);
+  const image = await rawImageFromSource(src);
+  const { pixel_values } = await state.models.bgProcessor(image);
+  const { output } = await state.models.bgModel({ input: pixel_values });
+  const mask = await RawImage.fromTensor(output[0].mul(255).to('uint8')).resize(image.width, image.height);
+  return mask;
+}
+
+async function makeDepth(src) {
+  setProgress('Running depth estimation…', 42);
+  const out = await state.models.depthEstimator(src);
+  return out.depth;
+}
+
+function stageMask(maskRaw, stageW, stageH) {
+  const maskCanvas = rawToCanvas(maskRaw);
+  ctx.mask.clearRect(0, 0, stageW, stageH);
+  drawCover(ctx.mask, maskCanvas, stageW, stageH, 1.02);
+
+  const expand = Number(el.edgeExpandRange.value);
+  const feather = Number(el.featherRange.value);
+
+  if (expand > 0) {
+    ctx.scratch.clearRect(0, 0, stageW, stageH);
+    ctx.scratch.filter = `blur(${expand}px)`;
+    ctx.scratch.drawImage(work.mask, 0, 0, stageW, stageH);
+    ctx.scratch.filter = 'none';
+    ctx.mask.clearRect(0, 0, stageW, stageH);
+    ctx.mask.drawImage(work.scratch, 0, 0, stageW, stageH);
+  }
+
+  if (feather > 0) {
+    ctx.scratch.clearRect(0, 0, stageW, stageH);
+    ctx.scratch.filter = `blur(${feather}px) contrast(1.15)`;
+    ctx.scratch.drawImage(work.mask, 0, 0, stageW, stageH);
+    ctx.scratch.filter = 'none';
+    ctx.mask.clearRect(0, 0, stageW, stageH);
+    ctx.mask.drawImage(work.scratch, 0, 0, stageW, stageH);
+  }
+}
+
+function stageDepth(depthRaw, stageW, stageH) {
+  const depthCanvas = rawToCanvas(depthRaw);
+  ctx.depthMap.clearRect(0, 0, stageW, stageH);
+  drawCover(ctx.depthMap, depthCanvas, stageW, stageH, 1.01);
+
+  ctx.scratch.clearRect(0, 0, stageW, stageH);
+  ctx.scratch.filter = 'blur(10px)';
+  ctx.scratch.drawImage(work.depthMap, 0, 0, stageW, stageH);
+  ctx.scratch.filter = 'none';
+  ctx.depthMap.clearRect(0, 0, stageW, stageH);
+  ctx.depthMap.drawImage(work.scratch, 0, 0, stageW, stageH);
+}
+
+function buildBackgroundPlate(stageW, stageH) {
+  ctx.invertMask.clearRect(0, 0, stageW, stageH);
+  ctx.invertMask.fillStyle = '#fff';
+  ctx.invertMask.fillRect(0, 0, stageW, stageH);
+  ctx.invertMask.globalCompositeOperation = 'destination-out';
+  ctx.invertMask.drawImage(work.mask, 0, 0, stageW, stageH);
+  ctx.invertMask.globalCompositeOperation = 'source-over';
+
+  ctx.holeFill.clearRect(0, 0, stageW, stageH);
+  ctx.holeFill.filter = `blur(${Number(el.fillRange.value)}px) saturate(.84) brightness(.94)`;
+  drawCover(ctx.holeFill, state.image.bitmap, stageW, stageH, 1.08);
+  ctx.holeFill.filter = 'none';
+  ctx.holeFill.globalCompositeOperation = 'destination-in';
+  ctx.holeFill.drawImage(work.mask, 0, 0, stageW, stageH);
+  ctx.holeFill.globalCompositeOperation = 'source-over';
+
+  ctx.backgroundPlate.clearRect(0, 0, stageW, stageH);
+  ctx.backgroundPlate.filter = `blur(${Number(el.blurRange.value)}px)`;
+  drawCover(ctx.backgroundPlate, state.image.bitmap, stageW, stageH, 1.04);
+  ctx.backgroundPlate.filter = 'none';
+  ctx.backgroundPlate.globalCompositeOperation = 'destination-in';
+  ctx.backgroundPlate.drawImage(work.invertMask, 0, 0, stageW, stageH);
+  ctx.backgroundPlate.globalCompositeOperation = 'source-over';
+  ctx.backgroundPlate.drawImage(work.holeFill, 0, 0, stageW, stageH);
+  ctx.backgroundPlate.fillStyle = 'rgba(8,10,14,.08)';
+  ctx.backgroundPlate.fillRect(0, 0, stageW, stageH);
+}
+
+function buildSubject(stageW, stageH) {
+  ctx.shadow.clearRect(0, 0, stageW, stageH);
+  drawCover(ctx.shadow, state.image.bitmap, stageW, stageH, 1.02);
+  ctx.shadow.globalCompositeOperation = 'destination-in';
+  ctx.shadow.drawImage(work.mask, 0, 0, stageW, stageH);
+  ctx.shadow.globalCompositeOperation = 'source-over';
+
+  const shadowTmp = document.createElement('canvas');
+  shadowTmp.width = work.shadow.width;
+  shadowTmp.height = work.shadow.height;
+  const sctx = shadowTmp.getContext('2d');
+  sctx.filter = 'blur(22px)';
+  sctx.globalAlpha = 0.28;
+  sctx.drawImage(work.shadow, 10, 18, shadowTmp.width, shadowTmp.height);
+
+  subjectCtx.clearRect(0, 0, stageW, stageH);
+  subjectCtx.drawImage(shadowTmp, 0, 0, stageW, stageH);
+  drawCover(subjectCtx, state.image.bitmap, stageW, stageH, 1.02);
+  subjectCtx.globalCompositeOperation = 'destination-in';
+  subjectCtx.drawImage(work.mask, 0, 0, stageW, stageH);
+  subjectCtx.globalCompositeOperation = 'source-over';
+}
+
+function buildBands(stageW, stageH) {
+  const bands = Number(el.bandsRange.value);
+  const depthPixels = ctx.depthMap.getImageData(0, 0, stageW, stageH).data;
+  const bgPixels = ctx.backgroundPlate.getImageData(0, 0, stageW, stageH).data;
+
+  el.bandCanvases.forEach((canvas, i) => canvas.classList.toggle('hidden', i >= bands));
+  bandCtxs.forEach(c => c.clearRect(0, 0, stageW, stageH));
+
+  const layers = Array.from({ length: bands }, () => new ImageData(stageW, stageH));
+
+  for (let y = 0; y < stageH; y++) {
+    for (let x = 0; x < stageW; x++) {
+      const i = (y * stageW + x) * 4;
+      const depth = depthPixels[i] / 255;
+      const band = Math.max(0, Math.min(bands - 1, bands - 1 - Math.floor(depth * bands)));
+      const target = layers[band].data;
+      target[i] = bgPixels[i];
+      target[i + 1] = bgPixels[i + 1];
+      target[i + 2] = bgPixels[i + 2];
+      target[i + 3] = bgPixels[i + 3];
+    }
+  }
+
+  layers.forEach((imgData, i) => {
+    bandCtxs[i].putImageData(imgData, 0, 0);
+  });
+}
+
+async function renderSpatial(src) {
+  const token = ++state.renderToken;
+  const stageW = el.stage.clientWidth;
+  const stageH = el.stage.clientHeight;
+
+  setStatus('busy', 'Running local AI pipeline…');
+  setProgress('Analyzing image…', 10);
+
+  const [maskRaw, depthRaw] = await Promise.all([
+    makeMask(src),
+    makeDepth(src)
+  ]);
+
+  if (token !== state.renderToken) return;
+
+  setProgress('Building scene layers…', 72);
+  stageMask(maskRaw, stageW, stageH);
+  stageDepth(depthRaw, stageW, stageH);
+  buildBackgroundPlate(stageW, stageH);
+  buildSubject(stageW, stageH);
+  buildBands(stageW, stageH);
+
+  state.image.loaded = true;
+  el.emptyState.classList.add('hidden');
+  el.glassRight.textContent = `${state.image.width}×${state.image.height} · ${el.bandsRange.value} bands`;
+  setProgress('Done', 100);
+  setStatus('ready', 'Local AI spatial stack ready');
+}
+
+async function loadImage(src) {
+  state.image.src = src;
+  setStatus('busy', 'Loading image…');
+  setProgress('Reading image…', 4);
+
+  await new Promise((resolve, reject) => {
+    el.sourceImage.onload = resolve;
+    el.sourceImage.onerror = reject;
+    el.sourceImage.src = src;
+  });
+
+  try {
+    state.image.bitmap = await createImageBitmap(el.sourceImage);
+  } catch {
+    state.image.bitmap = el.sourceImage;
+  }
+
+  state.image.width = el.sourceImage.naturalWidth;
+  state.image.height = el.sourceImage.naturalHeight;
+
+  resizeAll();
+  await renderSpatial(src);
+}
+
+async function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  try {
+    await loadImage(url);
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 1200);
+  }
+}
+
+function loadDemo() {
+  const svg = encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 980">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#c8dbe1"/>
+          <stop offset="100%" stop-color="#8eabb3"/>
+        </linearGradient>
+        <linearGradient id="coat" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#1f3639"/>
+          <stop offset="100%" stop-color="#396166"/>
+        </linearGradient>
+      </defs>
+      <rect width="1400" height="980" fill="url(#sky)"/>
+      <circle cx="1120" cy="160" r="102" fill="#eaf1f4" opacity=".68"/>
+      <rect x="0" y="720" width="1400" height="260" fill="#8da5ab"/>
+      <rect x="82" y="170" width="380" height="540" rx="22" fill="#c4d4d8" opacity=".42"/>
+      <rect x="870" y="220" width="240" height="450" rx="20" fill="#d8e5e7" opacity=".36"/>
+      <ellipse cx="700" cy="826" rx="224" ry="34" fill="#748f96" opacity=".34"/>
+      <circle cx="700" cy="320" r="108" fill="#c7855d"/>
+      <path d="M585 454c34-60 85-96 115-96 31 0 82 36 118 96l44 276H541l44-276Z" fill="url(#coat)"/>
+      <path d="M632 726c27-40 48-58 68-58 20 0 41 18 67 58" fill="none" stroke="#223f43" stroke-width="18" stroke-linecap="round"/>
+      <path d="M644 283c28-48 82-69 132-56 22 6 43 16 60 30-12-58-62-96-134-96-76 0-133 45-143 117 26-18 49-18 85 5Z" fill="#251f19"/>
+      <circle cx="665" cy="323" r="8" fill="#251f19"/>
+      <circle cx="736" cy="323" r="8" fill="#251f19"/>
+      <path d="M676 370c18 11 41 11 55 0" fill="none" stroke="#884a32" stroke-width="6" stroke-linecap="round"/>
+    </svg>
+  `);
+  loadImage(`data:image/svg+xml;charset=utf-8,${svg}`);
+}
+
+function animate() {
+  state.motion.currentX += (state.motion.targetX - state.motion.currentX) * 0.08;
+  state.motion.currentY += (state.motion.targetY - state.motion.currentY) * 0.08;
+
+  const bands = Number(el.bandsRange.value);
+  const near = Number(el.nearRange.value);
+  const far = Number(el.farRange.value);
+  const subjectMove = Number(el.subjectRange.value);
+
+  el.bandCanvases.forEach((canvas, i) => {
+    if (i >= bands) return;
+    const t = bands <= 1 ? 0 : i / (bands - 1);
+    const move = far + (near - far) * (1 - t);
+    const scale = 1.012 + (1 - t) * 0.012;
+    canvas.style.transform = `translate(${state.motion.currentX * move}px, ${state.motion.currentY * move}px) scale(${scale})`;
+  });
+
+  el.subjectCanvas.style.transform = `translate(${state.motion.currentX * subjectMove}px, ${state.motion.currentY * subjectMove}px) scale(1.012)`;
+  requestAnimationFrame(animate);
+}
+
+function setMotion(nx, ny) {
+  state.motion.targetX = Math.max(-1, Math.min(1, -nx));
+  state.motion.targetY = Math.max(-1, Math.min(1, -ny));
+}
+
+function bind() {
+  el.themeToggle.addEventListener('click', () => {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    setTheme();
+  });
+
+  el.bgModel.addEventListener('change', async () => {
+    updateLabels();
+    await ensureModels(true);
+    if (state.image.src) await renderSpatial(state.image.src);
+  });
+
+  el.depthModel.addEventListener('change', async () => {
+    updateLabels();
+    await ensureModels(true);
+    if (state.image.src) await renderSpatial(state.image.src);
+  });
+
+  el.deviceMode.addEventListener('change', async () => {
+    updateLabels();
+    await ensureModels(true);
+    if (state.image.src) await renderSpatial(state.image.src);
+  });
+
+  [
+    el.nearRange,
+    el.farRange,
+    el.subjectRange,
+    el.bandsRange,
+    el.blurRange,
+    el.fillRange,
+    el.featherRange,
+    el.edgeExpandRange
+  ].forEach(input => {
+    input.addEventListener('input', async () => {
+      updateLabels();
+      if (state.image.src && [el.bandsRange, el.blurRange, el.fillRange, el.featherRange, el.edgeExpandRange].includes(input)) {
+        await renderSpatial(state.image.src);
+      }
+    });
+  });
+
+  el.fileInput.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  });
+
+  el.demoBtn.addEventListener('click', loadDemo);
+  el.emptyDemoBtn.addEventListener('click', loadDemo);
+  el.recenterBtn.addEventListener('click', () => setMotion(0, 0));
+
+  ['dragenter', 'dragover'].forEach(type => {
+    el.dropzone.addEventListener(type, e => {
+      e.preventDefault();
+      el.dropzone.classList.add('dragover');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(type => {
+    el.dropzone.addEventListener(type, e => {
+      e.preventDefault();
+      el.dropzone.classList.remove('dragover');
+      if (type === 'drop') {
+        const file = e.dataTransfer?.files?.[0];
+        if (file) handleFile(file);
+      }
+    });
+  });
+
+  el.dropzone.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      el.fileInput.click();
+    }
+  });
+
+  el.stage.addEventListener('pointermove', e => {
+    if (!state.image.loaded) return;
+    const rect = el.stage.getBoundingClientRect();
+    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+    setMotion(nx, ny);
+  });
+
+  el.stage.addEventListener('pointerleave', () => setMotion(0, 0));
+
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', e => {
+      if (!state.image.loaded) return;
+      const nx = Math.max(-25, Math.min(25, e.gamma || 0)) / 25;
+      const ny = Math.max(-25, Math.min(25, e.beta || 0)) / 25;
+      setMotion(nx, ny);
+    });
+  }
+
+  window.addEventListener('resize', async () => {
+    resizeAll();
+    if (state.image.src) await renderSpatial(state.image.src);
+  });
+}
+
+async function init() {
+  resizeAll();
+  bind();
+  animate();
+  try {
+    await ensureModels();
+  } catch (err) {
+    console.error(err);
+    setStatus('error', 'Could not load AI models');
+    el.glassLeft.textContent = 'Model loading failed. Try Chrome or Edge, or switch to WASM mode.';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
