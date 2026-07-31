@@ -1259,6 +1259,10 @@
                             <i data-lucide="globe"></i>
                             Export Standalone 3D Page
                         </button>
+                        <button class="btn-secondary" id="btn-publish-gallery" style="margin-top:0.5rem">
+                            <i data-lucide="image-up"></i>
+                            Publish to Gallery
+                        </button>
                         <button class="btn-primary" id="btn-export-video" style="margin-top:0.5rem">
                             <i data-lucide="video"></i>
                             Export Watermarked Video
@@ -1850,6 +1854,7 @@
         // Assets Loader & Depth Map Handlers
         // ----------------------------------------------------
         let currentImageElement = null;
+        let currentPhotoName = null;
         let pendingDepthRun = false;
 
         function loadPhoto(url, isPreset = false) {
@@ -2543,6 +2548,7 @@
         });
 
         function handleUploadedFile(file) {
+            currentPhotoName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '-').substring(0, 60);
             const reader = new FileReader();
             reader.onload = function(evt) {
                 // Clear active presets highlights
@@ -2847,13 +2853,36 @@
             }
 
             showLoader('Bundling Standalone Page', 'Encoding assets to Base64 (this may take a moment)...');
+            const exportedHTML = generateStandaloneHTML();
+            const baseName = currentPhotoName ? `${currentPhotoName}-spatial_photo_3d` : 'spatial_photo_3d';
+            triggerDownload(new Blob([exportedHTML], { type: 'text/html' }), `${baseName}.html`);
+            hideLoader();
+        });
 
+        document.getElementById('btn-publish-gallery').addEventListener('click', () => {
+            if (!currentImageElement) {
+                alert('Please load an image first before publishing.');
+                return;
+            }
+
+            showLoader('Preparing for Gallery', 'Generating standalone page...');
+            const exportedHTML = generateStandaloneHTML();
+            try {
+                sessionStorage.setItem('aetherdepth_publish_html', exportedHTML);
+            } catch (e) {
+                alert('The exported file is too large for this browser. Please use Export Standalone 3D Page and upload the file manually.');
+                hideLoader();
+                return;
+            }
+            hideLoader();
+            window.open('https://viscioletti.com/gallery-submit.html', '_blank');
+        });
+
+        function generateStandaloneHTML() {
             const origDataUrl = createOriginalImageDataUrl();
             const depthDataUrl = depthCanvas.toDataURL('image/png');
             const settings = getCurrentExportSettings();
-
-            // Generate self-contained HTML Code
-            const exportedHTML = `<!DOCTYPE html>
+            return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -2888,6 +2917,7 @@
             transition: transform .18s ease, background .18s ease;
         }
         .aether-credit:hover { transform: translateY(-2px); background: rgba(255,255,255,.95); }
+        .aether-credit--left { right: auto; left: clamp(14px, 2vw, 28px); }
         .aether-credit svg { width: 1.15rem; height: 1.15rem; color: #2780e3; }
     </style>
 </head>
@@ -2900,6 +2930,22 @@
             <path d="m3 17 9 5 9-5"></path>
         </svg>
         <span>AetherDepth</span>
+    </a>
+    <a class="aether-credit" href="https://viscioletti.com/gallery.html" target="_blank" rel="noopener noreferrer" aria-label="Browse the AetherDepth Gallery">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        <span>Gallery</span>
+    </a>
+    <a class="aether-credit aether-credit--left" href="https://viscioletti.com/gallery-submit.html" target="_blank" rel="noopener noreferrer" aria-label="Publish your creation to the gallery">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Publish</span>
     </a>
     
     <script>
@@ -3079,11 +3125,8 @@
 </body>
 </html>`;
 
-            // Download file trigger
-            triggerDownload(new Blob([exportedHTML], { type: 'text/html' }), 'spatial_photo_3d.html');
-            
-            hideLoader();
-        });
+            return exportedHTML;
+        }
 
         document.getElementById('btn-export-video').addEventListener('click', async () => {
             if (!currentImageElement) {
