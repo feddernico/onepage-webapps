@@ -1259,6 +1259,10 @@
                             <i data-lucide="globe"></i>
                             Export Standalone 3D Page
                         </button>
+                        <button class="btn-secondary" id="btn-publish-gallery" style="margin-top:0.5rem">
+                            <i data-lucide="image-up"></i>
+                            Publish to Gallery
+                        </button>
                         <button class="btn-primary" id="btn-export-video" style="margin-top:0.5rem">
                             <i data-lucide="video"></i>
                             Export Watermarked Video
@@ -2847,13 +2851,35 @@
             }
 
             showLoader('Bundling Standalone Page', 'Encoding assets to Base64 (this may take a moment)...');
+            const exportedHTML = generateStandaloneHTML();
+            triggerDownload(new Blob([exportedHTML], { type: 'text/html' }), 'spatial_photo_3d.html');
+            hideLoader();
+        });
 
+        document.getElementById('btn-publish-gallery').addEventListener('click', () => {
+            if (!currentImageElement) {
+                alert('Please load an image first before publishing.');
+                return;
+            }
+
+            showLoader('Preparing for Gallery', 'Generating standalone page...');
+            const exportedHTML = generateStandaloneHTML();
+            try {
+                sessionStorage.setItem('aetherdepth_publish_html', exportedHTML);
+            } catch (e) {
+                alert('The exported file is too large for this browser. Please use Export Standalone 3D Page and upload the file manually.');
+                hideLoader();
+                return;
+            }
+            hideLoader();
+            window.open('https://viscioletti.com/gallery-submit.html', '_blank');
+        });
+
+        function generateStandaloneHTML() {
             const origDataUrl = createOriginalImageDataUrl();
             const depthDataUrl = depthCanvas.toDataURL('image/png');
             const settings = getCurrentExportSettings();
-
-            // Generate self-contained HTML Code
-            const exportedHTML = `<!DOCTYPE html>
+            return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -3096,11 +3122,8 @@
 </body>
 </html>`;
 
-            // Download file trigger
-            triggerDownload(new Blob([exportedHTML], { type: 'text/html' }), 'spatial_photo_3d.html');
-            
-            hideLoader();
-        });
+            return exportedHTML;
+        }
 
         document.getElementById('btn-export-video').addEventListener('click', async () => {
             if (!currentImageElement) {
