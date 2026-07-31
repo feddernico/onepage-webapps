@@ -1854,6 +1854,7 @@
         // Assets Loader & Depth Map Handlers
         // ----------------------------------------------------
         let currentImageElement = null;
+        let currentPhotoName = null;
         let pendingDepthRun = false;
 
         function loadPhoto(url, isPreset = false) {
@@ -2547,6 +2548,7 @@
         });
 
         function handleUploadedFile(file) {
+            currentPhotoName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '-').substring(0, 60);
             const reader = new FileReader();
             reader.onload = function(evt) {
                 // Clear active presets highlights
@@ -2852,7 +2854,8 @@
 
             showLoader('Bundling Standalone Page', 'Encoding assets to Base64 (this may take a moment)...');
             const exportedHTML = generateStandaloneHTML();
-            triggerDownload(new Blob([exportedHTML], { type: 'text/html' }), 'spatial_photo_3d.html');
+            const baseName = currentPhotoName ? `${currentPhotoName}-spatial_photo_3d` : 'spatial_photo_3d';
+            triggerDownload(new Blob([exportedHTML], { type: 'text/html' }), `${baseName}.html`);
             hideLoader();
         });
 
