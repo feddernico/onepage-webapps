@@ -20,6 +20,7 @@ window.NotebookStudioTest = {
     createBlankNotebook,
     createSalesDemoCsv,
     createSalesDemoNotebook,
+    createLearningToRankNotebook,
     createCell,
     normalizeNotebook,
     notebookToIpynb,

@@ -118,6 +118,104 @@ function createSalesDemoNotebook() {
     };
 }
 
+function createLearningToRankNotebook() {
+    return {
+        ...createBlankNotebook(),
+        metadata: {
+            ...createBlankNotebook().metadata,
+            notebookPilot: {
+                modelUrl: DEFAULT_MODEL_URL,
+                gemmaRepo: DEFAULT_GEMMA_REPO,
+                gemmaFile: DEFAULT_GEMMA_FILE,
+                runtime: 'pyodide',
+                pyodideVersion: PYODIDE_VERSION,
+                demo: 'learning-to-rank'
+            }
+        },
+        cells: [
+            createCell('markdown', '# Learning to Rank playground\n\nThis small browser-safe example trains a linear RankNet-style scorer on synthetic query groups. It compares the ranking before and after pairwise training, then measures NDCG@3.'),
+            createCell('code', [
+                'import numpy as np',
+                'import matplotlib.pyplot as plt',
+                '',
+                '# Each query group contains document features and graded relevance labels.',
+                'query_groups = [',
+                '    {',
+                '        "query": "best laptop for data science",',
+                '        "features": np.array([[0.95, 0.90], [0.70, 0.55], [0.35, 0.80], [0.20, 0.25]]),',
+                '        "relevance": np.array([3, 2, 1, 0])',
+                '    },',
+                '    {',
+                '        "query": "python ranking tutorial",',
+                '        "features": np.array([[0.88, 0.35], [0.60, 0.92], [0.42, 0.68], [0.10, 0.20]]),',
+                '        "relevance": np.array([3, 2, 1, 0])',
+                '    }',
+                ']',
+                '',
+                'def ndcg_at_k(relevance, scores, k=3):',
+                '    order = np.argsort(-scores)[:k]',
+                '    gains = (2 ** relevance[order] - 1) / np.log2(np.arange(2, k + 2))',
+                '    ideal = np.sort(relevance)[::-1][:k]',
+                '    ideal_gains = (2 ** ideal - 1) / np.log2(np.arange(2, k + 2))',
+                '    return float(gains.sum() / ideal_gains.sum()) if ideal_gains.sum() else 0.0',
+                '',
+                'def print_rankings(weights, label):',
+                '    print(label)',
+                '    for group in query_groups:',
+                '        scores = group["features"] @ weights',
+                '        order = np.argsort(-scores)',
+                '        print(group["query"], "→", order.tolist(), "NDCG@3:", round(ndcg_at_k(group["relevance"], scores), 3))',
+                '',
+                'weights = np.array([-0.45, 0.35])',
+                'print_rankings(weights, "Before training")'
+            ].join('\n')),
+            createCell('code', [
+                'def train_ranknet(groups, weights, epochs=160, learning_rate=0.08):',
+                '    losses = []',
+                '    ndcg_history = []',
+                '    for _ in range(epochs):',
+                '        total_loss = 0.0',
+                '        gradient = np.zeros_like(weights)',
+                '        pair_count = 0',
+                '        for group in groups:',
+                '            features = group["features"]',
+                '            relevance = group["relevance"]',
+                '            scores = features @ weights',
+                '            for i in range(len(relevance)):',
+                '                for j in range(len(relevance)):',
+                '                    if relevance[i] <= relevance[j]:',
+                '                        continue',
+                '                    logit = scores[i] - scores[j]',
+                '                    probability = 1 / (1 + np.exp(-logit))',
+                '                    total_loss += np.logaddexp(0, -logit)',
+                '                    gradient += (probability - 1) * (features[i] - features[j])',
+                '                    pair_count += 1',
+                '        weights -= learning_rate * gradient / pair_count',
+                '        losses.append(total_loss / pair_count)',
+                '        ndcg_history.append(np.mean([ndcg_at_k(g["relevance"], g["features"] @ weights) for g in groups]))',
+                '    return weights, losses, ndcg_history',
+                '',
+                'trained_weights, losses, ndcg_history = train_ranknet(query_groups, weights.copy())',
+                'print_rankings(trained_weights, "After pairwise training")'
+            ].join('\n')),
+            createCell('code', [
+                'fig, axes = plt.subplots(1, 2, figsize=(10, 4))',
+                'axes[0].plot(losses, color="#c35b3d")',
+                'axes[0].set_title("Pairwise logistic loss")',
+                'axes[0].set_xlabel("Training epoch")',
+                'axes[0].set_ylabel("Loss")',
+                'axes[1].plot(ndcg_history, color="#2d7771")',
+                'axes[1].set_title("Mean NDCG@3")',
+                'axes[1].set_xlabel("Training epoch")',
+                'axes[1].set_ylim(0, 1.05)',
+                'plt.tight_layout()',
+                'plt.show()'
+            ].join('\n')),
+            createCell('markdown', '## What to notice\n\nRankNet does not need the exact relevance score to be perfect. It learns which document should beat another document from the same query. LambdaRank extends this idea by weighting pairwise updates according to their impact on a metric such as NDCG. Try changing the feature values, relevance labels, learning rate, or number of epochs and run the cells again.')
+        ]
+    };
+}
+
 function sourceToString(source) {
     return Array.isArray(source) ? source.join('') : String(source || '');
 }
