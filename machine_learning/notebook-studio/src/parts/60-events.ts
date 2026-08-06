@@ -225,6 +225,10 @@ document.getElementById('sampleBtn').addEventListener('click', () => {
     loadSalesDemo();
 });
 
+document.getElementById('rankingDemoBtn').addEventListener('click', () => {
+    loadLearningToRankDemo();
+});
+
 const NOTEBOOK_STUDIO_EXAMPLES = {
     'decision-trees': {
         url: '/downloads/decision_trees_iris.ipynb',
@@ -288,6 +292,11 @@ async function loadNotebookFromQuery() {
     const notebookUrl = params.get('notebook');
     const exampleKey = params.get('example');
     const example = exampleKey ? NOTEBOOK_STUDIO_EXAMPLES[exampleKey] : null;
+
+    if (exampleKey === 'learning-to-rank') {
+        loadLearningToRankDemo();
+        return;
+    }
 
     if (!notebookUrl && !example) return;
 
