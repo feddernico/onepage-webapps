@@ -98,6 +98,14 @@ function loadSalesDemo() {
     addMessage('assistant', '<p>Loaded the sales demo notebook and queued <code>sales_demo.csv</code>. Use Run All to execute the example once Pyodide finishes loading.</p>');
 }
 
+function loadLearningToRankDemo() {
+    setNotebook(createLearningToRankNotebook());
+    document.getElementById('packageInput').value = 'numpy,matplotlib';
+    runtimeState.status = 'demo ready';
+    renderRuntimeStatus();
+    addMessage('assistant', '<p>Loaded the Learning to Rank playground. Use Run All to compare before and after rankings, NDCG@3, and the training curves.</p>');
+}
+
 async function captureMatplotlibImages(pyodide) {
     const code = [
         'import base64, io, json',
