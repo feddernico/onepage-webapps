@@ -623,6 +623,14 @@
                 assert.ok(demo.cells.some(cell => cell.source.includes('pd.read_csv("sales_demo.csv"')), 'demo reads the mounted CSV');
                 assert.ok(demo.cells.some(cell => cell.source.includes('plt.subplots')), 'demo includes a matplotlib plot cell');
             });
+
+            QUnit.test('creates a runnable Learning to Rank playground', assert => {
+                const demo = api.createLearningToRankNotebook();
+                assert.equal(demo.metadata.notebookPilot.demo, 'learning-to-rank', 'demo identifies its learning-to-rank mode');
+                assert.ok(demo.cells.some(cell => cell.source.includes('ndcg_at_k')), 'demo includes an NDCG@k metric');
+                assert.ok(demo.cells.some(cell => cell.source.includes('train_ranknet')), 'demo includes pairwise RankNet training');
+                assert.ok(demo.cells.some(cell => cell.source.includes('plt.subplots')), 'demo includes training charts');
+            });
         });
     </script>
 </body>
