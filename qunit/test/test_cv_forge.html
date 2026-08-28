@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>CV Forge tests</title>
+<link rel="stylesheet" href="../qunit-2.24.1.css">
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+<iframe id="cv-forge-frame" src="../../writing/cv-forge/index.html" style="position:absolute;left:-10000px;width:1000px;height:900px;border:0"></iframe>
+<script src="../qunit-2.24.1.js"></script>
+<script>
+QUnit.config.testTimeout = 30000;
+function loadCvForge() {
+  const frame = document.getElementById('cv-forge-frame');
+  if (frame.contentWindow && frame.contentWindow.CVForgeTest) return Promise.resolve(frame.contentWindow.CVForgeTest);
+  return new Promise((resolve, reject) => {
+    frame.addEventListener('load', () => {
+      const api = frame.contentWindow.CVForgeTest;
+      api ? resolve(api) : reject(new Error('CV Forge test API unavailable'));
+    }, { once: true });
+  });
+}
+
+QUnit.module('CV Forge pagination', hooks => {
+  let api;
+  hooks.before(async () => { api = await loadCvForge(); });
+
+  QUnit.test('starts a new page at a manual page break', assert => {
+    api.setSource('# First page\n\nIntro.\n\n<!-- cv:pagebreak -->\n\n# Second page\n\nDetails.');
+    assert.equal(api.getPages(), 2, 'creates two pages');
+    assert.equal(api.getRenderedMarkers(), 0, 'does not show the marker in the CV');
+    assert.ok(api.getPageTexts()[0].includes('First page'), 'keeps content before the marker on page one');
+    assert.ok(api.getPageTexts()[1].includes('Second page'), 'moves content after the marker to page two');
+  });
+
+  QUnit.test('removing and re-adding a page break cleans up stale pages', assert => {
+    api.setSource('# One\n\nBefore.\n\n<!-- cv:pagebreak -->\n\n# Two\n\nAfter.');
+    assert.equal(api.getPages(), 2, 'starts with two pages');
+    api.setSource('# One\n\nBefore.\n\n# Two\n\nAfter.');
+    assert.equal(api.getPages(), 1, 'removing the marker removes the stale second page');
+    api.setSource('# One\n\nBefore.\n\n<!-- cv:pagebreak -->\n\n# Two\n\nAfter.');
+    assert.equal(api.getPages(), 2, 're-adding the marker restores the second page');
+  });
+
+  QUnit.test('automatically paginates long content without body scrolling', assert => {
+    const source = '# Long CV\n\n' + Array(80).fill('A detailed experience line that should flow across the document.').join('\n\n');
+    api.setSource(source);
+    const frame = document.getElementById('cv-forge-frame');
+    assert.ok(api.getPages() > 1, 'creates multiple pages for long content');
+    assert.equal(frame.contentWindow.getComputedStyle(frame.contentDocument.body).overflow, 'hidden', 'the app body does not become the scroll container');
+    assert.equal(frame.contentWindow.getComputedStyle(frame.contentDocument.querySelector('.preview')).overflow, 'auto', 'the preview owns long-document scrolling');
+  });
+});
+</script>
+</body>
+</html>
