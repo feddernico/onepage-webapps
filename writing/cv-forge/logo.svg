@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">CV Forge mark</title>
+  <desc id="desc">A rounded document outline with a blue folded corner and check mark.</desc>
+  <path d="M17 7.5h22.5L52 20v36.5H17A8.5 8.5 0 0 1 8.5 48V16A8.5 8.5 0 0 1 17 7.5Z" stroke="#2f3a4d" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M39.5 8v12H51" stroke="#2780e3" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M17 25h25" stroke="#2780e3" stroke-width="4" stroke-linecap="round"/>
+  <path d="m18 39 5 5 9-10" stroke="#2f3a4d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M36 43h9" stroke="#2f3a4d" stroke-width="3.5" stroke-linecap="round"/>
+</svg>
