@@ -13,6 +13,8 @@
     
     <!-- Three.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <!-- Tone.js: expressive Web Audio instruments and effects -->
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
 
     <style>
         :root {
@@ -589,6 +591,53 @@
             cursor: not-allowed;
         }
 
+        .soundscape-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 0.85rem;
+            border: 1px solid rgba(39,128,227,.18);
+            border-radius: var(--radius);
+            background: linear-gradient(145deg, rgba(39,128,227,.07), rgba(255,255,255,.78));
+        }
+
+        .soundscape-intro {
+            display: flex;
+            gap: 0.6rem;
+            align-items: flex-start;
+        }
+
+        .soundscape-intro i {
+            color: var(--accent-primary);
+            flex: 0 0 auto;
+            margin-top: 0.1rem;
+        }
+
+        .soundscape-intro strong {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-main);
+        }
+
+        .soundscape-intro p {
+            margin-top: 0.15rem;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            line-height: 1.35;
+        }
+
+        .soundscape-status {
+            color: var(--text-muted);
+            font-size: 0.68rem;
+            text-align: center;
+        }
+
+        .sound-mode-label {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
         /* Central Display Canvas Workspace */
         .preview-area {
             flex: 1;
@@ -606,8 +655,9 @@
         }
 
         .canvas-container {
-            width: 100%;
-            height: 100%;
+            width: min(100%, calc(80vh * var(--image-aspect, 1)));
+            height: auto;
+            aspect-ratio: var(--image-aspect, 1);
             max-width: 1200px;
             max-height: 80vh;
             border-radius: 18px;
@@ -910,6 +960,7 @@
             }
 
             .canvas-container {
+                width: min(100%, calc(60vh * var(--image-aspect, 1)));
                 max-height: 100%;
             }
         }
@@ -1042,6 +1093,58 @@
                                 <i data-lucide="focus"></i>
                                 <input type="range" id="slider-focus" min="0" max="1" step="0.05" value="0.5">
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="group-title">Immersive Sound</span>
+                        <div class="soundscape-card">
+                            <div class="soundscape-intro">
+                                <i data-lucide="waves"></i>
+                                <div>
+                                    <strong>Image-reactive soundscape</strong>
+                                    <p>Dominant colours choose the chord; movement gently opens the tones.</p>
+                                </div>
+                            </div>
+                            <span class="sound-mode-label">Sound mode</span>
+                            <div class="btn-row">
+                                <button class="btn-select active" id="sound-mode-drone" type="button">Aether Drone</button>
+                                <button class="btn-select" id="sound-mode-pad" type="button">Aether Pad</button>
+                            </div>
+                            <span class="sound-mode-label">Sound character</span>
+                            <div class="btn-row">
+                                <button class="btn-select active" id="sound-instrument-ethereal" type="button">Ethereal</button>
+                                <button class="btn-select" id="sound-instrument-warm" type="button">Warm</button>
+                                <button class="btn-select" id="sound-instrument-glass" type="button">Glass</button>
+                            </div>
+                            <span class="sound-mode-label">Musical journey</span>
+                            <div class="btn-row">
+                                <button class="btn-select active" id="sound-progression-classic" type="button">Classic</button>
+                                <button class="btn-select" id="sound-progression-open" type="button">Open</button>
+                                <button class="btn-select" id="sound-progression-floating" type="button">Floating</button>
+                                <button class="btn-select" id="sound-progression-rise" type="button">Rise</button>
+                            </div>
+                            <span class="sound-mode-label">Rhythmic layer</span>
+                            <div class="btn-row">
+                                <button class="btn-select active" id="sound-rhythm-off" type="button">Still</button>
+                                <button class="btn-select" id="sound-rhythm-pulse" type="button">Orbit Pulse</button>
+                                <button class="btn-select" id="sound-rhythm-tides" type="button">Orbit Tides</button>
+                            </div>
+                            <button class="btn-primary" id="btn-toggle-soundscape" type="button" aria-pressed="false">
+                                <i data-lucide="volume-2"></i>
+                                <span id="soundscape-toggle-label">Enable Soundscape</span>
+                            </button>
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <span>Sound Level</span>
+                                    <span class="slider-val" id="val-sound-volume">42%</span>
+                                </div>
+                                <div class="slider-wrapper">
+                                    <i data-lucide="volume-1"></i>
+                                    <input type="range" id="slider-sound-volume" min="0" max="100" step="1" value="42">
+                                </div>
+                            </div>
+                            <span class="soundscape-status" id="soundscape-status">Off until you choose to listen</span>
                         </div>
                     </div>
 
@@ -1267,6 +1370,10 @@
                             <i data-lucide="video"></i>
                             Export Watermarked Video
                         </button>
+                        <button class="btn-secondary" id="btn-return-folio" style="margin-top:0.5rem">
+                            <i data-lucide="arrow-left"></i>
+                            Edit in Folio
+                        </button>
                         <p style="font-size:0.7rem; color:var(--text-muted); text-align:center; margin-top:0.25rem">
                             Exports use the current effect and global adjustment values.
                         </p>
@@ -1330,6 +1437,9 @@
                 <button class="toolbar-btn tooltip" id="tool-gyro" data-tooltip="Gyroscope Tilt Tracking">
                     <i data-lucide="smartphone"></i>
                 </button>
+                <button class="toolbar-btn tooltip" id="tool-soundscape" data-tooltip="Enable Soundscape" aria-label="Enable Soundscape" aria-pressed="false">
+                    <i data-lucide="volume-2"></i>
+                </button>
                 <button class="toolbar-btn tooltip" id="tool-fullscreen" data-tooltip="Toggle Fullscreen">
                     <i data-lucide="expand"></i>
                 </button>
@@ -1362,6 +1472,427 @@
         let mouseTarget = new THREE.Vector2(0, 0);
         let mouseCurrent = new THREE.Vector2(0, 0);
         let smoothFactor = 0.08;
+
+        // ----------------------------------------------------
+        // Image-reactive Web Audio soundscape
+        // ----------------------------------------------------
+        let soundscape = null;
+        let soundscapeEnabled = false;
+        let soundscapeMode = 'drone';
+        let soundInstrument = 'ethereal';
+        let soundProgression = 'classic';
+        let soundRhythm = 'off';
+        let padProgressionIndex = 0;
+        let soundColor = { hue: 0.58, brightness: 0.55, saturation: 0.35, tones: [1, 1.189, 1.498, 1.782, 2.244], weights: [1, .8, .65] };
+        let soundMotion = 0;
+        let previousSoundMouse = new THREE.Vector2(0, 0);
+        let lastSoundUpdate = 0;
+        let lastRhythmBeat = -1;
+
+        const soundProgressions = {
+            classic: [
+                [0, 4, 7, 11], [9, 12, 16, 19], [5, 9, 12, 16], [7, 11, 14, 17]
+            ],
+            open: [
+                [0, 4, 7, 14], [5, 9, 12, 16], [9, 12, 16, 19], [7, 9, 14, 17]
+            ],
+            floating: [
+                [0, 4, 7, 14], [2, 5, 9, 14], [5, 9, 12, 16], [7, 9, 14, 17]
+            ],
+            rise: [
+                [0, 4, 7, 11], [2, 5, 9, 14], [4, 7, 11, 16], [5, 9, 12, 16], [7, 11, 14, 19]
+            ]
+        };
+
+        function getSoundColor() {
+            const sample = document.createElement('canvas');
+            sample.width = 32;
+            sample.height = 32;
+            const ctx = sample.getContext('2d', { willReadFrequently: true });
+            try {
+                ctx.drawImage(currentImageElement || new Image(), 0, 0, 32, 32);
+                const pixels = ctx.getImageData(0, 0, 32, 32).data;
+                const buckets = Array.from({ length: 12 }, () => ({ weight: 0, brightness: 0 }));
+                for (let i = 0; i < pixels.length; i += 4) {
+                    const r = pixels[i] / 255, g = pixels[i + 1] / 255, b = pixels[i + 2] / 255;
+                    const max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
+                    let hue = 0.58;
+                    if (delta > 0.04) {
+                        if (max === r) hue = ((g - b) / delta) % 6 / 6;
+                        else if (max === g) hue = ((b - r) / delta + 2) / 6;
+                        else hue = ((r - g) / delta + 4) / 6;
+                        if (hue < 0) hue += 1;
+                    }
+                    const weight = delta * (0.3 + max) + 0.015;
+                    const bucket = buckets[Math.min(11, Math.floor(hue * 12))];
+                    bucket.weight += weight;
+                    bucket.brightness += max * weight;
+                }
+                const ranked = buckets.map((bucket, index) => ({ ...bucket, index })).sort((a, b) => b.weight - a.weight);
+                const primary = ranked[0];
+                const hue = (primary.index + 0.5) / 12;
+                const brightness = primary.brightness / Math.max(primary.weight, 0.001);
+                // Colour families choose the emotional centre of the harmony.
+                const chordFamilies = [
+                    [1, 1.189, 1.498, 1.782, 2.244],       // violet: minor 9
+                    [1, 1.122, 1.498, 1.782, 2.0],          // blue: suspended
+                    [1, 1.189, 1.498, 1.782, 2.244],       // cyan/green: open add9
+                    [1, 1.25, 1.498, 1.888, 2.244],        // yellow: major 7 add9
+                    [1, 1.189, 1.498, 1.782, 2.244],       // orange: warm add9
+                    [1, 1.122, 1.498, 1.782, 2.667]        // red: suspended fifth
+                ];
+                const family = chordFamilies[Math.floor(hue * chordFamilies.length) % chordFamilies.length];
+                soundColor = {
+                    hue,
+                    brightness,
+                    saturation: primary.weight,
+                    tones: family,
+                    weights: ranked.slice(0, 3).map(item => item.weight / Math.max(primary.weight, 0.001))
+                };
+            } catch (err) {
+                // A cross-origin image without CORS should not prevent the visual app working.
+                soundColor = { hue: 0.58, brightness: 0.55, saturation: 0.35, tones: [1, 1.189, 1.498, 1.782, 2.244], weights: [1, .8, .65] };
+            }
+        }
+
+        function createMainInstrument(destination) {
+            const presets = {
+                ethereal: {
+                    synth: Tone.FMSynth,
+                    options: {
+                        harmonicity: 1.5,
+                        modulationIndex: 1.2,
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 4.5, decay: 2, sustain: 0.55, release: 10 },
+                        modulation: { type: 'sine' },
+                        modulationEnvelope: { attack: 3, decay: 1.5, sustain: 0.25, release: 7 }
+                    }
+                },
+                warm: {
+                    synth: Tone.Synth,
+                    options: {
+                        oscillator: { type: 'triangle' },
+                        envelope: { attack: 5.5, decay: 2.5, sustain: 0.5, release: 11 }
+                    }
+                },
+                glass: {
+                    synth: Tone.FMSynth,
+                    options: {
+                        harmonicity: 2.8,
+                        modulationIndex: 2.4,
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 2.8, decay: 1.2, sustain: 0.35, release: 8 },
+                        modulation: { type: 'sine' },
+                        modulationEnvelope: { attack: 1.8, decay: 1, sustain: 0.18, release: 5 }
+                    }
+                }
+            };
+            const preset = presets[soundInstrument] || presets.ethereal;
+            return new Tone.PolySynth(preset.synth, preset.options).connect(destination);
+        }
+
+        function createSoundscape() {
+            if (!window.Tone) return false;
+            const output = new Tone.Volume(-60).toDestination();
+            const orbitPanner = new Tone.Panner(0).connect(output);
+            const filter = new Tone.Filter({ type: 'lowpass', frequency: 1500, rolloff: -24 }).connect(orbitPanner);
+            const reverb = new Tone.Reverb({ decay: 11, preDelay: 0.7, wet: 0.78 }).connect(filter);
+            const chorus = new Tone.Chorus({ frequency: 0.08, delayTime: 7, depth: 0.68, spread: 180, wet: 0.65 }).connect(reverb).start();
+            const lowFilter = new Tone.Filter({ type: 'lowpass', frequency: 420, rolloff: -24 }).connect(reverb);
+            const shimmerFilter = new Tone.Filter({ type: 'highpass', frequency: 1600, rolloff: -12 });
+            const shimmerWidth = new Tone.StereoWidener(0.82).connect(reverb);
+            const airFilter = new Tone.Filter({ type: 'highpass', frequency: 3200, rolloff: -12 });
+            const airWidth = new Tone.StereoWidener(0.72);
+            const airReverb = new Tone.Reverb({ decay: 9, preDelay: 0.9, wet: 0.82 }).connect(output);
+            airWidth.connect(airReverb);
+            const rhythmFilter = new Tone.Filter({ type: 'lowpass', frequency: 1100, rolloff: -24 }).connect(reverb);
+            const pad = createMainInstrument(chorus);
+            const lowPad = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sine' },
+                envelope: { attack: 7, decay: 2, sustain: 0.4, release: 12 }
+            }).connect(lowFilter);
+            const shimmerPad = new Tone.PolySynth(Tone.FMSynth, {
+                harmonicity: 3,
+                modulationIndex: 2.2,
+                oscillator: { type: 'sine' },
+                envelope: { attack: 2.8, decay: 1, sustain: 0.22, release: 8 },
+                modulation: { type: 'sine' },
+                modulationEnvelope: { attack: 2, decay: 1, sustain: 0.18, release: 6 }
+            }).connect(shimmerFilter).connect(shimmerWidth);
+            const airPad = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 1.8, decay: 1, sustain: 0.12, release: 6 }
+            }).connect(airFilter).connect(airWidth);
+            pad.volume.value = -2;
+            lowPad.volume.value = -5;
+            shimmerPad.volume.value = -13;
+            airPad.volume.value = -10;
+            const rhythm = new Tone.MembraneSynth({
+                pitchDecay: 0.04,
+                octaves: 2.2,
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.001, decay: 0.7, sustain: 0, release: 1.1 }
+            }).connect(rhythmFilter);
+            const rhythmTick = new Tone.Synth({
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.002, decay: 0.12, sustain: 0, release: 0.22 }
+            }).connect(rhythmFilter);
+            rhythm.volume.value = -9;
+            rhythmTick.volume.value = -19;
+            soundscape = { pad, lowPad, shimmerPad, airPad, rhythm, rhythmTick, output, orbitPanner, filter, lowFilter, shimmerFilter, shimmerWidth, airFilter, airWidth, rhythmFilter, reverb, airReverb, chorus, ready: Promise.all([reverb.ready, airReverb.ready]), root: 146.83, chordSignature: '', nextBloom: 0 };
+            return true;
+        }
+
+        async function toggleSoundscape() {
+            if (!soundscape && !createSoundscape()) {
+                document.getElementById('soundscape-status').textContent = window.Tone ? 'Audio engine unavailable' : 'Tone.js did not load — check your connection';
+                return;
+            }
+            soundscapeEnabled = !soundscapeEnabled;
+            try {
+                if (soundscapeEnabled) {
+                    document.getElementById('soundscape-status').textContent = 'Starting audio engine…';
+                    await Tone.start();
+                    await soundscape.ready;
+                    if (Tone.getContext().state !== 'running') throw new Error(`Audio context is ${Tone.getContext().state}`);
+                    soundscape.output.volume.rampTo(Tone.gainToDb(parseInt(document.getElementById('slider-sound-volume').value, 10) / 100), 0.8);
+                    updateSoundscape(performance.now());
+                    document.getElementById('soundscape-status').textContent = 'Ready · colour chord is blooming';
+                } else {
+                    soundscape.output.volume.rampTo(-60, 0.8);
+                    document.getElementById('soundscape-status').textContent = 'Soundscape paused';
+                }
+            } catch (err) {
+                soundscapeEnabled = false;
+                document.getElementById('soundscape-status').textContent = `Audio error · ${err.message || 'initialization failed'}`;
+                console.error('AetherDepth soundscape failed:', err);
+            }
+            updateSoundscapeControls();
+        }
+
+        function updateSoundscapeControls() {
+            const button = document.getElementById('btn-toggle-soundscape');
+            const toolbarButton = document.getElementById('tool-soundscape');
+            if (!button || !toolbarButton) return;
+            button.setAttribute('aria-pressed', soundscapeEnabled ? 'true' : 'false');
+            button.className = soundscapeEnabled ? 'btn-secondary' : 'btn-primary';
+            button.innerHTML = soundscapeEnabled
+                ? '<i data-lucide="volume-x"></i><span id="soundscape-toggle-label">Pause Soundscape</span>'
+                : '<i data-lucide="volume-2"></i><span id="soundscape-toggle-label">Enable Soundscape</span>';
+            toolbarButton.classList.toggle('active', soundscapeEnabled);
+            toolbarButton.setAttribute('aria-pressed', soundscapeEnabled ? 'true' : 'false');
+            toolbarButton.setAttribute('data-tooltip', soundscapeEnabled ? 'Pause Soundscape' : 'Enable Soundscape');
+            toolbarButton.innerHTML = `<i data-lucide="${soundscapeEnabled ? 'volume-x' : 'volume-2'}"></i>`;
+            lucide.createIcons();
+        }
+
+        function triggerSoundBloom(chord, audioNow) {
+            if (!soundscape) return;
+            const isDrone = soundscapeMode === 'drone';
+            chord.forEach((note, index) => {
+                soundscape.pad.triggerAttackRelease(note, isDrone ? 30 : 9 + index * 0.8, audioNow + (isDrone ? 0 : index * 0.38), isDrone ? 0.16 : 0.28 - index * 0.022);
+            });
+            const lowRoot = Tone.Frequency(chord[0]).transpose(-12).toNote();
+            soundscape.lowPad.triggerAttackRelease(lowRoot, isDrone ? 34 : 14, audioNow, isDrone ? 0.2 : 0.24);
+            if (isDrone) return;
+            chord.slice(2, 5).forEach((note, index) => {
+                const shimmerNote = Tone.Frequency(note).transpose(12 + index * 2).toNote();
+                soundscape.shimmerPad.triggerAttackRelease(shimmerNote, 8 + index, audioNow + 0.8 + index * 0.55, 0.12 - index * 0.02);
+            });
+            chord.slice(1, 4).forEach((note, index) => {
+                const airNote = Tone.Frequency(note).transpose(24).toNote();
+                soundscape.airPad.triggerAttackRelease(airNote, 6.5, audioNow + 1.4 + index * 0.7, 0.1 - index * 0.015);
+            });
+        }
+
+        function triggerOrbitRhythm(root, audioNow) {
+            if (!soundscape || soundRhythm === 'off' || !isOrbitActive || isGyroActive) return;
+            const beat = Math.floor(orbitTime / Math.PI);
+            if (beat === lastRhythmBeat) return;
+            lastRhythmBeat = beat;
+            if (soundRhythm === 'pulse' && beat % 2 !== 0) return;
+            if (beat % 2 === 0) {
+                const lowRoot = Tone.Frequency(root).transpose(-12).toNote();
+                soundscape.rhythm.triggerAttackRelease(lowRoot, 0.8, audioNow, soundRhythm === 'tides' ? 0.22 : 0.28);
+            } else if (soundRhythm === 'tides') {
+                const highRoot = Tone.Frequency(root).transpose(12).toNote();
+                soundscape.rhythmTick.triggerAttackRelease(highRoot, 0.18, audioNow, 0.13);
+            }
+        }
+
+        function updateSoundscape(now) {
+            if (!soundscape || !soundscapeEnabled || now - lastSoundUpdate < 45) return;
+            lastSoundUpdate = now;
+            const dx = mouseCurrent.x - previousSoundMouse.x;
+            const dy = mouseCurrent.y - previousSoundMouse.y;
+            const speed = Math.min(1, Math.hypot(dx, dy) * 16);
+            soundMotion += (speed - soundMotion) * 0.08;
+            previousSoundMouse.copy(mouseCurrent);
+            const spatialPan = isOrbitActive && !isGyroActive
+                ? Math.sin(orbitTime) * 0.68
+                : Math.max(-0.75, Math.min(0.75, mouseCurrent.x * 0.8));
+            soundscape.orbitPanner.pan.rampTo(spatialPan, 0.12);
+
+            const roots = ['C2', 'D2', 'E2', 'G2', 'A2', 'C3', 'D3'];
+            const root = roots[Math.round(soundColor.hue * (roots.length - 1))];
+            triggerOrbitRhythm(root, Tone.now());
+            const majorProgression = soundProgressions[soundProgression] || soundProgressions.classic;
+            const semitones = soundscapeMode === 'pad'
+                ? majorProgression[padProgressionIndex % majorProgression.length]
+                : [0, 7, 12, 19];
+            const chord = semitones.map(semitone => Tone.Frequency(root).transpose(semitone).toNote());
+            const signature = `${soundscapeMode}-${chord.join('-')}`;
+            const audioNow = Tone.now();
+            if (soundscape.chordSignature === '' || audioNow > soundscape.nextBloom) {
+                soundscape.chordSignature = signature;
+                soundscape.nextBloom = audioNow + (soundscapeMode === 'drone' ? 28 : 7.5);
+                triggerSoundBloom(chord, audioNow);
+                if (soundscapeMode === 'pad') padProgressionIndex = (padProgressionIndex + 1) % majorProgression.length;
+            }
+            soundscape.filter.frequency.rampTo(900 + soundColor.brightness * 1250 + soundMotion * 750, 1.8);
+            soundscape.lowFilter.frequency.rampTo(260 + soundColor.brightness * 260 + soundMotion * 220, 2.4);
+            soundscape.shimmerFilter.frequency.rampTo(1300 + soundColor.brightness * 1800 + soundMotion * 900, 2.2);
+            soundscape.airFilter.frequency.rampTo(2600 + soundColor.brightness * 3000 + soundMotion * 1200, 2.4);
+            soundscape.chorus.frequency.rampTo(0.06 + soundMotion * 0.05, 2.5);
+            soundscape.shimmerWidth.width.rampTo(0.7 + soundMotion * 0.25, 2.5);
+            soundscape.airWidth.width.rampTo(0.82 + soundMotion * 0.16, 2.5);
+        }
+
+        function regenerateSoundscape() {
+            if (!soundscape) return;
+            if (soundscapeEnabled && soundscape.pad) {
+                soundscape.pad.releaseAll();
+                soundscape.lowPad.releaseAll();
+                soundscape.shimmerPad.releaseAll();
+                soundscape.airPad.releaseAll();
+                document.getElementById('soundscape-status').textContent = 'Regenerating colour chord…';
+            }
+            soundscape.chordSignature = '';
+            soundscape.nextBloom = 0;
+            padProgressionIndex = 0;
+            lastRhythmBeat = -1;
+            if (soundscapeEnabled) updateSoundscape(performance.now());
+        }
+
+        function setSoundMode(mode) {
+            if (mode !== 'drone' && mode !== 'pad') return;
+            soundscapeMode = mode;
+            document.getElementById('sound-mode-drone').classList.toggle('active', mode === 'drone');
+            document.getElementById('sound-mode-pad').classList.toggle('active', mode === 'pad');
+            regenerateSoundscape();
+        }
+
+        function setSoundInstrument(instrument) {
+            if (!['ethereal', 'warm', 'glass'].includes(instrument)) return;
+            soundInstrument = instrument;
+            ['ethereal', 'warm', 'glass'].forEach(name => {
+                document.getElementById(`sound-instrument-${name}`).classList.toggle('active', name === instrument);
+            });
+            if (!soundscape) return;
+            const previousPad = soundscape.pad;
+            previousPad.releaseAll();
+            previousPad.volume.rampTo(-60, 0.25);
+            soundscape.pad = createMainInstrument(soundscape.chorus);
+            soundscape.pad.volume.value = -2;
+            // Tone.js keeps delayed PolySynth events alive internally. Keep the old pad muted
+            // instead of disposing it while those callbacks may still be pending.
+            soundscape.chordSignature = '';
+            soundscape.nextBloom = 0;
+            if (soundscapeEnabled) updateSoundscape(performance.now());
+        }
+
+        function setSoundProgression(progression) {
+            if (!soundProgressions[progression]) return;
+            soundProgression = progression;
+            ['classic', 'open', 'floating', 'rise'].forEach(name => {
+                document.getElementById(`sound-progression-${name}`).classList.toggle('active', name === progression);
+            });
+            setSoundMode('pad');
+        }
+
+        function setSoundRhythm(rhythm) {
+            if (!['off', 'pulse', 'tides'].includes(rhythm)) return;
+            soundRhythm = rhythm;
+            lastRhythmBeat = -1;
+            ['off', 'pulse', 'tides'].forEach(name => {
+                document.getElementById(`sound-rhythm-${name}`).classList.toggle('active', name === rhythm);
+            });
+            if (soundscape && rhythm === 'off') {
+                soundscape.rhythm.triggerRelease();
+                soundscape.rhythmTick.triggerRelease();
+            }
+        }
+
+        window.aetherDepthAudio = {
+            state() {
+                return {
+                    available: !!window.Tone,
+                    enabled: soundscapeEnabled,
+                    mode: soundscapeMode,
+                    instrument: soundInstrument,
+                    progression: soundProgression,
+                    rhythm: soundRhythm,
+                    context: window.Tone ? Tone.getContext().state : 'unavailable',
+                    volume: soundscape ? soundscape.output.volume.value : null,
+                    filter: soundscape ? soundscape.filter.frequency.value : null,
+                    lowFilter: soundscape ? soundscape.lowFilter.frequency.value : null,
+                    shimmerFilter: soundscape ? soundscape.shimmerFilter.frequency.value : null,
+                    airFilter: soundscape ? soundscape.airFilter.frequency.value : null,
+                    rhythmFilter: soundscape ? soundscape.rhythmFilter.frequency.value : null,
+                    reverb: soundscape ? soundscape.reverb.wet.value : null,
+                    chorus: soundscape ? soundscape.chorus.wet.value : null,
+                    pan: soundscape ? soundscape.orbitPanner.pan.value : null
+                };
+            },
+            set(values = {}) {
+                if (!soundscape) return this.state();
+                if (values.volume !== undefined) soundscape.output.volume.rampTo(values.volume, 0.4);
+                if (values.filter !== undefined) soundscape.filter.frequency.rampTo(values.filter, 0.8);
+                if (values.lowFilter !== undefined) soundscape.lowFilter.frequency.rampTo(values.lowFilter, 0.8);
+                if (values.shimmerFilter !== undefined) soundscape.shimmerFilter.frequency.rampTo(values.shimmerFilter, 0.8);
+                if (values.airFilter !== undefined) soundscape.airFilter.frequency.rampTo(values.airFilter, 0.8);
+                if (values.rhythmFilter !== undefined) soundscape.rhythmFilter.frequency.rampTo(values.rhythmFilter, 0.8);
+                if (values.reverb !== undefined) soundscape.reverb.wet.rampTo(values.reverb, 0.8);
+                if (values.chorus !== undefined) soundscape.chorus.wet.rampTo(values.chorus, 0.8);
+                if (values.width !== undefined) soundscape.shimmerWidth.width.rampTo(values.width, 0.8);
+                if (values.mainLevel !== undefined) soundscape.pad.volume.rampTo(values.mainLevel, 0.8);
+                if (values.lowLevel !== undefined) soundscape.lowPad.volume.rampTo(values.lowLevel, 0.8);
+                if (values.shimmerLevel !== undefined) soundscape.shimmerPad.volume.rampTo(values.shimmerLevel, 0.8);
+                if (values.airLevel !== undefined) soundscape.airPad.volume.rampTo(values.airLevel, 0.8);
+                if (values.rhythmLevel !== undefined) soundscape.rhythm.volume.rampTo(values.rhythmLevel, 0.8);
+                return this.state();
+            },
+            mode(mode) {
+                setSoundMode(mode);
+                return this.state();
+            },
+            instrument(instrument) {
+                setSoundInstrument(instrument);
+                return this.state();
+            },
+            progression(progression) {
+                setSoundProgression(progression);
+                return this.state();
+            },
+            rhythm(rhythm) {
+                setSoundRhythm(rhythm);
+                return this.state();
+            },
+            retrigger() {
+                regenerateSoundscape();
+                return this.state();
+            },
+            release() {
+                if (!soundscape) return this.state();
+                soundscape.pad.releaseAll();
+                soundscape.lowPad.releaseAll();
+                soundscape.shimmerPad.releaseAll();
+                soundscape.airPad.releaseAll();
+                soundscape.rhythm.triggerRelease();
+                soundscape.rhythmTick.triggerRelease();
+                return this.state();
+            }
+        };
 
         const defaultPortraitUrl = 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=1200&q=80';
         const defaultNeonUrl = 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=1200&q=80';
@@ -1546,6 +2077,11 @@
             material.uniforms.uAspect.value.set(scaleX, scaleY);
         }
 
+        function updatePreviewAspectRatio() {
+            if (!container || !imageWidth || !imageHeight) return;
+            container.style.setProperty('--image-aspect', imageWidth / imageHeight);
+        }
+
         // Animate rendering and smooth mouse/orbit movement
         function animate() {
             orbitTime += 0.015 * parseFloat(document.getElementById('slider-orbit-speed').value);
@@ -1563,6 +2099,8 @@
             // Smooth linear interpolation (lerp)
             mouseCurrent.x += (mouseTarget.x - mouseCurrent.x) * smoothFactor;
             mouseCurrent.y += (mouseTarget.y - mouseCurrent.y) * smoothFactor;
+
+            updateSoundscape(performance.now());
 
             renderer.render(scene, camera);
         }
@@ -1892,7 +2430,10 @@
                 initUndoStack();
 
                 // 3. Aspect Ratio adjustment
-                updateAspectUniform();
+                updatePreviewAspectRatio();
+                handleResize();
+                getSoundColor();
+                regenerateSoundscape();
                 hideLoader();
 
                 // 4. Trigger Auto AI depth generation if model is loaded and is a preset or custom image
@@ -2353,6 +2894,28 @@
             setOrbitActive(!isOrbitActive);
         });
 
+        document.getElementById('btn-toggle-soundscape').addEventListener('click', toggleSoundscape);
+        document.getElementById('tool-soundscape').addEventListener('click', toggleSoundscape);
+        document.getElementById('sound-mode-drone').addEventListener('click', () => setSoundMode('drone'));
+        document.getElementById('sound-mode-pad').addEventListener('click', () => setSoundMode('pad'));
+        document.getElementById('sound-instrument-ethereal').addEventListener('click', () => setSoundInstrument('ethereal'));
+        document.getElementById('sound-instrument-warm').addEventListener('click', () => setSoundInstrument('warm'));
+        document.getElementById('sound-instrument-glass').addEventListener('click', () => setSoundInstrument('glass'));
+        document.getElementById('sound-progression-classic').addEventListener('click', () => setSoundProgression('classic'));
+        document.getElementById('sound-progression-open').addEventListener('click', () => setSoundProgression('open'));
+        document.getElementById('sound-progression-floating').addEventListener('click', () => setSoundProgression('floating'));
+        document.getElementById('sound-progression-rise').addEventListener('click', () => setSoundProgression('rise'));
+        document.getElementById('sound-rhythm-off').addEventListener('click', () => setSoundRhythm('off'));
+        document.getElementById('sound-rhythm-pulse').addEventListener('click', () => setSoundRhythm('pulse'));
+        document.getElementById('sound-rhythm-tides').addEventListener('click', () => setSoundRhythm('tides'));
+        document.getElementById('slider-sound-volume').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value, 10);
+            document.getElementById('val-sound-volume').textContent = value + '%';
+            if (soundscape) {
+                soundscape.output.volume.rampTo(soundscapeEnabled ? Tone.gainToDb(value / 100) : -60, 0.35);
+            }
+        });
+
         document.getElementById('slider-orbit-speed').addEventListener('input', (e) => {
             document.getElementById('val-orbit-speed').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
         });
@@ -2752,7 +3315,12 @@
                 contrast: parseFloat(document.getElementById('slider-contrast').value),
                 brightness: parseFloat(document.getElementById('slider-brightness').value),
                 blur: parseFloat(document.getElementById('slider-blur').value) / 1000,
-                invert: document.getElementById('toggle-invert').checked ? 1 : 0
+                invert: document.getElementById('toggle-invert').checked ? 1 : 0,
+                soundVolume: parseInt(document.getElementById('slider-sound-volume').value, 10) / 100,
+                soundMode: soundscapeMode,
+                soundInstrument,
+                soundProgression,
+                soundRhythm
             };
         }
 
@@ -2775,6 +3343,9 @@
         }
 
         function drawAetherDepthWatermark(ctx, width, height, scale = 1) {
+            const isLocalDevelopment = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+            if (isLocalDevelopment) return;
+
             const pad = Math.max(16, Math.round(width * 0.018)) * scale;
             const fontSize = Math.max(17, Math.round(width * 0.018)) * scale;
             const icon = fontSize * 0.95;
@@ -2889,11 +3460,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AetherDepth - Standalone 3D Photo</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"><\/script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
         #canvas { display: block; width: 100%; height: 100%; cursor: grab; }
         #canvas:active { cursor: grabbing; }
+        #sound-toggle {
+            position: fixed;
+            left: clamp(14px, 2vw, 28px);
+            top: clamp(14px, 2vw, 28px);
+            z-index: 11;
+            border: 1px solid rgba(222,226,230,.72);
+            border-radius: 999px;
+            padding: .55rem .85rem;
+            background: rgba(255,255,255,.86);
+            color: #343a40;
+            font: 600 .88rem "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            cursor: pointer;
+            box-shadow: 0 .75rem 2rem rgba(0,0,0,.2);
+            backdrop-filter: blur(8px);
+        }
+        #sound-toggle.is-on { color: #1f4eb6; background: rgba(234,243,255,.94); }
+        #sound-mode-toggle {
+            position: fixed;
+            left: clamp(14px, 2vw, 28px);
+            top: 4.2rem;
+            z-index: 11;
+            border: 1px solid rgba(222,226,230,.72);
+            border-radius: 999px;
+            padding: .42rem .72rem;
+            background: rgba(255,255,255,.74);
+            color: #343a40;
+            font: 600 .76rem "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            cursor: pointer;
+            box-shadow: 0 .5rem 1.2rem rgba(0,0,0,.14);
+            backdrop-filter: blur(8px);
+        }
         .aether-credit {
             position: fixed;
             right: clamp(14px, 2vw, 28px);
@@ -2923,6 +3526,8 @@
 </head>
 <body>
     <canvas id="canvas"></canvas>
+    <button id="sound-toggle" type="button" aria-pressed="false">Enable soundscape</button>
+    <button id="sound-mode-toggle" type="button">Mode: ${settings.soundMode === 'pad' ? 'Aether Pad' : 'Aether Drone'}</button>
     <a class="aether-credit" href="https://aetherdepth.viscioletti.com" target="_blank" rel="noopener noreferrer" aria-label="Visit Federico Viscioletti">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m12 2 9 5-9 5-9-5 9-5Z"></path>
@@ -2963,8 +3568,186 @@
             contrast: ${settings.contrast},
             brightness: ${settings.brightness},
             blur: ${settings.blur},
-            invert: ${settings.invert}
+            invert: ${settings.invert},
+            soundVolume: ${settings.soundVolume},
+            soundMode: "${settings.soundMode}",
+            soundInstrument: "${settings.soundInstrument}",
+            soundProgression: "${settings.soundProgression}",
+            soundRhythm: "${settings.soundRhythm}"
         };
+
+        // Opt-in image-reactive soundscape for the exported page.
+        let audioScene = null;
+        let audioOn = false;
+        let audioMode = settings.soundMode;
+        let audioProgressionIndex = 0;
+        let audioRhythm = settings.soundRhythm;
+        let audioColor = { hue: 0.58, brightness: 0.55, tones: [1, 1.189, 1.498, 1.782, 2.244] };
+        let audioMotion = 0;
+        let lastAudioMouse = new THREE.Vector2(0, 0);
+        let lastAudioTick = 0;
+        let lastAudioRhythmBeat = -1;
+
+        function setupAudioScene() {
+            if (!window.Tone) return false;
+            const output = new Tone.Volume(-60).toDestination();
+            const orbitPanner = new Tone.Panner(0).connect(output);
+            const filter = new Tone.Filter({ type: 'lowpass', frequency: 1500, rolloff: -24 }).connect(orbitPanner);
+            const reverb = new Tone.Reverb({ decay: 11, preDelay: 0.7, wet: 0.78 }).connect(filter);
+            const chorus = new Tone.Chorus({ frequency: 0.08, delayTime: 7, depth: 0.68, spread: 180, wet: 0.65 }).connect(reverb).start();
+            const lowFilter = new Tone.Filter({ type: 'lowpass', frequency: 420, rolloff: -24 }).connect(reverb);
+            const shimmerFilter = new Tone.Filter({ type: 'highpass', frequency: 1600, rolloff: -12 });
+            const shimmerWidth = new Tone.StereoWidener(0.82).connect(reverb);
+            const airFilter = new Tone.Filter({ type: 'highpass', frequency: 3200, rolloff: -12 });
+            const airWidth = new Tone.StereoWidener(0.72);
+            const airReverb = new Tone.Reverb({ decay: 9, preDelay: 0.9, wet: 0.82 }).connect(output);
+            airWidth.connect(airReverb);
+            const rhythmFilter = new Tone.Filter({ type: 'lowpass', frequency: 1100, rolloff: -24 }).connect(reverb);
+            const pad = new Tone.PolySynth(Tone.FMSynth, {
+                harmonicity: 1.5,
+                modulationIndex: 1.2,
+                oscillator: { type: 'sine' },
+                envelope: { attack: 4.5, decay: 2, sustain: 0.55, release: 10 },
+                modulation: { type: 'sine' },
+                modulationEnvelope: { attack: 3, decay: 1.5, sustain: 0.25, release: 7 }
+            }).connect(chorus);
+            const lowPad = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sine' },
+                envelope: { attack: 7, decay: 2, sustain: 0.4, release: 12 }
+            }).connect(lowFilter);
+            const shimmerPad = new Tone.PolySynth(Tone.FMSynth, {
+                harmonicity: 3,
+                modulationIndex: 2.2,
+                oscillator: { type: 'sine' },
+                envelope: { attack: 2.8, decay: 1, sustain: 0.22, release: 8 },
+                modulation: { type: 'sine' },
+                modulationEnvelope: { attack: 2, decay: 1, sustain: 0.18, release: 6 }
+            }).connect(shimmerFilter).connect(shimmerWidth);
+            const airPad = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 1.8, decay: 1, sustain: 0.12, release: 6 }
+            }).connect(airFilter).connect(airWidth);
+            const rhythm = new Tone.MembraneSynth({
+                pitchDecay: 0.04,
+                octaves: 2.2,
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.001, decay: 0.7, sustain: 0, release: 1.1 }
+            }).connect(rhythmFilter);
+            const rhythmTick = new Tone.Synth({
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.002, decay: 0.12, sustain: 0, release: 0.22 }
+            }).connect(rhythmFilter);
+            pad.volume.value = -2;
+            lowPad.volume.value = -5;
+            shimmerPad.volume.value = -13;
+            airPad.volume.value = -10;
+            rhythm.volume.value = -9;
+            rhythmTick.volume.value = -19;
+            audioScene = { pad, lowPad, shimmerPad, airPad, rhythm, rhythmTick, output, orbitPanner, filter, lowFilter, shimmerFilter, shimmerWidth, airFilter, airWidth, rhythmFilter, reverb, airReverb, chorus, ready: Promise.all([reverb.ready, airReverb.ready]), chordSignature: '', nextBloom: 0 };
+            return true;
+        }
+
+        async function setAudio() {
+            if (!audioScene && !setupAudioScene()) return;
+            audioOn = !audioOn;
+            if (audioOn) {
+                await Tone.start();
+                await audioScene.ready;
+                audioScene.output.volume.rampTo(Tone.gainToDb(settings.soundVolume), 0.8);
+            } else {
+                audioScene.output.volume.rampTo(-60, 0.8);
+            }
+            const control = document.getElementById('sound-toggle');
+            control.textContent = audioOn ? 'Pause soundscape' : 'Enable soundscape';
+            control.classList.toggle('is-on', audioOn);
+            control.setAttribute('aria-pressed', audioOn ? 'true' : 'false');
+        }
+
+        function triggerAudioBloom(chord, audioNow) {
+            if (!audioScene) return;
+            const isDrone = audioMode === 'drone';
+            chord.forEach((note, index) => {
+                audioScene.pad.triggerAttackRelease(note, isDrone ? 30 : 9 + index * 0.8, audioNow + (isDrone ? 0 : index * 0.38), isDrone ? 0.16 : 0.28 - index * 0.022);
+            });
+            const lowRoot = Tone.Frequency(chord[0]).transpose(-12).toNote();
+            audioScene.lowPad.triggerAttackRelease(lowRoot, isDrone ? 34 : 14, audioNow, isDrone ? 0.2 : 0.24);
+            if (isDrone) return;
+            chord.slice(2, 5).forEach((note, index) => {
+                const shimmerNote = Tone.Frequency(note).transpose(12 + index * 2).toNote();
+                audioScene.shimmerPad.triggerAttackRelease(shimmerNote, 8 + index, audioNow + 0.8 + index * 0.55, 0.12 - index * 0.02);
+            });
+            chord.slice(1, 4).forEach((note, index) => {
+                const airNote = Tone.Frequency(note).transpose(24).toNote();
+                audioScene.airPad.triggerAttackRelease(airNote, 6.5, audioNow + 1.4 + index * 0.7, 0.1 - index * 0.015);
+            });
+        }
+
+        function triggerAudioRhythm(root, audioNow) {
+            if (!audioScene || audioRhythm === 'off' || !isOrbitActive) return;
+            const beat = Math.floor(orbitTime / Math.PI);
+            if (beat === lastAudioRhythmBeat) return;
+            lastAudioRhythmBeat = beat;
+            if (audioRhythm === 'pulse' && beat % 2 !== 0) return;
+            if (beat % 2 === 0) {
+                const lowRoot = Tone.Frequency(root).transpose(-12).toNote();
+                audioScene.rhythm.triggerAttackRelease(lowRoot, 0.8, audioNow, audioRhythm === 'tides' ? 0.22 : 0.28);
+            } else if (audioRhythm === 'tides') {
+                const highRoot = Tone.Frequency(root).transpose(12).toNote();
+                audioScene.rhythmTick.triggerAttackRelease(highRoot, 0.18, audioNow, 0.13);
+            }
+        }
+
+        const colorImage = new Image();
+        colorImage.onload = function() {
+            const sample = document.createElement('canvas');
+            sample.width = sample.height = 24;
+            const sampleCtx = sample.getContext('2d', { willReadFrequently: true });
+            sampleCtx.drawImage(colorImage, 0, 0, 24, 24);
+            const pixels = sampleCtx.getImageData(0, 0, 24, 24).data;
+            const buckets = Array.from({ length: 12 }, () => ({ weight: 0, brightness: 0 }));
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i] / 255, g = pixels[i + 1] / 255, b = pixels[i + 2] / 255;
+                const max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
+                let hue = 0.58;
+                if (delta > 0.04) {
+                    if (max === r) hue = ((g - b) / delta) % 6 / 6;
+                    else if (max === g) hue = ((b - r) / delta + 2) / 6;
+                    else hue = ((r - g) / delta + 4) / 6;
+                    if (hue < 0) hue += 1;
+                }
+                const weight = delta * (0.3 + max) + 0.015;
+                const bucket = buckets[Math.min(11, Math.floor(hue * 12))];
+                bucket.weight += weight;
+                bucket.brightness += max * weight;
+            }
+            const primary = buckets.map((bucket, index) => ({ ...bucket, index })).sort((a, b) => b.weight - a.weight)[0];
+            const hue = (primary.index + 0.5) / 12;
+            const chordFamilies = [
+                [1, 1.189, 1.498, 1.782, 2.244], [1, 1.122, 1.498, 1.782, 2.0],
+                [1, 1.189, 1.498, 1.782, 2.244], [1, 1.25, 1.498, 1.888, 2.244],
+                [1, 1.189, 1.498, 1.782, 2.244], [1, 1.122, 1.498, 1.782, 2.667]
+            ];
+            audioColor = {
+                hue,
+                brightness: primary.brightness / Math.max(primary.weight, 0.001),
+                tones: chordFamilies[Math.floor(hue * chordFamilies.length) % chordFamilies.length]
+            };
+        };
+        colorImage.src = imageBase64;
+        document.getElementById('sound-toggle').addEventListener('click', setAudio);
+        document.getElementById('sound-mode-toggle').addEventListener('click', () => {
+            audioMode = audioMode === 'drone' ? 'pad' : 'drone';
+            audioProgressionIndex = 0;
+            if (audioScene) {
+                audioScene.pad.releaseAll();
+                audioScene.lowPad.releaseAll();
+                audioScene.shimmerPad.releaseAll();
+                audioScene.airPad.releaseAll();
+                audioScene.chordSignature = '';
+                audioScene.nextBloom = 0;
+            }
+            document.getElementById('sound-mode-toggle').textContent = 'Mode: ' + (audioMode === 'pad' ? 'Aether Pad' : 'Aether Drone');
+        });
 
         const canvas = document.getElementById('canvas');
         const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
@@ -3119,6 +3902,40 @@
             mouseCurrent.y += (mouseTarget.y - mouseCurrent.y) * settings.smooth;
             material.uniforms.uMouse.value.copy(mouseCurrent);
 
+            if (audioScene && audioOn && performance.now() - lastAudioTick > 45) {
+                lastAudioTick = performance.now();
+                const movement = Math.min(1, Math.hypot(mouseCurrent.x - lastAudioMouse.x, mouseCurrent.y - lastAudioMouse.y) * 16);
+                audioMotion += (movement - audioMotion) * 0.08;
+                lastAudioMouse.copy(mouseCurrent);
+                const spatialPan = isOrbitActive
+                    ? Math.sin(orbitTime) * 0.68
+                    : Math.max(-0.75, Math.min(0.75, mouseCurrent.x * 0.8));
+                audioScene.orbitPanner.pan.rampTo(spatialPan, 0.12);
+                const roots = ['C2', 'D2', 'E2', 'G2', 'A2', 'C3', 'D3'];
+                const root = roots[Math.round(audioColor.hue * (roots.length - 1))];
+                triggerAudioRhythm(root, Tone.now());
+                const majorProgression = [[0, 4, 7, 11], [9, 12, 16, 19], [5, 9, 12, 16], [7, 11, 14, 17]];
+                const semitones = audioMode === 'pad'
+                    ? majorProgression[audioProgressionIndex % majorProgression.length]
+                    : [0, 7, 12, 19];
+                const chord = semitones.map(semitone => Tone.Frequency(root).transpose(semitone).toNote());
+                const signature = audioMode + '-' + chord.join('-');
+                const now = Tone.now();
+                if (audioScene.chordSignature === '' || now > audioScene.nextBloom) {
+                    audioScene.chordSignature = signature;
+                    audioScene.nextBloom = now + (audioMode === 'drone' ? 28 : 7.5);
+                    triggerAudioBloom(chord, now);
+                    if (audioMode === 'pad') audioProgressionIndex = (audioProgressionIndex + 1) % majorProgression.length;
+                }
+                audioScene.filter.frequency.rampTo(900 + audioColor.brightness * 1250 + audioMotion * 750, 1.8);
+                audioScene.lowFilter.frequency.rampTo(260 + audioColor.brightness * 260 + audioMotion * 220, 2.4);
+                audioScene.shimmerFilter.frequency.rampTo(1300 + audioColor.brightness * 1800 + audioMotion * 900, 2.2);
+                audioScene.airFilter.frequency.rampTo(2600 + audioColor.brightness * 3000 + audioMotion * 1200, 2.4);
+                audioScene.chorus.frequency.rampTo(0.06 + audioMotion * 0.05, 2.5);
+                audioScene.shimmerWidth.width.rampTo(0.7 + audioMotion * 0.25, 2.5);
+                audioScene.airWidth.width.rampTo(0.82 + audioMotion * 0.16, 2.5);
+            }
+
             renderer.render(scene, camera);
         });
     <\/script>
@@ -3128,15 +3945,16 @@
             return exportedHTML;
         }
 
-        document.getElementById('btn-export-video').addEventListener('click', async () => {
+        let videoExportPromise = null;
+        async function exportAetherDepthVideo({ download = false, watermark = true, portrait = false } = {}) {
             if (!currentImageElement) {
                 alert('Please load an image first before exporting.');
-                return;
+                return false;
             }
 
             if (typeof MediaRecorder === 'undefined') {
                 alert('Video export is not supported in this browser.');
-                return;
+                return false;
             }
 
             const mimeType = [
@@ -3147,14 +3965,14 @@
 
             if (!mimeType) {
                 alert('This browser cannot encode WebM video from the canvas.');
-                return;
+                return false;
             }
 
-            showLoader('Recording Watermarked Video', 'Capturing the current spatial animation...');
+            showLoader(watermark ? 'Recording Watermarked Video' : 'Preparing Folio Video', 'Capturing the current spatial animation...');
 
             const recordingCanvas = document.createElement('canvas');
-            recordingCanvas.width = canvas.width;
-            recordingCanvas.height = canvas.height;
+            recordingCanvas.width = portrait ? 1080 : canvas.width;
+            recordingCanvas.height = portrait ? 1920 : canvas.height;
             const recordingCtx = recordingCanvas.getContext('2d');
             const stream = recordingCanvas.captureStream(30);
             const recorder = new MediaRecorder(stream, {
@@ -3162,7 +3980,12 @@
                 videoBitsPerSecond: 8_000_000
             });
             const chunks = [];
-            const durationMs = 6000;
+            const requestedDuration = Number(document.getElementById('video-duration')?.value || sessionStorage.getItem('aetherdepth_incoming_duration') || 6);
+            const durationMs = Math.min(60, Math.max(3, requestedDuration)) * 1000;
+            // MediaRecorder can finalize slightly early; scale the safety tail
+            // from the duration selected in Folio instead of using a
+            // fixed value for every reel length.
+            const recordingDurationMs = durationMs + Math.max(100, Math.round(durationMs * 0.04));
             const startedAt = performance.now();
 
             recorder.ondataavailable = (event) => {
@@ -3178,15 +4001,22 @@
             let frameId = null;
             const drawFrame = () => {
                 recordingCtx.clearRect(0, 0, recordingCanvas.width, recordingCanvas.height);
-                recordingCtx.drawImage(canvas, 0, 0, recordingCanvas.width, recordingCanvas.height);
-                drawAetherDepthWatermark(recordingCtx, recordingCanvas.width, recordingCanvas.height);
+                if (portrait) {
+                    const scale = Math.max(recordingCanvas.width / canvas.width, recordingCanvas.height / canvas.height);
+                    const drawWidth = canvas.width * scale;
+                    const drawHeight = canvas.height * scale;
+                    recordingCtx.drawImage(canvas, (recordingCanvas.width - drawWidth) / 2, (recordingCanvas.height - drawHeight) / 2, drawWidth, drawHeight);
+                } else {
+                    recordingCtx.drawImage(canvas, 0, 0, recordingCanvas.width, recordingCanvas.height);
+                }
+                if (watermark) drawAetherDepthWatermark(recordingCtx, recordingCanvas.width, recordingCanvas.height);
 
                 const elapsed = performance.now() - startedAt;
                 const pct = Math.min(100, Math.round((elapsed / durationMs) * 100));
                 progressBar.style.width = pct + '%';
                 progressText.textContent = pct + '%';
 
-                if (elapsed < durationMs && recorder.state === 'recording') {
+                if (elapsed < recordingDurationMs && recorder.state === 'recording') {
                     frameId = requestAnimationFrame(drawFrame);
                 } else if (recorder.state === 'recording') {
                     recorder.stop();
@@ -3201,19 +4031,109 @@
                 cancelAnimationFrame(frameId);
             }
 
-            triggerDownload(blob, 'aetherdepth_spatial_video.webm');
+            try {
+                await new Promise((resolve, reject) => {
+                    const dbRequest = indexedDB.open('folio', 1);
+                    dbRequest.onupgradeneeded = () => {
+                        if (!dbRequest.result.objectStoreNames.contains('handoff')) dbRequest.result.createObjectStore('handoff');
+                    };
+                    dbRequest.onerror = () => reject(dbRequest.error);
+                    dbRequest.onsuccess = () => {
+                        const db = dbRequest.result;
+                        const transaction = db.transaction('handoff', 'readwrite');
+                        transaction.objectStore('handoff').put({ blob, duration: durationMs / 1000, width: recordingCanvas.width, height: recordingCanvas.height, watermark, createdAt: Date.now() }, 'latest-video');
+                        transaction.oncomplete = () => { db.close(); resolve(); };
+                        transaction.onerror = () => { db.close(); reject(transaction.error); };
+                        transaction.onabort = () => { db.close(); reject(transaction.error || new Error('Video handoff transaction aborted')); };
+                    };
+                });
+                sessionStorage.setItem('folio-handoff-kind', 'video');
+            } catch (error) {
+                console.warn('Could not prepare the video for Folio', error);
+                hideLoader();
+                throw error;
+            }
+
+            if (download) triggerDownload(blob, 'aetherdepth_spatial_video.webm');
             hideLoader();
+            return true;
+        }
+
+        document.getElementById('btn-export-video').addEventListener('click', async () => {
+            videoExportPromise = exportAetherDepthVideo({ download: true, watermark: true });
+            try {
+                await videoExportPromise;
+            } catch (error) {
+                alert('Could not export the video. Please try again.');
+            } finally {
+                videoExportPromise = null;
+            }
         });
 
         // ----------------------------------------------------
         // Startup Initialization
         // ----------------------------------------------------
         
+        const videoDurationControl = document.createElement('label');
+        videoDurationControl.className = 'control-group';
+        videoDurationControl.innerHTML = '<span class="group-title">Video Length</span><div class="slider-container"><div class="slider-header"><span>Duration (3–60 seconds)</span><span class="slider-val" id="video-duration-value">6s</span></div><input type="number" id="video-duration" min="3" max="60" step="1" value="6" style="width:100%; padding:.55rem; border:1px solid var(--line); border-radius:var(--radius); background:var(--soft); color:var(--text-main)"></div>';
+        document.querySelector('#tab-export .control-group:nth-of-type(2)').prepend(videoDurationControl);
+        const incomingDuration = Number(sessionStorage.getItem('aetherdepth_incoming_duration') || 6);
+        document.getElementById('video-duration').value = Math.min(60, Math.max(3, incomingDuration));
+        document.getElementById('video-duration-value').textContent = document.getElementById('video-duration').value + 's';
+        document.getElementById('video-duration').addEventListener('input', (event) => {
+            const seconds = Math.min(60, Math.max(3, Math.round(Number(event.target.value) || 3)));
+            event.target.value = seconds;
+            document.getElementById('video-duration-value').textContent = seconds + 's';
+        });
+        const returnButton = document.getElementById('btn-return-folio');
+        returnButton.addEventListener('click', async () => {
+            returnButton.disabled = true;
+            try {
+                videoExportPromise = exportAetherDepthVideo({ download: false, watermark: false, portrait: true });
+                const exported = await videoExportPromise;
+                if (!exported) {
+                    returnButton.disabled = false;
+                    return;
+                }
+            } catch (error) {
+                console.warn('Could not prepare the unwatermarked Folio video', error);
+                alert('Could not prepare the video for Folio. Please try again.');
+                returnButton.disabled = false;
+                return;
+            } finally {
+                videoExportPromise = null;
+            }
+            const baseDestination = sessionStorage.getItem('aetherdepth_return_url') || '../folio/';
+            if (currentImageElement) {
+                try {
+                    sessionStorage.setItem('folio-incoming-image', createOriginalImageDataUrl());
+                    if (sessionStorage.getItem('folio-handoff-kind') !== 'video') sessionStorage.setItem('folio-handoff-kind', 'image');
+                } catch (error) {
+                    console.warn('Could not pass the current AetherDepth image to Folio', error);
+                }
+            }
+            sessionStorage.setItem('folio-open-reel', '1');
+            const destinationUrl = new URL(baseDestination, window.location.href);
+            destinationUrl.searchParams.set('tab', 'reel');
+            destinationUrl.hash = 'reel';
+            sessionStorage.removeItem('aetherdepth_incoming_image');
+            sessionStorage.removeItem('aetherdepth_incoming_duration');
+            sessionStorage.removeItem('aetherdepth_return_url');
+            window.location.assign(destinationUrl.href);
+        });
+
         // Initialize WebGL Scene
         initWebGL();
 
-        // Load Initial Default Portrait Photo
-        loadPhoto(defaultPortraitUrl, true);
+        // Load the image handed off from Folio, or the default portrait.
+        const incomingImage = sessionStorage.getItem('aetherdepth_incoming_image');
+        if (incomingImage) {
+            currentPhotoName = 'folio-image';
+            loadPhoto(incomingImage);
+        } else {
+            loadPhoto(defaultPortraitUrl, true);
+        }
 
     </script>
 </body>
