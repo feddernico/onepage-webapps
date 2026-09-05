@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>AetherDepth to Folio integration test</title>
+<link rel="stylesheet" href="../qunit-2.24.1.css">
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+<iframe id="handoff-frame" style="position:absolute;left:-10000px;width:1200px;height:900px;border:0"></iframe>
+<script src="../qunit-2.24.1.js"></script>
+<script>
+QUnit.config.testTimeout = 45000;
+
+const frame = document.getElementById('handoff-frame');
+const tinyGif = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function openHandoffDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('folio', 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains('handoff')) request.result.createObjectStore('handoff');
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function clearVideo() {
+  const db = await openHandoffDb();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction('handoff', 'readwrite');
+    transaction.objectStore('handoff').delete('latest-video');
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+  db.close();
+}
+
+async function readVideo() {
+  const db = await openHandoffDb();
+  const record = await new Promise((resolve, reject) => {
+    const request = db.transaction('handoff', 'readonly').objectStore('handoff').get('latest-video');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  db.close();
+  return record;
+}
+
+async function waitForVideo(timeout = 12000) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    const record = await readVideo();
+    if (record?.blob?.size) return record;
+    await wait(100);
+  }
+  throw new Error('AetherDepth did not write latest-video to IndexedDB');
+}
+
+function waitForFrameLoad() {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('handoff iframe did not load')), 15000);
+    frame.addEventListener('load', () => {
+      clearTimeout(timeout);
+      resolve();
+    }, { once: true });
+  });
+}
+
+QUnit.test('exports in AetherDepth and returns the rendered video to Folio', async assert => {
+  await clearVideo();
+  frame.src = '../../media/folio/index.html?test=e2e';
+  await waitForFrameLoad();
+  const carousel = frame.contentWindow.FolioTest;
+  const file = new frame.contentWindow.File([await (await fetch(tinyGif)).blob()], 'handoff.gif', { type: 'image/gif' });
+  carousel.loadImage(file);
+  await wait(100);
+  carousel.openAetherDepth();
+  await waitForFrameLoad();
+
+  const aether = frame.contentDocument;
+  const duration = aether.getElementById('video-duration');
+  duration.value = '3';
+  duration.dispatchEvent(new Event('input', { bubbles: true }));
+  aether.getElementById('btn-export-video').click();
+  const record = await waitForVideo();
+  assert.ok(record.blob.size > 0, 'AetherDepth writes a non-empty video blob');
+  assert.equal(record.duration, 3, 'the selected duration is stored with the video');
+
+  aether.getElementById('btn-return-folio').click();
+  await waitForFrameLoad();
+  await wait(150);
+  const returned = frame.contentWindow.FolioTest.getReelState();
+  assert.equal(new URL(frame.contentWindow.location.href).searchParams.get('tab'), 'reel', 'return navigation opens the reel tab');
+  assert.true(returned.videoSrc, 'Folio receives the exported video URL');
+  assert.false(returned.videoHidden, 'the returned video is visible');
+  assert.notOk(frame.contentDocument.getElementById('reel-canvas'), 'the local canvas is not used for the returned video');
+  const returnedRecord = await readVideo();
+  assert.equal(returnedRecord.width, 1080, 'the Edit handoff video is portrait width');
+  assert.equal(returnedRecord.height, 1920, 'the Edit handoff video is portrait height');
+  assert.false(returnedRecord.watermark, 'the Edit handoff video is unwatermarked');
+});
+</script>
+</body>

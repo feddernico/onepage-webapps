@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Folio integration tests</title>
+<link rel="stylesheet" href="../qunit-2.24.1.css">
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+<iframe id="folio-frame" src="../../media/folio/index.html?test=boot" style="position:absolute;left:-10000px;width:1200px;height:900px;border:0"></iframe>
+<script src="../qunit-2.24.1.js"></script>
+<script>
+QUnit.config.testTimeout = 30000;
+
+const frame = document.getElementById('folio-frame');
+let boot = 0;
+
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function loadFolio(query = '') {
+  await clearVideo();
+  // Reset browser state before navigation so the app cannot observe a handoff
+  // left behind by an earlier iframe boot during its startup sequence.
+  if (frame.contentWindow) {
+    frame.contentWindow.localStorage.clear();
+    frame.contentWindow.sessionStorage.clear();
+  }
+  boot += 1;
+  frame.src = `../../media/folio/index.html?test=${boot}${query}`;
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Folio iframe did not load')), 10000);
+    frame.addEventListener('load', () => {
+      clearTimeout(timeout);
+      resolve();
+    }, { once: true });
+  });
+  frame.contentWindow.localStorage.clear();
+  frame.contentWindow.sessionStorage.clear();
+  return frame.contentWindow.FolioTest;
+}
+
+function openHandoffDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('folio', 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains('handoff')) request.result.createObjectStore('handoff');
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function putVideo(blob, duration = 6) {
+  const db = await openHandoffDb();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction('handoff', 'readwrite');
+    transaction.objectStore('handoff').put({ blob, duration }, 'latest-video');
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+  db.close();
+}
+
+async function clearVideo() {
+  const db = await openHandoffDb();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction('handoff', 'readwrite');
+    transaction.objectStore('handoff').delete('latest-video');
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+  db.close();
+}
+
+QUnit.module('Folio handoff integration', hooks => {
+  hooks.afterEach(async () => {
+    await clearVideo();
+  });
+
+  QUnit.test('parses markdown into a stable slide sequence', async assert => {
+    const api = await loadFolio();
+    api.render();
+    assert.ok(api.getSlideCount() >= 7, 'sample content produces multiple slides');
+    assert.equal(api.getSlideTitles()[0], 'The carousel nobody saves', 'first slide preserves the hook');
+    assert.ok(api.getSlideTitles().includes('Save this framework'), 'takeaway slide is preserved');
+  });
+
+  QUnit.test('opens directly on the moving reel tab when requested by the handoff URL', async assert => {
+    const api = await loadFolio('?tab=reel#reel');
+    await wait(25);
+    const state = api.getReelState();
+    assert.equal(state.activeTab, 'reel', 'reel URL selects the reel editor');
+    assert.notOk(frame.contentDocument.getElementById('reel-canvas'), 'there is no local reel canvas export surface');
+    assert.true(state.videoHidden, 'no returned video is shown');
+    assert.false(state.videoSrc, 'no video source is invented');
+  });
+
+  QUnit.test('restores an exported WebM and exposes the download action', async assert => {
+    const api = await loadFolio('?tab=reel#reel');
+    frame.contentWindow.sessionStorage.setItem('folio-handoff-kind', 'video');
+    await putVideo(new Blob(['fake-webm'], { type: 'video/webm' }), 3);
+    await api.loadReturnedVideo();
+    const state = api.getReelState();
+    assert.equal(state.activeTab, 'reel', 'returned media stays in the reel editor');
+    assert.notOk(frame.contentDocument.getElementById('reel-canvas'), 'the returned video does not depend on a local canvas');
+    assert.false(state.videoHidden, 'returned video is visible');
+    assert.true(state.videoSrc, 'returned video receives an object URL');
+    assert.ok(frame.contentDocument.getElementById('returned-video-status').textContent.includes('ready to review'), 'status identifies the returned video');
+    assert.false(frame.contentDocument.getElementById('download-returned-video').hidden, 'returned video exposes a download action');
+    const replacement = new frame.contentWindow.File(['replacement'], 'replacement.jpg', { type: 'image/jpeg' });
+    api.loadImage(replacement);
+    await wait(25);
+    assert.true(api.getReelState().videoHidden, 'dropping a new image hides the previous video');
+    assert.false(api.getReelState().videoSrc, 'dropping a new image removes the previous video source');
+  });
+
+  QUnit.test('accepts an image file for the reel handoff', async assert => {
+    const api = await loadFolio('?tab=reel#reel');
+    const file = new frame.contentWindow.File(['not-an-image'], 'garden.jpg', { type: 'image/jpeg' });
+    api.loadImage(file);
+    await wait(25);
+    assert.equal(frame.contentDocument.getElementById('reel-status').textContent, 'That image could not be loaded. Try a JPG or PNG.', 'invalid image files produce visible feedback');
+  });
+
+  QUnit.test('persists settings without serializing a live Image object', async assert => {
+    const api = await loadFolio();
+    api.render();
+    const persisted = JSON.parse(frame.contentWindow.localStorage.getItem('folio-settings'));
+    assert.strictEqual(persisted.image, null, 'settings contain a null image placeholder');
+    assert.notOk(persisted.image && typeof persisted.image === 'object' && !('src' in persisted.image), 'settings do not contain a stale plain object image');
+  });
+});
+</script>
+</body>
+</html>

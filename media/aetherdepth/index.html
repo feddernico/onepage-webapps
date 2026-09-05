@@ -4105,14 +4105,6 @@
                 videoExportPromise = null;
             }
             const baseDestination = sessionStorage.getItem('aetherdepth_return_url') || '../folio/';
-            if (currentImageElement) {
-                try {
-                    sessionStorage.setItem('folio-incoming-image', createOriginalImageDataUrl());
-                    if (sessionStorage.getItem('folio-handoff-kind') !== 'video') sessionStorage.setItem('folio-handoff-kind', 'image');
-                } catch (error) {
-                    console.warn('Could not pass the current AetherDepth image to Folio', error);
-                }
-            }
             sessionStorage.setItem('folio-open-reel', '1');
             const destinationUrl = new URL(baseDestination, window.location.href);
             destinationUrl.searchParams.set('tab', 'reel');
